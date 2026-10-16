@@ -226,11 +226,33 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
 | Pas | Conținut | Probă | Stare |
 |---|---|---|---|
 | 0 | contractul, scopul E3, rândurile din catalog, textele „1174” corectate; owner pe E3-D7 (31.12) și E3-D9 (seed-ul de pornire) | docskit verde | închis 2026-10-16 |
-| 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; generare fără linii pe o lună închisă de 1C | — |
+| 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; generare fără linii pe o lună închisă de 1C | implementat 2026-10-16 |
 | 2 | exercițiul pe decembrie: comenzile, constatările, istoricul; rândurile `Anual`; `CV_AN_INCHIS` pe exercițiu | familia `EX`; SC-X-12; teste de nucleu; ModelCheck pe ambele profiluri | — |
 | 3 | balanța pe an (E3-D8): proiecția, DTO-ul, openapi, coloana în React | SC-CIT pe doi ani; drift openapi; SAF-T neschimbat pe lunile de probă | — |
 | 4 | XAF: comenzile pe perioadă și exercițiu, lista închiderilor; ușile HTTP cu refuzurile (80) | `refuzuri.ps1` pe host viu; browser | — |
 | 5 | regresia integrală, review advers, decizia, închiderea | integrala pe ambele profiluri; nucleu; HTTP; docskit | — |
+
+## Tranșări la pasul 1 (2026-10-16)
+
+- Cheia-sursă e atomul soldului contabil: contul plus repartitorul,
+  materialul, codurile funcțional și economic, sursa de finanțare, unitatea,
+  proiectul și centrul de cost. Coordonatele fiscale nu sunt în atom, deci nu
+  ajung nici pe sursă, nici pe destinație.
+- IRZ are declarant propriu: sursa primește cheia completă, destinația
+  repartitorul scris pe linie (lipsa rămâne lipsă, fără implicitul antetului)
+  și numai coordonatele păstrate, memorate pe linie la generare. Linia
+  închisă rămâne astfel corectă și dacă politica se schimbă după operare.
+- Un singur document viu pe lună, ca la ITV; unitatea internă e latura
+  antetului, nu o partiție a soldurilor.
+- Generatorul aplică deja rândurile `Anual` în decembrie, după cele
+  `Lunar`; proba lor e a pasului 2.
+- Seed-ul bugetar păstrează pe 121 și 117 coordonatele notei legacy de
+  deschidere (repartitorul, unitatea, proiectul, codurile funcțional și
+  economic) plus sursa de finanțare; pe 521.03.00, codurile și sursa (E3-D9).
+  Owner-ul confirmă coordonatele; o schimbare e numai seed.
+- Ușa OData a politicii, ecranul de generare și ușile HTTP ale IRZ sunt ale
+  pasului 4; în pasul 1 politica se editează din XAF, iar comenzile au
+  stratul `InchidereRezultatApply`.
 
 ## Regula de oprire
 

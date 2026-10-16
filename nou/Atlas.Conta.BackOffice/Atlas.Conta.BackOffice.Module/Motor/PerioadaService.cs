@@ -107,7 +107,10 @@ public static class PerioadaService {
 
         // Un fapt, o constatare: draftul deja raportat de familia lui nu se mai
         // repetă ca `DRAFT-IN-PERIOADA` (F27-D2).
-        var raportate = new List<Guid>(2);
+        var raportate = new List<Guid>(3);
+        if (Activ(FelConstatareInchidere.RezNeinchis)
+                && RezNeinchis(os, an, luna, primaZi, ultimaZi, Adauga) is { } irzId)
+            raportate.Add(irzId);
         if (Activ(FelConstatareInchidere.ItvLipsa)
                 && ItvLipsa(os, an, luna, primaZi, ultimaZi, Adauga) is { } itvId)
             raportate.Add(itvId);
@@ -142,6 +145,28 @@ public static class PerioadaService {
         adauga(FelConstatareInchidere.ItvLipsa, Cheie(FelConstatareInchidere.ItvLipsa), text,
             vie?.ID, vie?.Numar ?? Eticheta(an, luna));
         return vie?.ID;
+    }
+
+    // E3-D5: conturile-sursă lunare au sold la sfârșitul lunii; cheia n-are sufix, ca ITV-LIPSA.
+    static Guid? RezNeinchis(IObjectSpace os, int an, int luna, DateOnly primaZi, DateOnly ultimaZi,
+            Action<FelConstatareInchidere, string, string, Guid?, string> adauga) {
+        if (!InchidereRezultatService.AreRezidual(os, an, luna))
+            return null;
+        var vie = os.GetObjectsQuery<InchidereRezultat>()
+            .Where(d => d.Data >= primaZi && d.Data <= ultimaZi && d.Stare != StareDocument.Stornat)
+            .Select(d => new { d.ID, d.Numar, d.Stare })
+            .FirstOrDefault();
+        var text = vie == null
+            ? $"Conturile de rezultat au sold la sfârșitul lui {Eticheta(an, luna)}, iar închiderea lor lipsește — "
+                + "soldul rămas strică soldul inițial al anului următor."
+            : vie.Stare == StareDocument.Draft
+                ? $"Închiderea conturilor de rezultat pentru {Eticheta(an, luna)} există ca DRAFT neoperat "
+                    + $"({vie.Numar ?? "fără număr"}) — un draft nu scrie registre, deci conturile rămân cu sold."
+                : $"Conturile de rezultat au sold la sfârșitul lui {Eticheta(an, luna)} deși închiderea "
+                    + $"{vie.Numar} e operată — un document operat după ea a lăsat sold; stornați-o și generați-o din nou.";
+        adauga(FelConstatareInchidere.RezNeinchis, Cheie(FelConstatareInchidere.RezNeinchis), text,
+            vie?.ID, vie?.Numar ?? Eticheta(an, luna));
+        return vie is { Stare: StareDocument.Draft } ? vie.ID : null;
     }
 
     // AMO: calculul lunii e al SOCIETĂȚII, nu al unei unități interne
@@ -237,6 +262,7 @@ public static class PerioadaService {
         FelConstatareInchidere.AmoLipsa => "AMO-LIPSA",
         FelConstatareInchidere.DraftInPerioada => "DRAFT-IN-PERIOADA",
         FelConstatareInchidere.RestScadent => "REST-SCADENT",
+        FelConstatareInchidere.RezNeinchis => "REZ-NEINCHIS",
         _ => fel.ToString().ToUpperInvariant(),
     };
 

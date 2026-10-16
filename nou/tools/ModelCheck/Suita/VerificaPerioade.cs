@@ -55,6 +55,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // creează deliberat: absența lor face din 03/2030 CAPĂTUL lanțului.
 static class VerificaPerioade {
     public static void Ruleaza(Suita s, bool privat) {
+        using var faraRez = s.FaraRezNeinchis();
         const string Marcaj = "E2E-PER";
         const int An = 2030;
         var eticheta = privat ? "privat" : "bugetar";

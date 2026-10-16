@@ -31,6 +31,9 @@ public static partial class Materializare {
             { PoliticaCeruta: PoliticaProfil.InchidereTva }
                 when !os.GetObjectsQuery<PoliticaInchidereTva>().Any(p => p.TipDocumentId == id)
                 => "profilul nu are politica închiderii de TVA",
+            { PoliticaCeruta: PoliticaProfil.InchidereConturi }
+                when !os.GetObjectsQuery<PoliticaInchidereConturi>().Any()
+                => "profilul nu are politica închiderii conturilor",
             _ => null,
         };
         return lipsa == null ? null : $"{CoduriRefuz.TipFaraDeclaratie}: Tipul {tip.Cod} nu se operează: {lipsa}.";

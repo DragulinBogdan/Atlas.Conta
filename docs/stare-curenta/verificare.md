@@ -1,6 +1,6 @@
 # Verificare
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 ModelCheck, scenariile, probele pe sursă, pe model și HTTP, scările de perf
 și documentația.
@@ -190,6 +190,14 @@ extinde cheia partidei la document × cont × partener; SC-NTC-13 verifică
 separarea. SC-NTC-22
 verifică dependența FIFO între data nominalizării și data inversării ei.
 Rezultatele rulărilor sunt consemnate în fișierele tipurilor.
+
+Familia [EX](../nucleu/scenarii/EX.md) (`ScenariiEx`, `--scenarii EX`)
+probează închiderea conturilor de rezultat pe ambele profiluri, pe anul 1975:
+soldurile lunii sunt cumulate de la începutul bazei, deci orice istoric
+anterior ar intra în așteptări. Probele care închid luni pentru alt scop
+(perioadele, acceptarea, soldurile materializate, concurența, PerfCub) țin
+`REZ-NEINCHIS` pe `Ignorat` sau acceptabil cât rulează, ca `ITV-LIPSA`, și
+restaurează severitatea din seed. (E3-D5)
 
 Comenzile, încercările intermediare și limitele sunt în
 [DESCHIDERE.md](../nucleu/scenarii/DESCHIDERE.md), NIR în

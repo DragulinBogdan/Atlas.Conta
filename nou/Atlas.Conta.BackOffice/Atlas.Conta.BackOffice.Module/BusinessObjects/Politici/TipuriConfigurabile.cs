@@ -6,7 +6,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects;
 // verifică egalitatea în ambele sensuri — un tip nou fără drept și fără
 // etichetă pică zgomotos, nu tăcut.
 public static class Politici {
-    /// <summary>Cele 21 de tipuri `ICuProvenienta`: politicile + nomenclatoarele pe care seed-ul le tratează ca ale lui.</summary>
+    /// <summary>Cele 23 de tipuri `ICuProvenienta`: politicile + nomenclatoarele pe care seed-ul le tratează ca ale lui.</summary>
     public static IReadOnlyList<Type> TipuriConfigurabile { get; } = [
         typeof(TipDocument), typeof(TipTva), typeof(Cont), typeof(ClasaProdus), typeof(TipMaterial),
         typeof(RegulaStoc), typeof(RegulaContare), typeof(PoliticaConex), typeof(PoliticaDiferenta), typeof(PoliticaScadenta),
@@ -14,5 +14,6 @@ public static class Politici {
         typeof(PoliticaNumerotare), typeof(PoliticaMiscareSaft), typeof(PoliticaTvaImplicit),
         typeof(MapareD300), typeof(MapareD394), typeof(MapareTvaSaft),
         typeof(PoliticaAmortizare), typeof(RegulaDeductibilitate), typeof(PoliticaInchidere),
+        typeof(PoliticaInchidereConturi),
     ];
 }

@@ -1242,6 +1242,49 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.ToTable("PoliticiInchidere");
                 });
 
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaInchidereConturi", b =>
+                {
+                    b.Property<Guid>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ContDestinatieId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ContSursaId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CoordonatePastrate")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("DinSeed")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Moment")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OptimisticLockField")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("Ordine")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("PastreazaRepartitor")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("ContDestinatieId");
+
+                    b.HasIndex("ContSursaId", "Moment")
+                        .IsUnique();
+
+                    b.ToTable("PoliticiInchidereConturi");
+                });
+
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaInchidereTva", b =>
                 {
                     b.Property<Guid>("ID")
@@ -4093,6 +4136,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentDetaliu");
 
                     b.Property<Guid?>("CentruCostId")
+                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("uuid")
                         .HasColumnName("CentruCostId");
 
@@ -4957,11 +5001,79 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasDiscriminator().HasValue("Plata");
                 });
 
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.InchidereRezultat", b =>
+                {
+                    b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.NotaContabila");
+
+                    b.HasDiscriminator().HasValue("InchidereRezultat");
+                });
+
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.InchidereTva", b =>
                 {
                     b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.NotaContabila");
 
                     b.HasDiscriminator().HasValue("InchidereTva");
+                });
+
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.InchidereRezultatDetaliu", b =>
+                {
+                    b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.NotaContabilaDetaliu");
+
+                    b.Property<Guid?>("CentruCostId")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("uuid")
+                        .HasColumnName("CentruCostId");
+
+                    b.Property<Guid?>("CodFunctionalId")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("uuid")
+                        .HasColumnName("CodFunctionalId");
+
+                    b.Property<int>("CoordonatePastrate")
+                        .HasColumnType("integer")
+                        .HasColumnName("CoordonatePastrate");
+
+                    b.Property<Guid?>("ProdusId")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("uuid")
+                        .HasColumnName("ProdusId");
+
+                    b.Property<Guid?>("ProiectId")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("uuid")
+                        .HasColumnName("ProiectId");
+
+                    b.Property<Guid?>("SursaFinantareId")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("uuid")
+                        .HasColumnName("SursaFinantareId");
+
+                    b.Property<bool>("SursaPeDebit")
+                        .HasColumnType("boolean")
+                        .HasColumnName("SursaPeDebit");
+
+                    b.Property<Guid?>("UnitateId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("UnitateId");
+
+                    b.HasIndex("CentruCostId");
+
+                    b.HasIndex("CodFunctionalId");
+
+                    b.HasIndex("ProdusId");
+
+                    b.HasIndex("ProiectId");
+
+                    b.HasIndex("SursaFinantareId");
+
+                    b.HasIndex("UnitateId");
+
+                    b.ToTable(t =>
+                        {
+                            t.HasCheckConstraint("CK_DocumentDetalii_TvaCules", "NOT \"TvaCules\" OR \"ValoareTva\" <> 0");
+                        });
+
+                    b.HasDiscriminator().HasValue("InchidereRezultatDetaliu");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.ApplicationUserLoginInfo", b =>
@@ -5313,6 +5425,25 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Navigation("ContPersonal");
 
                     b.Navigation("TipDocument");
+                });
+
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaInchidereConturi", b =>
+                {
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Cont", "ContDestinatie")
+                        .WithMany()
+                        .HasForeignKey("ContDestinatieId")
+                        .OnDelete(DeleteBehavior.ClientNoAction)
+                        .IsRequired();
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Cont", "ContSursa")
+                        .WithMany()
+                        .HasForeignKey("ContSursaId")
+                        .OnDelete(DeleteBehavior.ClientNoAction)
+                        .IsRequired();
+
+                    b.Navigation("ContDestinatie");
+
+                    b.Navigation("ContSursa");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.PoliticaInchidereTva", b =>
@@ -6495,6 +6626,51 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Navigation("Judet");
 
                     b.Navigation("TipTvaImplicit");
+                });
+
+            modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.InchidereRezultatDetaliu", b =>
+                {
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "CentruCost")
+                        .WithMany()
+                        .HasForeignKey("CentruCostId")
+                        .OnDelete(DeleteBehavior.ClientNoAction);
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.CodFunctional", "CodFunctional")
+                        .WithMany()
+                        .HasForeignKey("CodFunctionalId")
+                        .OnDelete(DeleteBehavior.ClientNoAction);
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Produs", "Produs")
+                        .WithMany()
+                        .HasForeignKey("ProdusId")
+                        .OnDelete(DeleteBehavior.ClientNoAction);
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Proiect", "Proiect")
+                        .WithMany()
+                        .HasForeignKey("ProiectId")
+                        .OnDelete(DeleteBehavior.ClientNoAction);
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.SursaFinantare", "SursaFinantare")
+                        .WithMany()
+                        .HasForeignKey("SursaFinantareId")
+                        .OnDelete(DeleteBehavior.ClientNoAction);
+
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Unitate", "Unitate")
+                        .WithMany()
+                        .HasForeignKey("UnitateId")
+                        .OnDelete(DeleteBehavior.ClientNoAction);
+
+                    b.Navigation("CentruCost");
+
+                    b.Navigation("CodFunctional");
+
+                    b.Navigation("Produs");
+
+                    b.Navigation("Proiect");
+
+                    b.Navigation("SursaFinantare");
+
+                    b.Navigation("Unitate");
                 });
 
             modelBuilder.Entity("Atlas.Conta.BackOffice.Module.BusinessObjects.Document", b =>

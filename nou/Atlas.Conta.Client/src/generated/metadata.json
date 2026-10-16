@@ -132,7 +132,8 @@
       "ItvLipsa": "Închiderea de TVA lipsește sau nu e operată",
       "AmoLipsa": "Amortizarea lunară lipsește sau nu e operată",
       "DraftInPerioada": "Document în lucru cu data înregistrării în perioadă",
-      "RestScadent": "Document operat cu rest scadent în perioadă"
+      "RestScadent": "Document operat cu rest scadent în perioadă",
+      "RezNeinchis": "Conturile de rezultat au sold la sfârșitul lunii"
     },
     "FelDeductibilitate": {
       "PlafonLunar": "Plafon lunar",
@@ -194,6 +195,10 @@
       "ToNegativeInfinity": "ToNegativeInfinity",
       "ToPositiveInfinity": "ToPositiveInfinity"
     },
+    "MomentInchidere": {
+      "Lunar": "Lunar",
+      "Anual": "Anual (în decembrie)"
+    },
     "MotivCorectie": {
       "EroareMateriala": "Eroare de evidență",
       "FaptNou": "Fapt nou"
@@ -212,7 +217,7 @@
     "MotivNegenerare": {
       "ProfilInert": "Profilul nu are conturile închiderii",
       "InchidereVie": "Luna are deja o închidere",
-      "FaraSold": "Luna n-are sold de TVA de închis",
+      "FaraSold": "Luna n-are sold de închis",
       "NeCronologica": "Există o închidere pentru o lună ulterioară",
       "DraftAnterior": "O lună anterioară are un draft de închidere neoperat",
       "PerioadaInchisa": "Perioada fiscală e închisă",
@@ -1312,6 +1317,78 @@
         "PerioadaId": "Perioada"
       }
     },
+    "InchidereRezultat": {
+      "DefaultProperty": "Numar",
+      "Membri": {
+        "Autogenerat": "Autogenerat",
+        "ClrType": "Tip",
+        "Corecteaza": "Corectează documentul",
+        "CorecteazaId": "Corectează documentul",
+        "Data": "Dată",
+        "DataInregistrare": "Data înregistrării",
+        "DataOperare": "Data operării",
+        "DocumentSursa": "Document sursă",
+        "DocumentSursaId": "Document sursă",
+        "ID": "ID",
+        "MotivCorectie": "Motivul corecției",
+        "Numar": "Număr",
+        "Predator": "Predator (de la)",
+        "PredatorId": "Predator (de la)",
+        "Primitor": "Primitor (către)",
+        "PrimitorId": "Primitor (către)",
+        "Stare": "Stare",
+        "Total": "Total (brut)"
+      }
+    },
+    "InchidereRezultatDetaliu": {
+      "DefaultProperty": null,
+      "Membri": {
+        "Angajament": "Angajament",
+        "AngajamentId": "Angajament",
+        "Cantitate": "Cantitate",
+        "CentruCost": "Centru de cost",
+        "CentruCostId": "Centru de cost",
+        "ClrType": "Tip",
+        "CodEconomic": "Cod economic",
+        "CodEconomicId": "Cod economic",
+        "CodFunctional": "Cod funcțional",
+        "CodFunctionalId": "Cod funcțional",
+        "ContCredit": "ContCredit",
+        "ContCreditId": "ContCredit",
+        "ContDebit": "ContDebit",
+        "ContDebitId": "ContDebit",
+        "CoordonatePastrate": "Coordonate păstrate",
+        "Descriere": "Descriere",
+        "Document": "Document",
+        "DocumentId": "Document",
+        "ID": "ID",
+        "Lot": "Lot",
+        "LotId": "Lot",
+        "PartidaCreditId": "Partida stinsă pe credit",
+        "PartidaDebitId": "Partida stinsă pe debit",
+        "Pozitie": "Poziție",
+        "Produs": "Material",
+        "ProdusId": "Material",
+        "Proiect": "Proiect",
+        "ProiectId": "Proiect",
+        "RepartitorCredit": "RepartitorCredit",
+        "RepartitorCreditId": "RepartitorCredit",
+        "RepartitorDebit": "RepartitorDebit",
+        "RepartitorDebitId": "RepartitorDebit",
+        "SursaFinantare": "Sursă de finanțare",
+        "SursaFinantareId": "Sursă de finanțare",
+        "SursaPeDebit": "Sursa pe debit",
+        "TipMaterial": "Tip (cont/clasă)",
+        "TipMaterialId": "Tip (cont/clasă)",
+        "TipTva": "Tip TVA",
+        "TipTvaId": "Tip TVA",
+        "TvaCules": "TVA cules",
+        "Unitate": "Unitate",
+        "UnitateId": "Unitate",
+        "Valoare": "Valoare",
+        "ValoareTva": "Valoare TVA"
+      }
+    },
     "InchidereTva": {
       "DefaultProperty": "Numar",
       "Membri": {
@@ -1774,6 +1851,21 @@
         "Fel": "Fel",
         "ID": "ID",
         "Severitate": "Severitate"
+      }
+    },
+    "PoliticaInchidereConturi": {
+      "DefaultProperty": "Ordine",
+      "Membri": {
+        "ContDestinatie": "Cont destinație",
+        "ContDestinatieId": "Cont destinație",
+        "ContSursa": "Cont sursă",
+        "ContSursaId": "Cont sursă",
+        "CoordonatePastrate": "Coordonate păstrate",
+        "DinSeed": "Din seed",
+        "ID": "ID",
+        "Moment": "Moment",
+        "Ordine": "Ordine",
+        "PastreazaRepartitor": "Păstrează repartitorul"
       }
     },
     "PoliticaInchidereTva": {

@@ -1,4 +1,5 @@
 ﻿using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using System.Linq.Expressions;
 using Atlas.Conta.BackOffice.Module.Culegere;
 using Atlas.Conta.BackOffice.Module.Motor;
 using Atlas.Conta.BackOffice.Module.Proiectii;
@@ -40,7 +41,7 @@ public static class NotaContabilaApply {
         NotaContabila doc;
         if (id is Guid existentId) {
             doc = Rezolva.Cere<NotaContabila>(os, existentId, "Nota contabilă");
-            RefuzaInchidereaTva(doc);
+            RefuzaNotaGenerata(doc);
             // Pre-check de DOMENIU: gardianul (`GardianEditare`) ar prinde oricum
             // la commit, dar abia după ce am rescris header-ul și liniile în
             // ObjectSpace-ul viu, cu mesajul lui generic. Aici oprim din prima.
@@ -75,7 +76,7 @@ public static class NotaContabilaApply {
     // de TVA are tipul ei, ITV).
     public static void Sterge(IObjectSpace os, Guid id) {
         var doc = Rezolva.Cere<NotaContabila>(os, id, "Nota contabilă");
-        RefuzaInchidereaTva(doc);
+        RefuzaNotaGenerata(doc);
         if (doc.Stare != StareDocument.Draft)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} nu mai e Draft (starea „{doc.Stare}”) — nu se șterge. "
@@ -164,11 +165,20 @@ public static class NotaContabilaApply {
     // PERMISE pe ruta NTC: sunt `ComenziDocument` pe `Document`, agnostic la tip, și
     // produc exact același rezultat ca pe ruta ITV — un al doilea gard acolo ar fi
     // fost o regulă fără miză.
-    static void RefuzaInchidereaTva(NotaContabila doc) {
+    static void RefuzaNotaGenerata(NotaContabila doc) {
         if (doc is InchidereTva)
             throw new OperareException(
                 $"Documentul {Eticheta(doc)} e o închidere de TVA — se gestionează din ecranul ei (/itv).");
+        if (doc is InchidereRezultat)
+            throw new OperareException(
+                $"Documentul {Eticheta(doc)} e o închidere a conturilor de rezultat — se regenerează, nu se culege.");
     }
+
+    /// <summary>Notele generate (ITV, IRZ) nu sunt ale ușii NTC (F21-D5).</summary>
+    public static readonly Expression<Func<NotaContabila, bool>> Culeasa =
+        d => !(d is InchidereTva) && !(d is InchidereRezultat);
+
+    public static bool EsteGenerata(NotaContabila d) => d is InchidereTva or InchidereRezultat;
 
     static T Nomenclator<T>(IObjectSpace os, Guid? id, string rol)
             where T : class => Rezolva.Optional<T>(os, id, rol);
@@ -193,7 +203,7 @@ public static class NotaContabilaApply {
             // printr-un test pe discriminator, deci filtrul rămâne server-side, iar
             // `GET api/ntc/{id}` pe un ITV întoarce 404, nu o reprezentare
             // parțială a unui document pe care ecranul de notă nu-l poate scrie.
-            .Where(d => !(d is InchidereTva))
+            .Where(Culeasa)
             .Where(d => d.ID == id)
             .Select(d => new {
                 d.ID, d.Numar, d.Data, d.DataInregistrare, d.Stare, d.DataOperare,
@@ -276,7 +286,7 @@ public static class NotaContabilaApply {
             .Select(g => new { DocumentId = g.Key, Total = g.Sum(x => x.Valoare + x.ValoareTva) });
 
         // F21-D5: fără filtru, lista notelor conținea și închiderile de TVA.
-        return from d in os.GetObjectsQuery<NotaContabila>().Where(d => !(d is InchidereTva))
+        return from d in os.GetObjectsQuery<NotaContabila>().Where(Culeasa)
                join t in totaluri on d.ID equals t.DocumentId into agregat
                from t in agregat.DefaultIfEmpty()
                select new NtcListDto {
@@ -318,7 +328,7 @@ public static class NotaContabilaApply {
         const int Plafon = 100;
 
         var doc = RandDupaCheie.Ca<NotaContabila>(os, id);
-        if (doc == null || doc is InchidereTva)
+        if (doc == null || EsteGenerata(doc))
             return null;
 
         var rezultat = new NtcCandidatiDto {

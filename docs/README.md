@@ -341,7 +341,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [TR-D9b, pasul 7 — membrii de tip SensTva își iau numele întreg](nucleu/tr-d9b-pas7-senstva.md)
 - [TR-D9b, pasul 8 — sensul stingerii și parametrii de interogare își iau numele întreg](nucleu/tr-d9b-pas8-sensstingere.md)
 
-### `docs/nucleu/scenarii/` (27)
+### `docs/nucleu/scenarii/` (28)
 
 - [ASM — asamblare](nucleu/scenarii/ASM.md)
 - [BCS — bon de consum](nucleu/scenarii/BCS.md)
@@ -355,6 +355,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [DESCHIDERE — solduri inițiale detaliate](nucleu/scenarii/DESCHIDERE.md)
 - [DSC — descărcare de gestiune](nucleu/scenarii/DSC.md)
 - [DVI — declarație vamală](nucleu/scenarii/DVI.md)
+- [EX — închiderea exercițiului](nucleu/scenarii/EX.md)
 - [FCL — factură de ieșire](nucleu/scenarii/FCL.md)
 - [FCT — factură de intrare](nucleu/scenarii/FCT.md)
 - [IMO — PIF, AMO, CAS complete pe cub](nucleu/scenarii/IMO.md)

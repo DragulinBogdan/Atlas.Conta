@@ -1,6 +1,6 @@
 # Documente
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Modelul comun al documentelor, ciclul lor de viață (culegere, operare, anulare, storno, corecție, retragere), data înregistrării și documentele generate.
 
@@ -131,7 +131,7 @@ luna închisă a documentului de imobilizări, recepția activă, nominalizăril
 cu net rămas nenul. Stornat: nimic. Ștergerea se decide numai pe stare
 (Draft), fără hook de tip (106j). Tipul contribuie comenzile proprii prin
 `Document.ContribuieRegim`, în vocabularul închis
-`RegimDocument.ComenziCunoscute`: NTC → Stinge pe Operat; AMO și ITV →
+`RegimDocument.ComenziCunoscute`: NTC → Stinge pe Operat; AMO, ITV și IRZ →
 Regenerează pe Draft; ASM → Distribuie pe Draft cu linii de consum și de
 produs; FCL → Generează descărcarea pe Operat, cu gestiune de descărcare și
 rest nedescărcat. Adaptorii (`Api/*Apply`, controllerele XAF) randează
@@ -199,7 +199,7 @@ scadența, cronologia seriilor proprii și identitatea fiscală rămân pe ea.
   Postările unui document fără câmp cules cad pe data documentului. (F27-D4)
 - Documentul conex și cele secundare care copiază data sursei moștenesc și data
   înregistrării ei. Documentele generate (amortizarea lunară, închiderea de TVA,
-  descărcarea de gestiune) o primesc egală cu data lor chiar la creare, nu abia
+  închiderea conturilor de rezultat, descărcarea de gestiune) o primesc egală cu data lor chiar la creare, nu abia
   la operare. (17, F27-D4, F27-r9)
 - Plata autogenerată din factura de intrare are data ei proprie (ziua plății
   culese), dar data înregistrării nu poate precede intrarea facturii în
@@ -373,8 +373,9 @@ Stornoul și anularea urmăresc postările existente ale documentului.
 | LDI — diferențe inventar | Direcție explicită Plus/Minus, culegere pozitivă, semn la materializare. Plusul naște lot pe gestiunea predatorului; minusul cere lot existent, străin de document. Primitorul are calitatea Comisie. Declarant pe cub pentru Magazie/Marfuri/Folosinta: plus contra Inventar, minus contra Consum, contraponderi fără unitate. Folosinta păstrează gestiunea reală pe lanțul FCT/NIR/BTR/BCS/LDI; Custodie explicit neacoperită. (093) (28a, 28d, 63, LDI-B1…B3) |
 | PLT / INC — plată / încasare | Valoarea se culege pe linii ca defalcare. Contarea se rezolvă din laturi. PLT: cont propriu → beneficiar; INC: plătitor → cont propriu. Pot exprima și picioarele unui virament intern. (31a, 31c, 64) |
 | DEC — decont | Angajat → repartitor intern, fără stoc. Contractul permite cont și repartitor explicite pe linie. Cantitatea pro-formă zero se normalizează la unu. (32a, 32b, 32d) |
-| NTC — notă contabilă | Postare explicită. Poate stinge manual pe contrapartidă și sens; nu se înscrie implicit în stingerea automată a sursei. ITV nu trece prin ușa NTC (listă, citire, comenzi). (46b, 79c, 82a) |
+| NTC — notă contabilă | Postare explicită. Poate stinge manual pe contrapartidă și sens; nu se înscrie implicit în stingerea automată a sursei. ITV și IRZ nu trec prin ușa NTC (listă, citire, comenzi). (46b, 79c, 82a, E3-D3) |
 | ITV — închidere TVA | Rezultatul serviciului lunar, cu conturi din politică. Nu se culege ca agregat liber și nu închide perioada fiscală. (46c, 79a) |
+| IRZ — închiderea conturilor de rezultat | Notă generată pe tiparul ITV, datată în ultima zi a lunii, pe o unitate internă; cel mult una vie pe lună. O linie per cheie-sursă cu sold nenul la sfârșitul lunii (contul plus coordonatele soldului), închisă în sensul opus soldului pe destinația rândului de politică. Sursa poartă cheia completă; destinația păstrează repartitorul și coordonatele declarate de rând, restul se pliază; coordonatele fiscale nu trec. Operarea refuză draftul depășit (soldurile sau politica s-au schimbat) și orice închidere când o lună ulterioară e închisă operat. Nu se culege liber; fără flux `/nou`. (E3-D3, E3-D4) |
 | DVI — declarație vamală de import | Linii pe detaliul de bază: valoarea în vamă ca bază, taxa declarată (0 = din cotă la operare). Nu postează valoarea și nu mișcă stocul; postează doar taxa din politica TVA (4426 contra contului implicit al predatorului — biroul vamal/comisionarul — sau 4426 = 4427 la amânarea plății). MRN cules, fără numerotare. Legătura n→m cu facturile de import este evidență, doar în Draft, prin agregat. Nu este document stins: taxa se plătește ca orice taxă, fără împerechere. (86a, 86b, 86e, 86g) |
 | ASM — asamblare/dezasamblare | Transformare n→m cu linii de produs și consum. Gardul valoric e ΣP = ΣC: produsele culese contra consumului evaluat pe cub (`ASAMBLARE_NEBALANSATA`, cu ambele sume). Grupurile pe cont cu P = C intră în Transfer, restul în Operare, cu contraponderi cantitative Transformare; nu există absorbție. `DistribuieValoarea` aduce produsele la consumul evaluat de declarant pe operandul draftului (D9-D3). Nu consumă un lot produs de același document. (46d, ASM-B2…B7) |
 | RLF — retur la furnizor | Folosește lotul original; culegere pozitivă, postare cu semn negativ pe corespondența originală. (46e, 76d) |

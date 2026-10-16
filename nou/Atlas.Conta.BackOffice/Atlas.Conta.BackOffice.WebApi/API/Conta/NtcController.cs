@@ -72,7 +72,7 @@ public class NtcController : ContaApiController {
     // adevăruri, iar 422-ul ar divulga numărul închiderii pe care GET o neagă.
     // Amendează 79c: comenzile NTC pe un id ITV NU mai sunt permise — ITV are
     // ușa lui (`api/itv`), cu aceleași comenzi.
-    static readonly Func<NotaContabila, bool> PeUsaNtc = d => d is not InchidereTva;
+    static readonly Func<NotaContabila, bool> PeUsaNtc = d => !NotaContabilaApply.EsteGenerata(d);
 
     // ── Scriere: agregatul per document (42d) ─────────────────────────────
     // `Numar` nu apare în WriteDto: NTC are politică de numerotare („NTC-") în

@@ -54,6 +54,9 @@ public sealed record TransformareFapt(N.RolTransformare? Rol, decimal? PretProdu
 
 public sealed record DiferentaInventarFapt(DirectieDiferenta Directie, decimal? PretEvaluare);
 
+/// <summary>Latura care poartă cheia-sursă a liniei de închidere și coordonatele care trec pe destinație (E3-D3).</summary>
+public sealed record InchidereFapt(bool SursaPeDebit, DimensiuneFlags Pastrate);
+
 public sealed record PoliticaTvaFapt(
     DirectieTva Directie,
     SursaCont SursaContrapartida,
@@ -101,6 +104,7 @@ public sealed record LinieOperand(
 
     public TransformareFapt? Transformare { get; init; }
     public DiferentaInventarFapt? DiferentaInventar { get; init; }
+    public InchidereFapt? Inchidere { get; init; }
     public ImobilizareCuleasa? Imobilizare { get; init; }
     public CorectieValoricaFapt? CorectieValorica { get; init; }
     public Guid? PartidaDebit { get; init; }

@@ -51,6 +51,10 @@ public interface ILinieCuDiferentaInventar {
     Declaratii.DiferentaInventarFapt DiferentaCuleasa();
 }
 
+public interface ILinieCuInchidere {
+    Declaratii.InchidereFapt InchidereCuleasa();
+}
+
 // Linia care NAȘTE un lot la culegere (F5-D2): produsul ales de operator devine
 // identitatea lotului nou, iar `LoturiCulegereService` face nașterea/
 // sincronizarea/curățenia pe contractul ăsta — o singură logică pentru toate

@@ -1,6 +1,6 @@
 # Motorul de postare
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Contarea și dimensiunile, precizia numerică, nucleul pur, declarația fluxului per tip, laturile documentului, cubul persistat și scrierea serială.
 
@@ -356,19 +356,27 @@ partide care cere repartitor și e atins de catalog.
   stornoul a redeschis sumele; închiderea obișnuită folosește `Data`.
   Validarea și citirea `Stale` folosesc aceeași regulă. Cataloagele și
   validarea independentă: `docs/nucleu/scenarii/NTC.md`, `ITV.md`.
+- **IRZ** are declarant propriu (`DeclarantInchidereRezultat`): fiecare linie
+  e o mișcare între cheia-sursă și destinație. Latura sursei, marcată pe linie,
+  primește repartitorul, materialul și analiza complete; latura destinației
+  primește repartitorul scris pe linie și numai coordonatele păstrate
+  (`InchidereFapt.Pastrate`). Repartitorul lipsă rămâne lipsă, fără implicitul
+  antetului; partidele nu se nominalizează. Catalogul: `docs/nucleu/scenarii/EX.md`.
+  (E3-D3)
 
 ### Tipul care nu declară
 
 Orice tip operabil declară. Tipul fără declarant (BPR) sau fără politica de
 profil pe care declarantul lui o cere (`IDeclarant.PoliticaCeruta`: regulile
 de contare pentru DSC, RDC și RLF, politica de TVA pentru DVI, politica
-închiderii de TVA pentru ITV — absente pe bugetar) e refuzat la dry-run și la
+închiderii de TVA pentru ITV — absente pe bugetar, politica închiderii
+conturilor pentru IRZ) e refuzat la dry-run și la
 operare cu `TIP_FARA_DECLARATIE`, înaintea validării frunzei, cu sau fără
 număr cules. Tipul de document nu poartă un comutator de postare în cub:
 orice tip operabil postează, prin declarant. (D9-D5, D9-D6)
 
 O regulă de contare pe un tip al cărui declarant nu contează prin reguli
-(`IDeclarant.ConteazaPrinReguli` fals: ASM, BTR, PIF, AMO, CAS, NTC, ITV, DVI)
+(`IDeclarant.ConteazaPrinReguli` fals: ASM, BTR, PIF, AMO, CAS, NTC, ITV, IRZ, DVI)
 sau care nu declară e refuzată la editare, pe ușa gardianului, cu
 `REGULA_CONTARE_FARA_CONSUMATOR`: politica nu descrie comportament pe care
 motorul nu-l are. (4, D9-A4)

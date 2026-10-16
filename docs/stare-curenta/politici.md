@@ -37,6 +37,14 @@ tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e
 | Politică de amortizare | Un rând per tip material de clasă de imobilizări (natura verificată la commit): contul de amortizare, cheltuiala cu amortizarea și cheltuiala la cedare; fișa fără politică blochează generarea lunară și ieșirea (87d) |
 | Regulă de deductibilitate | Categoria fiscală, felul (plafon lunar sau procent), valoarea, valabilitatea de la o dată cu temei; aplicată doar utilizării neexclusive când e marcată așa (87d) |
 | Închidere de perioadă | Un singur rând per fel de constatare; gardianul refuză al doilea înaintea indexului unic (F27-D2) |
+| Închiderea conturilor | Rândul duce soldul descendenților contului-sursă pe contul-destinație, în ordinea rândurilor, `Lunar` sau `Anual` (numai în decembrie, după cele lunare); destinația nu stă în sursă, își păstrează coordonatele obligatorii (15) prin repartitorul și coordonatele declarate pe rând, iar sursa × momentul e unic (E3-D4) |
+
+Seed-ul închiderii conturilor: privatul închide lunar 6 și 7 în 121, fără
+coordonate, și n-are rânduri anuale (121 trece în anul nou); bugetarul
+închide lunar 6 și 7 în 121.00.00 și anual 121 și 489 în 117.00.00, cu
+repartitorul, unitatea, proiectul, codurile funcțional și economic și sursa
+de finanțare, iar 520.02 și 521.02 în 521.03.00, cu codurile funcțional și
+economic și sursa de finanțare. (E3-D2, E3-D4, E3-D9)
 
 Unicitățile politicilor se aplică rândurilor active, cu tratarea explicită a
 axelor opționale. `Repartitor.Cod` nu este cheie unică globală, deși toate

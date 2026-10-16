@@ -160,15 +160,18 @@ sealed partial class PerfCub {
         .. PeInterval("SAFTL", "SAF-T L", true, m => Saft(m, true), Snapshot),
         .. PeInterval("SAFTS", "SAF-T S", true, m => Saft(m, false), Snapshot),
         new("INCH-N", "închiderea lunii măsurate", Scriere, false, false, m => {
-            var severitate = m.Os.FirstOrDefault<PoliticaInchidere>(p => p.Fel == FelConstatareInchidere.ItvLipsa);
-            var initiala = severitate?.Severitate;
-            if (severitate != null) { severitate.Severitate = SeveritateConstatare.Avertisment; m.Os.CommitChanges(); }
+            var blocante = m.Os.GetObjectsQuery<PoliticaInchidere>()
+                .Where(p => p.Fel == FelConstatareInchidere.ItvLipsa || p.Fel == FelConstatareInchidere.RezNeinchis).ToList();
+            var initiale = blocante.ToDictionary(p => p, p => p.Severitate);
+            foreach (var p in blocante) p.Severitate = SeveritateConstatare.Avertisment;
+            if (blocante.Count > 0) m.Os.CommitChanges();
             try {
                 PerioadaService.Inchide(m.Os, m.P.An, m.P.Luna,
                     PerioadaService.Verifica(m.Os, m.P.An, m.P.Luna).Select(c => c.Cheie).ToArray(), null, "PerfCub");
             }
             finally {
-                if (severitate != null) { severitate.Severitate = initiala.Value; m.Os.CommitChanges(); }
+                foreach (var (p, v) in initiale) p.Severitate = v;
+                if (blocante.Count > 0) m.Os.CommitChanges();
             }
             return new(1, new() { ["snapshot"] = SolduriService.AreSnapshot(m.Os, m.P.An, m.P.Luna) ? 1 : 0 });
         }),

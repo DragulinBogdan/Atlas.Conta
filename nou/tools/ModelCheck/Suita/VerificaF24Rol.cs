@@ -79,10 +79,10 @@ static class VerificaF24Rol {
             + (lipsaDinLista.Count > 0 ? $"; LIPSESC din listă: {string.Join(", ", lipsaDinLista)}" : "")
             + (inPlusInLista.Count > 0 ? $"; în PLUS în listă: {string.Join(", ", inPlusInLista)}" : "") + ".");
         s.Check($"F24-R1 ({eticheta}) `Politici.TipuriConfigurabile` == mulțimea tipurilor concrete "
-            + "`ICuProvenienta` din assembly-ul Module, în AMBELE sensuri (22 de tipuri), iar "
+            + "`ICuProvenienta` din assembly-ul Module, în AMBELE sensuri (23 de tipuri), iar "
             + "`PoliticiApply.TipuriCitite` == lista ∪ {Partener, Produs}: lista declarată și descoperirea prin "
             + "reflecție nu pot diverge fără să pice proba",
-            lipsaDinLista.Count == 0 && inPlusInLista.Count == 0 && dinLista.Count == 22 && cititeOk);
+            lipsaDinLista.Count == 0 && inPlusInLista.Count == 0 && dinLista.Count == 23 && cititeOk);
 
         string exceptieRaport = null;
         using (var os = s.Provider.CreateObjectSpace()) {

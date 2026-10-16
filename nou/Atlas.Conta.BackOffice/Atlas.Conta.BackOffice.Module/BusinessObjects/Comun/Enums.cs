@@ -339,7 +339,7 @@ public enum CodAvertismentD394 {
 public enum MotivNegenerare {
     [XafDisplayName("Profilul nu are conturile închiderii")] ProfilInert = 1,
     [XafDisplayName("Luna are deja o închidere")] InchidereVie = 2,
-    [XafDisplayName("Luna n-are sold de TVA de închis")] FaraSold = 3,
+    [XafDisplayName("Luna n-are sold de închis")] FaraSold = 3,
     [XafDisplayName("Există o închidere pentru o lună ulterioară")] NeCronologica = 4,
     [XafDisplayName("O lună anterioară are un draft de închidere neoperat")] DraftAnterior = 5,
     [XafDisplayName("Perioada fiscală e închisă")] PerioadaInchisa = 6,
@@ -407,6 +407,13 @@ public enum FelConstatareInchidere {
     [XafDisplayName("Amortizarea lunară lipsește sau nu e operată")] AmoLipsa = 2,
     [XafDisplayName("Document în lucru cu data înregistrării în perioadă")] DraftInPerioada = 3,
     [XafDisplayName("Document operat cu rest scadent în perioadă")] RestScadent = 4,
+    [XafDisplayName("Conturile de rezultat au sold la sfârșitul lunii")] RezNeinchis = 5,
+}
+
+// Când se aplică un rând de `PoliticaInchidereConturi` (E3-D4, E3-D7).
+public enum MomentInchidere {
+    [XafDisplayName("Lunar")] Lunar = 1,
+    [XafDisplayName("Anual (în decembrie)")] Anual = 2,
 }
 
 // ═══ Verdictele POTRIVIRII (felia 24, F24-D5/D6) ═══════════════════════════

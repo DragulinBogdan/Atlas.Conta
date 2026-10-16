@@ -302,6 +302,7 @@ public static class ContaSeeder {
             ("PIF", "Punere în funcțiune", nameof(PunereInFunctiune)),
             ("CAS", "Ieșire de imobilizări", nameof(IesireImobilizare)),
             ("AMO", "Amortizare lunară", nameof(AmortizareLunara)),
+            ("IRZ", "Închidere conturi de rezultat", nameof(InchidereRezultat)),
         ];
         foreach (var t in tipuri)
             Aliniaza<TipDocument>(os, t.Cod, x => x.Cod == t.Cod, tip => {

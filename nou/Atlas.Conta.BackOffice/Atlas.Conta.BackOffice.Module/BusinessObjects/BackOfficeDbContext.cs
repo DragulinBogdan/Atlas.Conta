@@ -103,6 +103,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         // contabilă GENERATĂ (`InchidereTva : NotaContabila`); detaliul rămâne
         // NotaContabilaDetaliu.
         public DbSet<InchidereTva> InchideriTva { get; set; }
+        public DbSet<InchidereRezultat> InchideriRezultat { get; set; }
+        public DbSet<InchidereRezultatDetaliu> InchideriRezultatDetalii { get; set; }
         // Al 14-lea derivat (FAZA 1C §7): asamblarea/kitting n→m pe stoc
         // (BPR rămâne rezervat — decizia 19).
         public DbSet<Asamblare> Asamblari { get; set; }
@@ -142,6 +144,7 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
         public DbSet<PoliticaValidare> PoliticiValidare { get; set; }
         public DbSet<PoliticaTva> PoliticiTva { get; set; }
         public DbSet<PoliticaInchidereTva> PoliticiInchidereTva { get; set; }
+        public DbSet<PoliticaInchidereConturi> PoliticiInchidereConturi { get; set; }
         // Severitatea constatărilor de închidere de perioadă (F27-D2): un rând per fel.
         public DbSet<PoliticaInchidere> PoliticiInchidere { get; set; }
         // Politica de așezare pe decont (D3-D2): (TipTva × Sens) → rând, n rânduri.
@@ -519,6 +522,8 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .HasIndex(p => p.TipDocumentId).IsUnique();
             modelBuilder.Entity<PoliticaInchidere>()
                 .HasIndex(p => p.Fel).IsUnique();
+            modelBuilder.Entity<PoliticaInchidereConturi>()
+                .HasIndex(p => new { p.ContSursaId, p.Moment }).IsUnique();
 
             // (2) Regulile de alimentare — cheia lor e cheia de POTRIVIRE a
             // motorului, cu nullable-uri pe trepte (`ClasaId`, `TipMaterialId`,

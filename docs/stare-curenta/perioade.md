@@ -1,6 +1,6 @@
 # Perioade
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Perioada fiscală ca lanț, închiderea ei cu verificarea și politica constatărilor, soldurile materializate la închidere și soldul citit.
 
@@ -38,16 +38,24 @@ Perioada fiscală ca lanț, închiderea ei cu verificarea și politica constată
   deja închisă, perioadă precedentă deschisă. Ele sunt întotdeauna blocante, iar
   cât timp una dintre ele stă în picioare constatările de conținut nu se mai
   caută. (F27-D2)
-- Constatările de CONȚINUT sunt patru, iar severitatea fiecăreia vine din
-  politica de închidere de perioadă, nu din cod: închiderea de TVA lipsă sau
-  neoperată pe lună; amortizarea lunară lipsă sau neoperată, când luna are fișe
-  de amortizat; fiecare document în lucru cu data înregistrării în perioadă;
-  fiecare document operat, scadent și cu rest la sfârșitul perioadei.
-  Cheile lor sunt `ITV-LIPSA`, `AMO-LIPSA`, `DRAFT-IN-PERIOADA:{id}` și
-  `REST-SCADENT:{id}`; primele două n-au sufix fiindcă amândouă sunt ale
-  societății, nu ale unei unități interne. Un fapt dă o singură constatare:
-  documentul în lucru raportat deja de familia lui — închiderea de TVA sau
-  amortizarea existente ca draft — nu se mai repetă ca `DRAFT-IN-PERIOADA` și
+- Constatările de CONȚINUT sunt cinci, iar severitatea fiecăreia vine din
+  politica de închidere de perioadă, nu din cod: conturile-sursă lunare ale
+  închiderii conturilor de rezultat au sold la sfârșitul lunii; închiderea de
+  TVA lipsă sau neoperată pe lună; amortizarea lunară lipsă sau neoperată, când
+  luna are fișe de amortizat; fiecare document în lucru cu data înregistrării
+  în perioadă; fiecare document operat, scadent și cu rest la sfârșitul
+  perioadei. Cheile lor sunt `REZ-NEINCHIS`, `ITV-LIPSA`, `AMO-LIPSA`,
+  `DRAFT-IN-PERIOADA:{id}` și `REST-SCADENT:{id}`; primele trei n-au sufix
+  fiindcă sunt ale societății, nu ale unei unități interne. (F27-D2, E3-D5)
+- `REZ-NEINCHIS` judecă soldul, nu documentul: se emite cât timp vreo cheie a
+  conturilor-sursă cu moment `Lunar` are sold la ultima zi a lunii, deci și
+  când închiderea e operată, dar un document operat după ea în aceeași lună a
+  lăsat sold. Textul spune care din cele trei cazuri e: închiderea lipsește,
+  există ca draft sau există operată. (E3-D5)
+- Un fapt dă o singură constatare:
+  documentul în lucru raportat deja de familia lui — închiderea conturilor de
+  rezultat, închiderea de TVA sau amortizarea existente ca draft — nu se mai
+  repetă ca `DRAFT-IN-PERIOADA` și
   nu intră nici în numărătoarea acelei familii; dacă felul care l-ar raporta e
   `Ignorat` (deci nu se caută), documentul apare normal ca draft. Fiecare
   familie listează cel mult 200 de rânduri, iar restul intră într-un rând de
@@ -75,10 +83,11 @@ istoricul lunii; `Ignorat` nu emite constatarea deloc. Un fel fără rând se
 comportă ca avertisment și o SPUNE în textul constatării, ca o configurație pe
 jumătate să nu treacă tăcut. (F27-D2)
 
-Cele patru feluri și seed-ul lor:
+Cele cinci feluri și seed-ul lor:
 
 | Fel | Privat | Bugetar |
 |---|---|---|
+| Conturile de rezultat au sold la sfârșitul lunii | Blocant | Blocant |
 | Închiderea de TVA lipsește sau nu e operată | Blocant | Ignorat |
 | Amortizarea lunară lipsește sau nu e operată | Avertisment | Avertisment |
 | Document în lucru cu data înregistrării în perioadă | Avertisment | Avertisment |
@@ -89,6 +98,9 @@ plătitor de TVA, deci închiderea de TVA îi este tip inert, iar un blocant pe 
 n-ar fi avut niciodată cum să se stingă. Constatarea de închidere de TVA nu se
 emite deloc când profilul n-are politica de conturi completă sau când luna nu
 are sold pe cele două conturi de TVA. (F27-D2)
+
+Soldul rămas pe conturile de rezultat e blocant pe ambele profiluri: el ar
+strica soldul inițial al anului următor. (E3-D5)
 
 Blocantele STRUCTURALE ale lanțului nu sunt în această politică și nu se
 configurează: ele sunt regula lanțului. (F27-D2)

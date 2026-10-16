@@ -52,6 +52,7 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // pune totul la loc în `finally`; NU atinge alte politici decât cele probate.
 static class VerificaReviewAcceptare {
     public static void Ruleaza(Suita s, bool privat) {
+        using var faraRez = s.FaraRezNeinchis();
         const string Marcaj = "E2E-RA";
         const int An = 2037;
         var eticheta = privat ? "privat" : "bugetar";
@@ -526,7 +527,7 @@ static class VerificaReviewAcceptare {
                 .Count(d => d.Data >= new DateOnly(An - 1, 12, 1) && d.Data <= new DateOnly(An, 12, 31));
             var politici = os.GetObjectsQuery<PoliticaInchidere>().Select(p => new { p.Fel, p.Severitate, p.DinSeed }).ToList();
             s.Check($"F27-RA10 ({eticheta}) fără reziduu și politica exact ca înainte de scenă",
-                perioade == 0 && documente == 0 && politici.Count == 4 && politici.All(p => p.DinSeed)
+                perioade == 0 && documente == 0 && politici.Count == 5 && politici.All(p => p.DinSeed)
                 && politici.Single(p => p.Fel == FelConstatareInchidere.ItvLipsa).Severitate == itvSeed
                 && politici.Single(p => p.Fel == FelConstatareInchidere.RestScadent).Severitate == restSeed);
         }
