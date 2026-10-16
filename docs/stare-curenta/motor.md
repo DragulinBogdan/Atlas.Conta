@@ -708,5 +708,5 @@ scrie cubul, iar loturile ei se consumă ca oricare altele. (094, DES-B1…B4)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (32; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124 (propusă).
+Deciziile care numesc pagina în `Arii:` (32; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124.
 <!-- /gen:decizii -->

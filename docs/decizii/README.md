@@ -113,7 +113,7 @@
 | 120 | [Lanțul de migrații e de unică folosință până la „rotund”; recomprimarea lui este a șaptea condiție](120-lantul-de-migratii-se-recomprima-la-rotund.md) | 2026-10-13 | activă |
 | 121 | [Ariile stării curente sunt 16, pe responsabilitățile catalogului de funcționalități](121-ariile-pe-familiile-catalogului.md) | 2026-10-15 | activă |
 | 123 | [D300 și D394 se verifică încrucișat pe aceleași fapte: maparea D394 e completă și coerentă cu decontul, iar diferențele…](123-d300-d394-verificare-incrucisata.md) | 2026-10-16 | activă |
-| 124 | [Rezultatul se închide lunar printr-un document generat, exercițiul închis e starea lui decembrie, iar balanța are graniț…](124-exercitiul-se-inchide-pe-decembrie.md) | 2026-10-16 | propusă |
+| 124 | [Rezultatul se închide lunar printr-un document generat, exercițiul închis e starea lui decembrie, iar balanța are graniț…](124-exercitiul-se-inchide-pe-decembrie.md) | 2026-10-16 | activă |
 
 ### Amendate parțial (35)
 

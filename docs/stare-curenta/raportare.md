@@ -187,5 +187,5 @@ pentru a păstra permisiunile pe rând și membru. (S1, C111-Q6, 098, 099)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (7; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 42 (amendată de 104, 106), 66, 67, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 104 (amendată de 106), 117, 124 (propusă).
+Deciziile care numesc pagina în `Arii:` (7; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 42 (amendată de 104, 106), 66, 67, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 104 (amendată de 106), 117, 124.
 <!-- /gen:decizii -->
