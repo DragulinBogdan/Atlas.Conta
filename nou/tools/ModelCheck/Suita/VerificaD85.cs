@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
@@ -84,10 +85,10 @@ static class VerificaD85 {
             .Select(c => NumeAfisat(lv.ModelClass.TypeInfo, c.PropertyName)).Distinct().ToArray();
 
         // ---- D85-M1: modurile per view ----
-        string[] culegere = [
-            nameof(FacturaIntrareDetaliu), nameof(NirDetaliu), nameof(FacturaIesireDetaliu),
-            nameof(ListaDiferenteInventarDetaliu), nameof(DecontDetaliu), nameof(DescarcareGestiuneDetaliu),
-            nameof(NotaContabilaDetaliu), nameof(AsamblareDetaliu)];
+        var culegere = typeof(Document).Assembly.GetTypes()
+            .Select(t => t.GetCustomAttribute<Atlas.Conta.BackOffice.Module.UI.TipDetaliuAttribute>(inherit: false)?.TipDetaliu)
+            .Where(t => t != null && t != typeof(DocumentDetaliu))
+            .Select(t => t.Name).Distinct().Order().ToArray();
         var moduriCulegere = culegere.Select(n => (Id: n + "_ListView", Mod: Lv(n + "_ListView")?.DataAccessMode)).ToList();
         var generic = Lv(nameof(Document) + "_" + nameof(Document.Detalii) + "_ListView")?.DataAccessMode;
         var radacini = (model?.BOModel ?? Enumerable.Empty<IModelClass>())
@@ -99,7 +100,7 @@ static class VerificaD85 {
             + $"{listViews.Count} ListView-uri; culegere: {string.Join(", ", moduriCulegere.Select(m => $"{m.Id}={m.Mod}"))}; "
             + $"Document_Detalii_ListView={generic}; rădăcini de document: {radacini.Count} "
             + $"({string.Join("/", radacini.Select(r => r.Mod).Distinct())}); DataView: {dataView.Count}");
-        s.Check($"D85-M1 ({eticheta}) `Options.DataAccessMode` = Server; cele opt grile de culegere tipizate și "
+        s.Check($"D85-M1 ({eticheta}) `Options.DataAccessMode` = Server; grilele de linii ale fiecărui `[TipDetaliu]` ({culegere.Length}) și "
             + "`Document_Detalii_ListView` sunt Client explicit; ListView-ul implicit al fiecărei clase de document "
             + "e Server; niciun view nu e DataView",
             model != null && model.Options.DataAccessMode == CollectionSourceDataAccessMode.Server

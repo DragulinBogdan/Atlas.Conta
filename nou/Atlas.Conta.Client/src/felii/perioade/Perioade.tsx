@@ -204,7 +204,7 @@ export function Perioade() {
         {lant.isError && <PanouErori erori={eroriDin(lant.error)} titlu="Lanțul nu se poate citi" />}
         <table className="tabel-mic">
           <thead>
-            <tr><th>Perioada</th><th>Închisă</th><th>Închisă la</th><th>Închisă prima oară</th><th /></tr>
+            <tr><th>Perioada</th><th>Închisă</th><th>Închisă la</th><th>Închisă prima oară</th><th>Exercițiu</th><th /></tr>
           </thead>
           <tbody>
             {(lant.data ?? []).map((p: Perioada) => (
@@ -213,6 +213,9 @@ export function Perioade() {
                 <td>{p.Inchisa ? 'da' : 'nu'}</td>
                 <td>{p.InchisaLa ? new Date(p.InchisaLa).toLocaleString('ro-RO') : ''}</td>
                 <td>{p.InchisaPrimaOara ? new Date(p.InchisaPrimaOara).toLocaleString('ro-RO') : ''}</td>
+                <td>{p.Luna !== 12 ? '' : p.ExercitiuInchis
+                  ? `închis la ${p.ExercitiuInchisLa ? new Date(p.ExercitiuInchisLa).toLocaleString('ro-RO') : ''}`
+                  : 'deschis'}</td>
                 <td>
                   <button
                     type="button"

@@ -102,6 +102,44 @@ public class PerioadeController : ContaApiController {
     public IActionResult Redeschide(int an, int luna, [FromBody] RedeschidePerioadaRequestDto cerere) =>
         Comanda(an, luna, os => PerioadeApply.Redeschide(os, an, luna, cerere, UserId(), securitate?.UserName));
 
+    // Exercițiul stă pe decembrie (E3-D7): subiectul rutelor e luna 12 a anului.
+    [HttpGet("{an:int}/exercitiu/verificare")]
+    [ProducesResponseType(typeof(ConstatareInchidereDto[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    public IActionResult VerificareExercitiu(int an) {
+        var erori = Perioada(an, 12);
+        if (erori.Count > 0)
+            return BadRequest(EroriDto.Din(erori));
+        var refuz = Subiect(an, 12, OperatieAcces.Citire) ?? CititeIntegral();
+        if (refuz != null)
+            return refuz;
+        return Domeniu(() => {
+            using var os = NonSecured(typeof(PerioadaFiscala));
+            return Ok(PerioadeApply.VerificaExercitiul(os, an));
+        });
+    }
+
+    [HttpPost("{an:int}/exercitiu/inchide")]
+    [ProducesResponseType(typeof(InchiderePerioadaRezultatDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult InchideExercitiul(int an,
+            [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] InchidePerioadaRequestDto cerere) =>
+        Comanda(an, 12, os => PerioadeApply.InchideExercitiul(os, an, cerere, UserId(), securitate?.UserName));
+
+    [HttpPost("{an:int}/exercitiu/redeschide")]
+    [ProducesResponseType(typeof(InchiderePerioadaRezultatDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(EroriDto), StatusCodes.Status422UnprocessableEntity)]
+    public IActionResult RedeschideExercitiul(int an, [FromBody] RedeschidePerioadaRequestDto cerere) =>
+        Comanda(an, 12, os => PerioadeApply.RedeschideExercitiul(os, an, cerere, UserId(), securitate?.UserName));
+
     // Reconstrucția n-are lună ca subiect: recalculează integral TOATE perioadele
     // de referință și raportează diferențele înainte de rescriere (F27-D3, 35b).
     // Gate-ul e pe TIP, `Write` pe `PerioadaFiscala` — același drept ca

@@ -23,7 +23,7 @@ namespace Atlas.Conta.BackOffice.Module.Controllers;
 // vehiculul de iterație, nu un al doilea produs):
 //
 //   * PARAMETRII (an, lună, unitate internă) se culeg într-un dialog pe un
-//     obiect NON-PERSISTENT (`GenerareInchidereTvaParametri`) — exact cererea
+//     obiect NON-PERSISTENT (`GenerareInchidereLunaParametri`) — exact cererea
 //     `GenerareItvRequestDto`, cu lookup-ul de unitate în loc de Guid. Un
 //     `ParametrizedAction` cu o singură valoare (precedentul „Generează
 //     descărcarea") n-ar fi putut culege și unitatea; două widget-uri în toolbar
@@ -79,13 +79,13 @@ public class InchidereTvaGenerareController : ObjectViewController<ListView, Inc
         // non-persistente ale modulelor DevExpress (rapoarte, dashboard-uri).
         // OS-ul suplimentar vine din `Application.CreateObjectSpace`, deci e
         // SECURIZAT: lista de unități e cea pe care operatorul are voie s-o vadă.
-        var os = Application.CreateObjectSpace(typeof(GenerareInchidereTvaParametri));
+        var os = Application.CreateObjectSpace(typeof(GenerareInchidereLunaParametri));
         if (os is NonPersistentObjectSpace npos && npos.Owner is not CompositeObjectSpace) {
             npos.PopulateAdditionalObjectSpaces(Application);
             npos.AutoDisposeAdditionalObjectSpaces = true;
         }
 
-        var parametri = os.CreateObject<GenerareInchidereTvaParametri>();
+        var parametri = os.CreateObject<GenerareInchidereLunaParametri>();
         // Default-ul lunii: luna care URMEAZĂ ultimei închideri vii (Draft/Operat)
         // — închiderile se generează cronologic (46c), deci asta e singura lună
         // pe care comanda o poate accepta după ea; fără nicio închidere, luna
@@ -111,7 +111,7 @@ public class InchidereTvaGenerareController : ObjectViewController<ListView, Inc
     }
 
     void Genereaza_Execute(object sender, PopupWindowShowActionExecuteEventArgs e) {
-        var parametri = (GenerareInchidereTvaParametri)e.PopupWindowViewCurrentObject;
+        var parametri = (GenerareInchidereLunaParametri)e.PopupWindowViewCurrentObject;
 
         // Validarea cererii, ca 400-ul de pe API (toate erorile deodată — cine a
         // greșit luna vrea să afle tot ce e greșit). Explicită, nu prin reguli
@@ -219,7 +219,7 @@ public class InchidereTvaGenerareController : ObjectViewController<ListView, Inc
         });
 }
 
-// Parametrii dialogului de generare — cererea `GenerareItvRequestDto`, cu
+// Parametrii dialogurilor de generare pe lună (ITV, IRZ) — cererea lor, cu
 // unitatea ca LOOKUP (referință la obiectul persistent, prin spațiul compus al
 // dialogului). Non-persistent (`NonPersistentBaseObject`): trăiește cât
 // dialogul, nu are tabel, nu intră în `metadata.json` (dump-ul ia doar spațiul
@@ -227,8 +227,8 @@ public class InchidereTvaGenerareController : ObjectViewController<ListView, Inc
 // `SetPropertyValue`, nu auto-proprietăți: altfel `INotifyPropertyChanged` tace
 // și editorii dialogului nu văd precompletarea.
 [DomainComponent]
-[XafDisplayName("Generează închiderea de TVA")]
-public class GenerareInchidereTvaParametri : NonPersistentBaseObject {
+[XafDisplayName("Generează închiderea lunii")]
+public class GenerareInchidereLunaParametri : NonPersistentBaseObject {
     int an;
     int luna;
     UnitateInterna unitate;

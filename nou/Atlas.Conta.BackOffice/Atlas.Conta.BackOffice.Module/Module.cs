@@ -42,7 +42,7 @@ namespace Atlas.Conta.BackOffice.Module {
             AdditionalExportedTypes.Add(typeof(StateMachineState));
             // 79-r1: parametrii dialogului „Generează închiderea" (non-persistent;
             // tipurile fără DbSet nu se descoperă din DbContext).
-            AdditionalExportedTypes.Add(typeof(Controllers.GenerareInchidereTvaParametri));
+            AdditionalExportedTypes.Add(typeof(Controllers.GenerareInchidereLunaParametri));
         }
         public override IEnumerable<ModuleUpdater> GetModuleUpdaters(IObjectSpace objectSpace, Version versionFromDB) {
             ModuleUpdater updater = new DatabaseUpdate.Updater(objectSpace, versionFromDB);

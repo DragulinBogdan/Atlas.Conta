@@ -231,7 +231,7 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
 | 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; pe o lună închisă de 1C, netul pe cont al liniilor = divergența explicată | închis 2026-10-16 (PR #54) |
 | 2 | exercițiul pe decembrie: comenzile, constatările, istoricul; rândurile `Anual`; `CV_AN_INCHIS` pe exercițiu | familia `EX`; SC-X-12; teste de nucleu; ModelCheck pe ambele profiluri | implementat 2026-10-16 |
 | 3 | balanța pe an (E3-D8): proiecția, DTO-ul, openapi, coloana în React | SC-CIT pe doi ani; drift openapi; SAF-T neschimbat pe lunile de probă | implementat 2026-10-16 |
-| 4 | XAF: comenzile pe perioadă și exercițiu, lista închiderilor; ușile HTTP cu refuzurile (80) | `refuzuri.ps1` pe host viu; browser | — |
+| 4 | XAF: comenzile pe perioadă și exercițiu, lista închiderilor; ușile HTTP cu refuzurile (80) | `refuzuri.ps1` pe host viu; browser | implementat 2026-10-16 |
 | 5 | regresia integrală, review advers, decizia, închiderea | integrala pe ambele profiluri; nucleu; HTTP; docskit | — |
 
 ## Tranșări la pasul 1 (2026-10-16)
@@ -303,6 +303,28 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
   dinaintea startului. Acum le alege după soldul inițial net sau rulaj, ca
   filtrul să nu depindă de definiția coloanei `Initial`. SAF-T citește
   numai soldurile nete, iar suita SAFT rămâne verde pe ambele profiluri.
+
+## Tranșări la pasul 4 (2026-10-16)
+
+- Exercițiul n-are entitate, deci n-are rută proprie: rutele lui stau sub
+  `api/perioade/{an}/exercitiu`, iar subiectul lor e decembrie. Un an fără
+  decembrie definit dă 404, ca o lună nedefinită; verificarea structurală
+  `DECEMBRIE-NEDEFINIT` rămâne a motorului, pentru ModelCheck și XAF.
+- `api/irz` copiază ușile ITV, inclusiv dreptul complet pe `Postare` pe
+  citirea documentului și pe previzualizare. Fixture-ul matricei generează un
+  IRZ draft pe luna fixture-ului și îl șterge la final; `Irz` e punct de
+  cădere în `refuzuri-caderi.ps1`.
+- Politica închiderii conturilor intră în suprafața OData ca orice politică;
+  rândul fără conturi e 422 din gardian, nu eroare de cheie străină.
+- În XAF, dialogul de generare e comun ITV și IRZ
+  (`GenerareInchidereLunaParametri`). Comenzile exercițiului folosesc
+  dialogul constatărilor și al motivului de la lună, pe decembrie.
+- Proba din browser a găsit grila liniilor IRZ fără mod `Client`: detaliul
+  cădea la deschidere. Grila e acum `Client` și `ReadOnly`, iar `D85-M1`
+  enumeră grilele din `[TipDetaliu]`. Enumerarea a prins și grila plăților și
+  încasărilor, rămasă `Server`; e aliniată la 85c.
+- React primește numai coloana „Exercițiu” pe `/perioade`; comenzile
+  exercițiului și închiderea conturilor de rezultat se fac din XAF (104d).
 
 ## Regula de oprire
 

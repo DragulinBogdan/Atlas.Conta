@@ -132,7 +132,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | Pagina | Actualizat |
 |---|---|
 | [README](stare-curenta/README.md) | 2026-10-15 |
-| [api](stare-curenta/api.md) | 2026-10-15 |
+| [api](stare-curenta/api.md) | 2026-10-16 |
 | [dezvoltare](stare-curenta/dezvoltare.md) | 2026-10-15 |
 | [documente](stare-curenta/documente.md) | 2026-10-16 |
 | [ecrane](stare-curenta/ecrane.md) | 2026-10-16 |

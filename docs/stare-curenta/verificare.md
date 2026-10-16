@@ -517,7 +517,8 @@ Modurile de acces ale listelor XAF sunt probate pe modelul REAL al
 aplicației Blazor: ModelCheck construiește hostul cu `Startup` din
 Blazor.Server pe calea `--updateDatabase`, fără circuit
 (`ModelAplicatie.cs`, `D85-M0`) și numără comenzile SQL printr-un
-interceptor (`NumaratorSql.cs`). Probele: modul fiecărui view (`D85-M1`),
+interceptor (`NumaratorSql.cs`). Probele: modul fiecărui view (`D85-M1`;
+grilele de linii se enumeră din `[TipDetaliu]`, deci un tip nou intră singur),
 precondițiile oricărui `ServerView`/`InstantFeedbackView` — coloane și
 `DefaultProperty` mapate sau calculate, fără cast pe selecție, fără regulă
 Appearance pe membru nevizibil (`D85-M2`) — o pagină `ServerView` cu
@@ -555,7 +556,10 @@ public n-are setter ne-`init`; egalitatea `Tranzactie`/`Declaratie`/
 ModelCheck nu are strategie de securitate XAF; autorizarea se probează prin
 `nou/tools/ProbeHttp/refuzuri.ps1`, cu rolurile Admin, Cititor, User și
 Configurator. (80i, 81j, 84c) Matricea generală `refuzuri.ps1` își creează
-singură subiecții. (104-r5)
+singură subiecții, inclusiv un ITV și un IRZ draft pe prima lună deschisă;
+`refuzuri-caderi.ps1` cere desfacerea completă după fiecare mutație a
+fixture-ului. Exercițiul se probează pe decembrie deschis, deci matricea nu
+scrie nimic pe lanț. (104-r5, E3-D3, E3-D7)
 
 Proba HTTP `nou/tools/ProbeHttp/citiri-cub.py` verifică accesul pe rând și
 membru înainte/după închidere și reconstrucție, pe host privat cu bază

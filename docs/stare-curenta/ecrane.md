@@ -169,7 +169,11 @@ activează pe un singur view, după o măsurătoare de pagină peste prag și pr
 Grilele nested de culegere a liniilor (ListView-urile tipizate puse pe
 `Detalii`) sunt declarate `Client` explicit în `ContaUiBaseline`: o colecție
 server nu vede liniile nesalvate ale documentului și nu acceptă adăugare
-sub grupare. Lookup-urile rămân pe modul forțat de editor. (85c, 85i)
+sub grupare. Regula e a fiecărui `[TipDetaliu]`, nu a unei liste: și
+grilele pe care operatorul nu le culege (AMO, închiderea conturilor de
+rezultat) sunt `Client`, `ReadOnly`. Pe o colecție server, grila validează
+coloanele pe tipul de bază al colecției și cade la primul membru al
+derivatei. Lookup-urile rămân pe modul forțat de editor. (85c, 85i, F26-D12)
 
 ### Lista de evidență a cubului
 
@@ -274,6 +278,7 @@ rolurilor per tip: `design/format-xaf-documente.md`, axa 2. (106h)
 | Declarații vamale | `api/dvi`: agregat cules (antet, linii, `FacturiIds` ca agregat întreg), `facturi-candidate` cu perioadă obligatorie, filtru implicit pe clasa fiscală extra-UE, plicul `{ Candidati, MaiSunt }` cu plafon 500 decis pe interogare și `TipMaterialSugeratId`; cere și citirea pe FCT. Ecranul: lookup TVA filtrat pe `DeImport`, popup de candidați pe luna declarației, totaluri de pe server (86h, 86i) |
 | Trezorerie și relații | Stingere manuală în limitele contractelor, vizualizarea relațiilor și comenzile documentului (57d, 76g) |
 | TVA lunar | Previzualizare și generare ITV, detaliu și comenzile rezultatului (79e) |
+| Închiderea anului | În XAF Blazor: „Generează închiderea” pe lista închiderilor conturilor de rezultat (an, lună, unitate; luna implicită urmează ultimei închideri vii), detaliul cu liniile needitabile; pe lista perioadelor, „Închide exercițiul” și „Redeschide exercițiul” pe decembrie, cu dialogul constatărilor, respectiv al motivului; „Redeschide perioada” e inactiv pe decembrie cât exercițiul e închis. În React, coloana „Exercițiu” pe `/perioade` (E3-D3, E3-D7) |
 | Contabilitate | Stoc, balanță, balanță pe plan, fișă de cont, registru-jurnal (66, 67) |
 | Perioade fiscale | `/perioade`: consolă, nu listă — luna în URL, verificarea cu constatările grupate pe severitate și bifă pe fiecare avertisment, închiderea care trimite cheile bifate, redeschiderea cu motiv, istoricul cu acceptările și lanțul întreg (F27-D2) |
 | Fiscalitate | Jurnale de cumpărări/vânzări, decont TVA, D300, D394, SAF-T L/S (68, 69g, 71g) |

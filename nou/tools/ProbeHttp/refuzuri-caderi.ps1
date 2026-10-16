@@ -1,4 +1,4 @@
-#requires -Version 7
+﻿#requires -Version 7
 <#
   refuzuri-caderi.ps1 — fixture-ul lui `refuzuri.ps1` se desface complet la o cădere
   după oricare dintre mutațiile lui (104-r5, review C104 pas 5).
@@ -14,7 +14,7 @@ param([string]$HostUrl = 'https://localhost:5001')
 
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $matrice = Join-Path $PSScriptRoot 'refuzuri.ps1'
-$puncte = 'Furnizor', 'Fct', 'OperareFct', 'OperarePlt', 'Imperechere', 'Itv', 'Angajat'
+$puncte = 'Furnizor', 'Fct', 'OperareFct', 'OperarePlt', 'Imperechere', 'Itv', 'Irz', 'Angajat'
 $picate = @()
 foreach ($punct in $puncte) {
     $iesire = & pwsh -NoProfile -File $matrice -HostUrl $HostUrl -Utilizatori Admin -CadeDupa $punct 2>&1 | Out-String

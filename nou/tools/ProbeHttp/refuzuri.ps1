@@ -95,7 +95,7 @@ param(
     [Alias('Host')]
     [string]$HostUrl = 'https://localhost:5001',
     [string[]]$Utilizatori = @('Admin', 'Cititor', 'User', 'Configurator'),
-    [ValidateSet('', 'Furnizor', 'Fct', 'OperareFct', 'OperarePlt', 'Imperechere', 'Itv', 'Angajat')]
+    [ValidateSet('', 'Furnizor', 'Fct', 'OperareFct', 'OperarePlt', 'Imperechere', 'Itv', 'Irz', 'Angajat')]
     [string]$CadeDupa = '',
     [string]$Baza = ''
 )
@@ -320,7 +320,7 @@ $curatenie = [Collections.Generic.List[scriptblock]]::new()
 $fixture = [Collections.Generic.List[scriptblock]]::new()
 $codIesire = 0
 $timbru = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
-$idFctFixture = $null; $idItv = $null
+$idFctFixture = $null; $idItv = $null; $idIrz = $null
 
 try {
     $partener = Get-PrimaEntitate 'Partener'
@@ -392,10 +392,16 @@ try {
     $fixture.Add({ Invoke-Fixture DELETE "/api/itv/$idItv" -Asteptat 204 | Out-Null }.GetNewClosure())
     Cade 'Itv'
 
+    $irzFixture = Invoke-Fixture POST '/api/irz/genereaza' -Corp @{ An = $lunaFixture.An; Luna = $lunaFixture.Luna; UnitateId = $unitate.ID }
+    if (-not $irzFixture.DocumentId) { throw "fixture: IRZ negenerat pe $dataFixture — $($irzFixture.Motiv)" }
+    $idIrz = $irzFixture.DocumentId
+    $fixture.Add({ Invoke-Fixture DELETE "/api/irz/$idIrz" -Asteptat 204 | Out-Null }.GetNewClosure())
+    Cade 'Irz'
+
     $angajat = Invoke-Fixture POST '/api/odata/Angajat' -Asteptat 201 -Corp @{ Cod = "PROBA-R5-A-$timbru"; Denumire = 'Angajat probă 104-r5' }
     $fixture.Add({ Invoke-Fixture DELETE "/api/odata/Angajat($($angajat.ID))" | Out-Null }.GetNewClosure())
     Cade 'Angajat'
-    Write-Host "  fixture pe $dataFixture`: FCT $idFctFixture, PLT $idPltFixture, împerechere $idImperechere, ITV $idItv, angajat $($angajat.ID)" -ForegroundColor DarkGray
+    Write-Host "  fixture pe $dataFixture`: FCT $idFctFixture, PLT $idPltFixture, împerechere $idImperechere, ITV $idItv, IRZ $idIrz, angajat $($angajat.ID)" -ForegroundColor DarkGray
 
     # `genereaza` pe o lună fără sold (`FaraSold`), ca proba să nu poată scrie
     # nici dacă gate-ul ar pica; SAF-T pe luna cu activitate a fixture-ului.
@@ -472,6 +478,38 @@ try {
     Proba -Cerere 'generare ITV' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/itv/genereaza' -Corp $corpItv -Contine 'crea' | Out-Null
     Proba -Cerere 'generare ITV' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/itv/genereaza' -Corp $corpItv -Contine 'crea' | Out-Null
     Proba -Cerere 'generare ITV' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/itv/genereaza' -Corp $corpItv -Contine 'crea' -Nota 'nu scrie: gate-ul e pe TIP' | Out-Null
+
+    # ── IRZ: închiderea conturilor de rezultat, pe ușile ITV (E3-D3) ────────
+    $caleIrzPrev = "/api/irz/previzualizare?an=$($lunaFixture.An)&luna=$($lunaFixture.Luna)"
+    Proba -Cerere 'listă IRZ' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale '/api/irz?take=5' -Contine $idIrz | Out-Null
+    Proba -Cerere 'listă IRZ' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/irz?take=5' -Contine '"data":[]' -Nota '200 filtrat' | Out-Null
+    Proba -Cerere 'previzualizare IRZ' -User 'Admin' -Asteptat 200 -Metoda GET -Cale $caleIrzPrev -Contine '"Motiv":"InchidereVie"' -Nota 'luna are draftul fixture-ului' | Out-Null
+    Proba -Cerere 'previzualizare IRZ' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale $caleIrzPrev | Out-Null
+    Proba -Cerere 'previzualizare IRZ' -User 'User' -Asteptat 403 -Metoda GET -Cale $caleIrzPrev -Contine 'citi' | Out-Null
+    Proba -Cerere 'previzualizare IRZ pe luna 13' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/irz/previzualizare?an=2026&luna=13' -Contine 'trebuie să fie' | Out-Null
+    Proba -Cerere 'previzualizare IRZ fără lună' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/irz/previzualizare?an=2026' -Contine 'obligatoriu' | Out-Null
+    Proba -Cerere 'citire IRZ' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "/api/irz/$idIrz" -Contine '"Stale":false', '"PoateRegenera":true' | Out-Null
+    Proba -Cerere 'citire IRZ' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "/api/irz/$idIrz" | Out-Null
+    Proba -Cerere 'citire IRZ' -User 'User' -Asteptat 404 -Metoda GET -Cale "/api/irz/$idIrz" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'citire ITV pe ușa IRZ' -User 'Admin' -Asteptat 404 -Metoda GET -Cale "/api/irz/$idItv" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba-AccesPostari -Cerere 'previzualizare IRZ' -Cale $caleIrzPrev
+    Proba-AccesPostari -Cerere 'citire IRZ' -Cale "/api/irz/$idIrz"
+    # `genereaza` numai pe cei fără drept și pe o lună fără sold: pe Admin ar scrie un draft.
+    $corpIrz = @{ An = $anItv; Luna = $lunaItv; UnitateId = $unitate.ID }
+    Proba -Cerere 'generare IRZ' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/irz/genereaza' -Corp $corpIrz -Contine 'crea' | Out-Null
+    Proba -Cerere 'generare IRZ' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/irz/genereaza' -Corp $corpIrz -Contine 'crea' | Out-Null
+    Proba -Cerere 'generare IRZ' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale '/api/irz/genereaza' -Corp $corpIrz -Contine 'crea' | Out-Null
+    Proba -Cerere 'generare IRZ pe luna 13' -User 'Admin' -Asteptat 400 -Metoda POST -Cale '/api/irz/genereaza' -Corp @{ An = 2026; Luna = 13; UnitateId = $unitate.ID } -Nota 'sintaxa, înaintea bazei' | Out-Null
+    Proba -Cerere 'regenerare IRZ' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/irz/$idIrz/regenereaza" -Contine 'modifica' | Out-Null
+    Proba -Cerere 'regenerare IRZ' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/irz/$idIrz/regenereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'regenerare IRZ' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale "/api/irz/$idIrz/regenereaza" -Contine 'modifica' | Out-Null
+    Proba -Cerere 'ștergere IRZ' -User 'Cititor' -Asteptat 403 -Metoda DELETE -Cale "/api/irz/$idIrz" -Contine 'șterge' | Out-Null
+    Proba -Cerere 'ștergere IRZ' -User 'User' -Asteptat 404 -Metoda DELETE -Cale "/api/irz/$idIrz" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'operare IRZ' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/irz/$idIrz/opereaza" -Contine 'modifica' | Out-Null
+    Proba -Cerere 'operare IRZ' -User 'User' -Asteptat 404 -Metoda POST -Cale "/api/irz/$idIrz/opereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'operare id inexistent pe ușa IRZ' -User 'Admin' -Asteptat 404 -Metoda POST -Cale "/api/irz/$idInexistent/opereaza" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'validare IRZ' -User 'Admin' -Asteptat 200 -Metoda POST -Cale "/api/irz/$idIrz/valideaza" -Contine '"Erori":[]' -Nota 'nu scrie' | Out-Null
+    Proba -Cerere 'validare IRZ' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "/api/irz/$idIrz/valideaza" -Contine 'modifica' | Out-Null
 
     # ── OData: același contract ca REST (F22-D4, închide 70-r1/77-r8) ───────
     $idPartener = $partener.ID
@@ -1253,6 +1291,31 @@ try {
     # Al doilea rând pe același fel: gardianul îl refuză ca DOMENIU, înaintea
     # indexului unic — `Admin` are dreptul, îl oprește regula.
     Proba -Cerere 'al doilea rând pe același fel' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/PoliticaInchidere' -Corp @{ Fel = 'ItvLipsa'; Severitate = 'Avertisment' } -Contine 'o singură severitate' -Nota 'F27-D2: gardianul înaintea indexului' | Out-Null
+    # Politica închiderii conturilor (E3-D4) e politică: aceeași ușă, același gardian.
+    Proba -Cerere 'listă PoliticaInchidereConturi' -User 'Configurator' -Asteptat 200 -Metoda GET -Cale '/api/odata/PoliticaInchidereConturi' -Contine '"Moment":"Lunar"' | Out-Null
+    Proba -Cerere 'listă PoliticaInchidereConturi' -User 'User' -Asteptat 200 -Metoda GET -Cale '/api/odata/PoliticaInchidereConturi' -Contine '"value":[]' -Nota '200 filtrat' | Out-Null
+    Proba -Cerere 'creare PoliticaInchidereConturi' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaInchidereConturi' -Corp @{ Ordine = 99; Moment = 'Lunar' } -Contine 'crea' | Out-Null
+    Proba -Cerere 'creare PoliticaInchidereConturi' -User 'User' -Asteptat 403 -Metoda POST -Cale '/api/odata/PoliticaInchidereConturi' -Corp @{ Ordine = 99; Moment = 'Lunar' } -Contine 'crea' | Out-Null
+    Proba -Cerere 'rând de închidere fără conturi' -User 'Admin' -Asteptat 422 -Metoda POST -Cale '/api/odata/PoliticaInchidereConturi' -Corp @{ Ordine = 99; Moment = 'Lunar' } -Contine 'contul-sursă și contul-destinație' -Nota 'E3-D4: gardianul, nu FK-ul' | Out-Null
+
+    # Exercițiul (E3-D7): subiectul e decembrie anului; nimic nu se scrie, decembrie e deschis.
+    $anExercitiu = $perioadaBlocata.An
+    $caleExercitiu = "/api/perioade/$anExercitiu/exercitiu"
+    Proba -Cerere 'verificarea exercițiului' -User 'Admin' -Asteptat 200 -Metoda GET -Cale "$caleExercitiu/verificare" -Contine 'DECEMBRIE-DESCHIS', '"Severitate":"Blocant"' | Out-Null
+    Proba -Cerere 'verificarea exercițiului' -User 'Cititor' -Asteptat 200 -Metoda GET -Cale "$caleExercitiu/verificare" -Contine 'DECEMBRIE-DESCHIS' | Out-Null
+    Proba -Cerere 'verificarea exercițiului' -User 'User' -Asteptat 404 -Metoda GET -Cale "$caleExercitiu/verificare" -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba-AccesPostari -Cerere 'verificarea exercițiului' -Cale "$caleExercitiu/verificare"
+    Proba -Cerere 'verificarea unui exercițiu fără decembrie' -User 'Admin' -Asteptat 404 -Metoda GET -Cale '/api/perioade/2099/exercitiu/verificare' -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'verificarea exercițiului 1999' -User 'Admin' -Asteptat 400 -Metoda GET -Cale '/api/perioade/1999/exercitiu/verificare' -Contine 'trebuie să fie' | Out-Null
+    Proba -Cerere 'închide exercițiul' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "$caleExercitiu/inchide" -Corp @{ Acceptate = @() } -Contine 'modifica' | Out-Null
+    Proba -Cerere 'închide exercițiul' -User 'Configurator' -Asteptat 403 -Metoda POST -Cale "$caleExercitiu/inchide" -Corp @{ Acceptate = @() } -Contine 'modifica' -Nota 'perioada nu e politică' | Out-Null
+    Proba -Cerere 'închide exercițiul' -User 'User' -Asteptat 404 -Metoda POST -Cale "$caleExercitiu/inchide" -Corp @{ Acceptate = @() } -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'închide exercițiul cu decembrie deschis' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$caleExercitiu/inchide" -Contine 'Blocant:', '[DECEMBRIE-DESCHIS' -Nota 'corp lipsă = nimic acceptat' | Out-Null
+    Proba -Cerere 'închide exercițiul 2099' -User 'Admin' -Asteptat 404 -Metoda POST -Cale '/api/perioade/2099/exercitiu/inchide' -Corp @{ Acceptate = @() } -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'redeschide exercițiul' -User 'Cititor' -Asteptat 403 -Metoda POST -Cale "$caleExercitiu/redeschide" -Corp @{ Motiv = 'probă' } -Contine 'modifica' | Out-Null
+    Proba -Cerere 'redeschide exercițiul' -User 'User' -Asteptat 404 -Metoda POST -Cale "$caleExercitiu/redeschide" -Corp @{ Motiv = 'probă' } -Contine 'nu există sau nu e vizibil' | Out-Null
+    Proba -Cerere 'redeschide un exercițiu deschis' -User 'Admin' -Asteptat 422 -Metoda POST -Cale "$caleExercitiu/redeschide" -Corp @{ Motiv = '' } -Contine 'nu e închis', 'motiv' | Out-Null
+
     # Reconstrucția soldurilor (F27-D3): comandă FĂRĂ subiect (rescrie toate
     # perioadele de referință), deci gate-ul ei e pe TIP — `Write` pe
     # `PerioadaFiscala`, același drept ca `inchide`. Pe baza vie nu există nicio
@@ -1295,11 +1358,11 @@ try {
 
     # Lanțul a rămas NEATINS: nicio perioadă închisă de matrice.
     $lantDupa = @((Invoke-Cerere -Metoda GET -Cale '/api/perioade' -Token $tokenAdmin).Corp | ConvertFrom-Json)
-    $inchiseDupa = @($lantDupa | Where-Object { $_.Inchisa }).Count
+    $inchiseDupa = @($lantDupa | Where-Object { $_.Inchisa -or $_.ExercitiuInchis }).Count
     $script:Numar++
     $verdictLant = 'PASS'
     $motivLant = ''
-    if ($lantDupa.Count -ne $lant.Count -or $inchiseDupa -ne @($lant | Where-Object { $_.Inchisa }).Count) {
+    if ($lantDupa.Count -ne $lant.Count -or $inchiseDupa -ne @($lant | Where-Object { $_.Inchisa -or $_.ExercitiuInchis }).Count) {
         $verdictLant = 'FAIL'
         $motivLant = "lanțul s-a schimbat: $($lant.Count) → $($lantDupa.Count) verigi, închise $inchiseDupa"
     }
@@ -1367,6 +1430,7 @@ finally {
     }
     if ($idFctFixture -and (Invoke-Cerere -Metoda GET -Cale "/api/fct/$idFctFixture" -Token $tokenAdmin).Status -ne 404) { $rezidu += "FCT $idFctFixture" }
     if ($idItv -and (Invoke-Cerere -Metoda GET -Cale "/api/itv/$idItv" -Token $tokenAdmin).Status -ne 404) { $rezidu += "ITV $idItv" }
+    if ($idIrz -and (Invoke-Cerere -Metoda GET -Cale "/api/irz/$idIrz" -Token $tokenAdmin).Status -ne 404) { $rezidu += "IRZ $idIrz" }
     if ($rezidu.Count -gt 0) {
         Write-Host "REZIDU fixture: $($rezidu -join '; ')" -ForegroundColor Red
         $codIesire = 3

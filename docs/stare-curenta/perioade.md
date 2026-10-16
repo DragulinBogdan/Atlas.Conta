@@ -134,6 +134,9 @@ configurează: ele sunt regula lanțului. (F27-D2)
   (`CV_AN_INCHIS`); un consum din anul anterior cu exercițiul deschis își
   primește cota. Nucleul primește anul ultimului exercițiu închis ca valoare.
   (E3-D10)
+- Comenzile exercițiului au ușile lunii: HTTP sub `api/perioade/{an}/exercitiu`
+  ([api](api.md#perioadele)) și acțiunile XAF pe decembrie, cu același gate
+  de scriere pe instanță. (E3-D7)
 
 ## Soldurile materializate la închidere
 
