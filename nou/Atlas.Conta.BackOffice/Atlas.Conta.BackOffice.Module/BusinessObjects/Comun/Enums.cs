@@ -408,6 +408,7 @@ public enum FelConstatareInchidere {
     [XafDisplayName("Document în lucru cu data înregistrării în perioadă")] DraftInPerioada = 3,
     [XafDisplayName("Document operat cu rest scadent în perioadă")] RestScadent = 4,
     [XafDisplayName("Conturile de rezultat au sold la sfârșitul lunii")] RezNeinchis = 5,
+    [XafDisplayName("Conturile închiderii au sold la sfârșitul exercițiului")] ExSoldRezidual = 6,
 }
 
 // Când se aplică un rând de `PoliticaInchidereConturi` (E3-D4, E3-D7).

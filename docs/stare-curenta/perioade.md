@@ -2,7 +2,7 @@
 
 **Actualizat: 2026-10-16.** [Index](README.md)
 
-Perioada fiscală ca lanț, închiderea ei cu verificarea și politica constatărilor, soldurile materializate la închidere și soldul citit.
+Perioada fiscală ca lanț, închiderea ei cu verificarea și politica constatărilor, exercițiul închis pe decembrie, soldurile materializate la închidere și soldul citit.
 
 ## Perioada fiscală ca lanț
 
@@ -83,7 +83,7 @@ istoricul lunii; `Ignorat` nu emite constatarea deloc. Un fel fără rând se
 comportă ca avertisment și o SPUNE în textul constatării, ca o configurație pe
 jumătate să nu treacă tăcut. (F27-D2)
 
-Cele cinci feluri și seed-ul lor:
+Cele șase feluri și seed-ul lor (ultimul aparține verificării exercițiului):
 
 | Fel | Privat | Bugetar |
 |---|---|---|
@@ -92,6 +92,7 @@ Cele cinci feluri și seed-ul lor:
 | Amortizarea lunară lipsește sau nu e operată | Avertisment | Avertisment |
 | Document în lucru cu data înregistrării în perioadă | Avertisment | Avertisment |
 | Document operat cu rest scadent în perioadă | Ignorat | Ignorat |
+| Conturile închiderii au sold la sfârșitul exercițiului | Blocant | Blocant |
 
 Diferența dintre profiluri este de CONȚINUT, nu de mecanism: bugetarul nu e
 plătitor de TVA, deci închiderea de TVA îi este tip inert, iar un blocant pe ea
@@ -104,6 +105,35 @@ strica soldul inițial al anului următor. (E3-D5)
 
 Blocantele STRUCTURALE ale lanțului nu sunt în această politică și nu se
 configurează: ele sunt regula lanțului. (F27-D2)
+
+## Exercițiul închis
+
+- Exercițiul este anul calendaristic, iar starea lui stă pe decembrie:
+  `ExercitiuInchis` și momentul închiderii, ale motorului, refuzate pe calea
+  securizată ca starea lunii. Nu există entitate separată; închiderea și
+  redeschiderea exercițiului scriu rânduri în istoricul lui decembrie, cu
+  felurile `InchidereExercitiu` și `RedeschidereExercitiu`. (E3-D7)
+- Verificarea exercițiului are constatări STRUCTURALE, mereu blocante:
+  `DECEMBRIE-NEDEFINIT`, `DECEMBRIE-DESCHIS`, `EXERCITIU-INCHIS` și
+  `EXERCITIU-PRECEDENT-DESCHIS:{an}` (decembrie anului precedent e definit și
+  are exercițiul deschis; nedefinit înseamnă închis prin absență, ca la
+  lanț). Constatarea de CONȚINUT se caută numai fără structurale:
+  `EX-SOLD-REZIDUAL`, când un cont-sursă din politica închiderii conturilor,
+  cu moment `Lunar` sau `Anual`, are sold la 31.12; textul numește conturile.
+  Severitatea ei vine din politica de închidere, ca la lună. (E3-D7)
+- Închiderea exercițiului reia verificarea în tranzacție și acceptă
+  avertismentele pe cheie, ca închiderea lunii. Blochează decembrie anului
+  și pe al anului precedent. Nu postează nimic: rândurile `Anual` ale
+  închiderii conturilor de rezultat intră în închiderea lunară a lui
+  decembrie, datate 31.12, după rândurile `Lunar`. (E3-D7, E3-D8)
+- Cât timp exercițiul e închis, redeschiderea lui decembrie se refuză.
+  Redeschiderea exercițiului cere un motiv scris și se poate face numai pe
+  ultimul exercițiu închis; decembrie rămâne închis, iar nimic nu se
+  stornează. (E3-D7)
+- Corecția valorică refuză consumul dintr-un an cu exercițiul închis
+  (`CV_AN_INCHIS`); un consum din anul anterior cu exercițiul deschis își
+  primește cota. Nucleul primește anul ultimului exercițiu închis ca valoare.
+  (E3-D10)
 
 ## Soldurile materializate la închidere
 

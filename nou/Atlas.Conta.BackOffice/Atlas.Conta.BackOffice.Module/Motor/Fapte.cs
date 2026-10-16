@@ -125,10 +125,11 @@ internal static class Fapte {
         var corectate = linii.Where(d => d is ILinieCuCorectieValorica { CorectieValoareLot: true } && d.LotId != null)
             .Select(d => d.LotId.Value).Distinct().ToList();
         var fapteCorectate = Cub.Citiri.CorectiiValorice.Fapte(os, corectate, doc.ID);
+        var exercitiuInchis = corectate.Count == 0 ? null : PerioadaService.UltimulExercitiuInchis(os);
         Declaratii.LinieOperand CuCorectie(DocumentDetaliu d, Declaratii.LinieOperand linie) =>
             d is not ILinieCuCorectieValorica { CorectieValoareLot: true } ? linie : linie with {
                 CorectieValorica = new(linie.Lot is { LinieIntrareId: Guid intrare, ContImplicitId: Guid contStoc } lot
-                    ? new N.ReperLot(lot.Id, contStoc, doc.PrimitorId, intrare, doc.PredatorId) : null, fapteCorectate),
+                    ? new N.ReperLot(lot.Id, contStoc, doc.PrimitorId, intrare, doc.PredatorId) : null, fapteCorectate, exercitiuInchis),
             };
 
         var partideSursa = sursa.Partide

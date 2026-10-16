@@ -22,6 +22,7 @@ public partial class CorectieValoricaTeste {
         public Guid Receptie { get; } = Guid.NewGuid();
         public Guid Bon { get; private set; }
         public ReperLot Reper => new(Lot, Stoc, Magazie.Id, LinieIntrare, Furnizor.Id);
+        public int? ExercitiuInchis { get; set; }
 
         Capat PeStoc => new() { Cont = Stoc, Repartitor = Magazie, Produs = Produs, Unitate = lot };
         Capat PeConsum => new() { Cont = Consum, Repartitor = Loc, Produs = Produs, Unitate = lot with { Cont = Consum } };
@@ -74,7 +75,7 @@ public partial class CorectieValoricaTeste {
         public Guid Corecteaza(decimal delta, DateOnly data, ReperLot? reper = null) {
             var document = Guid.NewGuid();
             var cauza = new Cauza(document, Guid.NewGuid());
-            var alocari = CorectieValorica.Aloca(CorectieValorica.Beneficiari(reper ?? Reper, Fapte, data), delta);
+            var alocari = CorectieValorica.Aloca(CorectieValorica.Beneficiari(reper ?? Reper, Fapte, data, ExercitiuInchis), delta);
             Assert.Equal(delta, alocari.Sum(a => a.Valoare));
             var tranzactie = Opereaza(document, data, [.. alocari.Where(a => a.Valoare != 0m)
                 .Select(a => CorectieValorica.Miscarea(a, Tert(document, data), cauza))]);

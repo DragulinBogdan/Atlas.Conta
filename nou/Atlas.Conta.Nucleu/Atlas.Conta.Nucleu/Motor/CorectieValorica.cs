@@ -13,9 +13,9 @@ public sealed record CompensareLot(FaptPostat Radacina, FaptPostat Beneficiar, F
 
 /// <summary>Corecția valorii unui lot fără schimbarea cantității, judecată pe forma faptelor (CV-D10).</summary>
 public static partial class CorectieValorica {
-    /// <summary>Beneficiarii lotului la data corecției, în ordinea repartizării.</summary>
+    /// <summary>Beneficiarii lotului la data corecției, în ordinea repartizării; <paramref name="exercitiuInchis"/> = anul ultimului exercițiu închis.</summary>
     public static IReadOnlyList<BeneficiarValoric> Beneficiari(
-            ReperLot reper, IReadOnlyList<FaptPostat> fapte, DateOnly data) {
+            ReperLot reper, IReadOnlyList<FaptPostat> fapte, DateOnly data, int? exercitiuInchis) {
         ArgumentNullException.ThrowIfNull(reper);
         var citite = new Fapte(fapte);
         var peLot = citite.Toate.Where(f => Lot(f) == reper.Lot).ToList();
@@ -60,9 +60,9 @@ public static partial class CorectieValorica {
             throw Neeligibil("stocul rămas și consumurile active nu dau cantitatea recepționată");
         if (ramas == 0m && peStoc.Sum(Masura) != 0m)
             throw Neeligibil("valoare pe stocul fără cantitate");
-        if (consumuri.FirstOrDefault(f => f.Postare.Coordonate.Data.Year < data.Year) is { } vechi)
+        if (consumuri.FirstOrDefault(f => f.Postare.Coordonate.Data.Year <= exercitiuInchis) is { } vechi)
             throw Refuza(MotivCorectieValorica.AnInchis,
-                $"Consumul din {vechi.Postare.Coordonate.Data:yyyy-MM-dd} este într-un an anterior corecției.");
+                $"Consumul din {vechi.Postare.Coordonate.Data:yyyy-MM-dd} este într-un exercițiu închis.");
 
         var beneficiari = consumuri
             .Select(f => new BeneficiarValoric(f, false, f.Postare.Cantitate,

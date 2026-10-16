@@ -119,6 +119,7 @@ internal static class ProfilBugetar {
             [FelConstatareInchidere.DraftInPerioada] = SeveritateConstatare.Avertisment,
             [FelConstatareInchidere.RestScadent] = SeveritateConstatare.Ignorat,
             [FelConstatareInchidere.RezNeinchis] = SeveritateConstatare.Blocant,
+            [FelConstatareInchidere.ExSoldRezidual] = SeveritateConstatare.Blocant,
         });
 
     // E3-D4, E3-D9: rezultatul patrimonial păstrează coordonatele notei legacy de deschidere; execuția doar clasificația și sursa.

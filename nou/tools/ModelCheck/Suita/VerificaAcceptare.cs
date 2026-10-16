@@ -166,12 +166,13 @@ static class VerificaAcceptare {
             Console.WriteLine($"     MĂSURAT (ACC-V1/{eticheta}): "
                 + string.Join(", ", randuri.Select(r => $"{r.Key}={r.Value.Severitate}"
                     + (r.Value.DinSeed ? "" : " (fără timbru)"))) + ".");
-            s.Check($"ACC-V1 ({eticheta}) seed-ul aliniază cele cinci feluri, toate cu timbrul `DinSeed`: `ItvLipsa` "
+            s.Check($"ACC-V1 ({eticheta}) seed-ul aliniază cele șase feluri, toate cu timbrul `DinSeed`: `ItvLipsa` "
                 + $"= {itvAsteptat} (privatul e plătitor de TVA, bugetarul are ITV inert), `AmoLipsa` și "
-                + "`DraftInPerioada` = Avertisment, `RestScadent` = Ignorat, `RezNeinchis` = Blocant — severitatea e "
+                + "`DraftInPerioada` = Avertisment, `RestScadent` = Ignorat, `RezNeinchis` și `ExSoldRezidual` = Blocant — severitatea e "
                 + "DATE, iar cele două profiluri diferă de CONȚINUT, nu de mecanism",
-                randuri.Count == 5
+                randuri.Count == 6
                 && randuri[FelConstatareInchidere.RezNeinchis] == (SeveritateConstatare.Blocant, true)
+                && randuri[FelConstatareInchidere.ExSoldRezidual] == (SeveritateConstatare.Blocant, true)
                 && randuri[FelConstatareInchidere.ItvLipsa] == (itvAsteptat, true)
                 && randuri[FelConstatareInchidere.AmoLipsa] == (SeveritateConstatare.Avertisment, true)
                 && randuri[FelConstatareInchidere.DraftInPerioada] == (SeveritateConstatare.Avertisment, true)
@@ -517,7 +518,7 @@ static class VerificaAcceptare {
             s.Check($"ACC-V18 ({eticheta}) fără reziduu: nicio perioadă, niciun document și nicio fișă rămase, iar "
                 + "politica e din nou exact cea de seed — scena e re-rulabilă identic",
                 perioade == 0 && documente == 0 && fise == 0
-                && politici.Count == 5 && politici.All(p => p.DinSeed)
+                && politici.Count == 6 && politici.All(p => p.DinSeed)
                 && politici.Single(p => p.Fel == FelConstatareInchidere.ItvLipsa).Severitate == itvAsteptat
                 && politici.Single(p => p.Fel == FelConstatareInchidere.AmoLipsa).Severitate
                     == SeveritateConstatare.Avertisment

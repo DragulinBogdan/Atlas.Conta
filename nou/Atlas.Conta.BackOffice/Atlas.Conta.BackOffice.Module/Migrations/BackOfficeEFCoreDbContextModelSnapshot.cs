@@ -1032,6 +1032,12 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<int>("An")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("ExercitiuInchis")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("ExercitiuInchisLa")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("Inchisa")
                         .HasColumnType("boolean");
 
