@@ -420,9 +420,10 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 .OnDelete(DeleteBehavior.Restrict);
             // D3-D2: tripleta e identitatea mapării — aceeași pereche poate cădea pe
             // mai multe rânduri (TI19 pe achiziție: 16 ȘI 33), dar de două ori pe
-            // ACELAȘI rând ar dubla cifra la proiecție.
+            // ACELAȘI rând ar dubla cifra la proiecție. Excluderea (`RandId` NULL) e o
+            // singură dată per pereche (123 d).
             modelBuilder.Entity<MapareD300>()
-                .HasIndex(m => new { m.TipTvaId, m.SensTva, m.RandId }).IsUnique();
+                .HasIndex(m => new { m.TipTvaId, m.SensTva, m.RandId }).IsUnique().AreNullsDistinct(false);
             // D4-D2: spre deosebire de D300, aici PERECHEA e identitatea — un grup
             // de registru are un singur tip de operațiune în 394.
             modelBuilder.Entity<MapareD394>()

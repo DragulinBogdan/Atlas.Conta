@@ -53,8 +53,16 @@ a tuturor situațiilor fiscale. Profilul bugetar nu primește aceste rânduri. (
 Seed-ul privat acoperă și achiziția de la un partener neînregistrat din
 România (`FCT`/`RLF` → `NIM`, fără fapt de TVA pe linie) și achiziția din
 afara UE (`FCT`/`RLF` → `IMP`, tip propriu cu cotă 0 sub regimul neimpozabil,
-fără cod SAF-T — codurile de import sunt ale DVI-ului — și nemapat deliberat
-pe D300 și D394). (83f–g, 84b)
+fără cod SAF-T — codurile de import sunt ale DVI-ului —, exclus din D300 pe
+achiziție și din D394 pe ambele sensuri). (83f–g, 84b, 123 d)
+
+`N9` poartă cota de 9%: cota redusă de până la 31.07.2025 (importul 1C o
+aduce pe acest tip) și cota tranzitorie pentru locuințe (art. III din Legea
+141/2025, art. I din Legea 161/2026), cu `ValabilPanaLa` 30.09.2026. Pe
+livrare intră în rd. 11, pe achiziție în rd. 33: zona deductibilă a
+formularului 2026 n-are rând cu 9%, iar rd. 33 cuprinde operațiunile cu
+exigibilitatea în perioadă taxate cu 24, 20, 19, 9 sau 5%. În D394 e `A`,
+cu cota 9. (123 e)
 
 Tipurile de import sunt marcate prin `TipTva.DeImport`, nu prin coduri în cod.
 Seed-ul privat are `IMP21`/`IMP11` (regim normal, coduri SAF-T de achiziție
@@ -284,6 +292,17 @@ Structura `RandD300` este furnizată de seed și nu se editează prin API;
 formulele sunt cod. O mapare poate contribui la mai multe rânduri, fără
 dublare pe lanțul strămoș–descendent. (69a, 69b, 69c)
 
+Perechea tip de TVA × sens are în `MapareD300` una din trei stări: rânduri de
+operațiuni; exclusă, cu o singură mapare fără rând și cu `Motiv` obligatoriu;
+nemapată. Faptele perechii excluse ies în `Excluse`, cu motivul, și nu opresc
+fișierul; ale perechii nemapate ies în `Nemapate` și îl opresc (E2-D5).
+Excluderea e pentru operațiunea reală pe care decontul n-o cere: profilul
+privat exclude livrarea în afara sferei (`NIM`) și factura furnizorului de
+import (`IMP` pe achiziție). Combinațiile care nu pot exista (`NED21` și
+tipurile de import pe livrare) rămân nemapate. Maparea fără rând și fără
+motiv, excluderea lângă rândurile aceleiași perechi și un rând peste excludere
+se refuză la salvare, pe ambele uși, iar seed-ul aplică aceeași regulă. (123 d)
+
 Totalurile și rândurile calculate respectă semantica explicită a fiecărui
 rând. Rândul 31 scade nedeductibilul din rândul 30 folosind operanzii
 înregistrați. Limitarea la zero se aplică numai rândurilor care o cer.
@@ -327,7 +346,8 @@ pentru fiecare rând D300 al perechii, după matricea din
 `CoerentaMapariTva.Matrice` (cod, fiindcă decurge din formulare): rândurile
 intracomunitare, scutite și OSS cer excluderea, 9–11 L sau LS, 12–12.2 C,
 13 V, 16 L, LS sau C, 24–25 A sau AS, 29 AS sau excludere, 33 A, AS sau C.
-Tipul de TVA de import se mapează în D394 numai ca excludere. Maparea
+Tipul de TVA de import se mapează în D394 numai ca excludere, iar perechea
+exclusă din D300 se exclude și din D394. (123 d) Maparea
 incoerentă se refuză la salvarea oricăreia dintre cele două mapări, în XAF și
 pe API (`GardianEditare`), iar gardianul de seed aplică aceeași regulă și
 cere ca fiecare rând de operațiuni D300 să aibă ținte în matrice. Perechea

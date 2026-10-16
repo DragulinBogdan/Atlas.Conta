@@ -22,6 +22,7 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
         os.CommitChanges();
         purja.Adauga(os.GetObjectsQuery<PlajaFacturi>().Where(p => p.Serie == SeriePlaja));
         purja.Adauga(os.GetObjectsQuery<DepunereDeclaratie>().Where(d => d.Perioada >= An * 100 && d.Perioada < (An + 1) * 100));
+        purja.Adauga(os.GetObjectsQuery<TipTva>().Where(t => t.Cod.StartsWith(Marcaj)));
     }
 
     protected override void Executa() {
@@ -173,13 +174,38 @@ sealed partial class ScenariiDecl(Func<IObjectSpace> deschide, Action<string, bo
     }
 
     void Nemapate() {
-        var n9 = Factura(Luna(2), new LinieFctScena(1, 50, "N9", Stoc: false));
-        Opereaza(n9.Id);
+        var propriu = Marcaj + "-T9";
+        Comanda(os => {
+            var n9 = os.GetObjectsQuery<TipTva>().Single(t => t.Cod == "N9");
+            var t = os.CreateObject<TipTva>(); t.Cod = propriu; t.Denumire = "TVA 9% propriu, fără mapare";
+            t.Cota = 9m; t.Regim = RegimTva.Normal;
+            t.ContTvaDeductibilId = n9.ContTvaDeductibilId; t.ContTvaColectatId = n9.ContTvaColectatId;
+            t.ContTvaNeexigibilId = n9.ContTvaNeexigibilId;
+            os.CommitChanges();
+        });
+        var n9Achizitie = Factura(Luna(2), new LinieFctScena(1, 50, "N9", Stoc: false));
+        var nimLivrare = Vanzare(Luna(2), 110, "NIM");
+        var nemapat = Factura(Luna(2), new LinieFctScena(1, 70, propriu, Stoc: false));
+        Opereaza(n9Achizitie.Id); Opereaza(nimLivrare); Opereaza(nemapat.Id);
         var (inceput, sfarsit) = Perioada(2);
-        Verifica("SC-DECL-02", "achiziția N9 fără rând în formular: refuz cu tipul numit",
-            Refuz(inceput, sfarsit, CoduriDeclaratie.DateNeincluse, "N9"));
-        Storneaza(n9.Id, Luna(2, 20));
-        Exporta("SC-DECL-03", inceput, sfarsit);
+        var dto = CuSpatiu(os => D300Proiectii.D300(os, inceput, sfarsit, null));
+        Verifica("SC-DECL-02", "tipul propriu fără mapare: refuz cu tipul numit; N9 și NIM nu refuză",
+            Refuz(inceput, sfarsit, CoduriDeclaratie.DateNeincluse, propriu)
+            && dto.RefuzuriXml.Count == 1 && dto.Nemapate.Single().TipTvaCod == propriu);
+        Storneaza(nemapat.Id, Luna(2, 20));
+        var d = Atribute(Exporta("SC-DECL-03", inceput, sfarsit));
+        dto = CuSpatiu(os => D300Proiectii.D300(os, inceput, sfarsit, null));
+        Verifica("SC-DECL-19", "achiziția N9 pe rd. 33 (50 / 4,50 → R30 50 / 5), regularizare a taxei deduse (123 e)",
+            dto.Randuri.Single(r => r.Cod == "33") is { Baza: 50m, Tva: 4.50m, Surse: "N9" }
+            && d.GetValueOrDefault("R30_1") == "50" && d.GetValueOrDefault("R30_2") == "5");
+        Verifica("SC-DECL-19", "livrarea NIM 110 iese în `Excluse` cu motivul, nu în `Nemapate`, și nu oprește fișierul (123 d)",
+            dto.Excluse.SingleOrDefault() is { TipTvaCod: "NIM", SensTva: "Livrare", Baza: 110m, Tva: 0m } x
+            && !string.IsNullOrWhiteSpace(x.Motiv) && dto.Nemapate.All(n => n.Baza == 0m && n.Tva == 0m));
+        var d394 = CuSpatiu(os => D394Proiectii.D394(os, inceput, sfarsit));
+        Verifica("SC-DECL-19", "în D394 aceeași lună: N9 pe A cu cota 9, NIM exclusă, niciuna neinclusă",
+            d394.Operatiuni.SingleOrDefault(o => o.Tip == "A" && o.Cota == 9) is { Baza: 50m }
+            && d394.Excluse.Any(e => e.TipTvaCod == "NIM" && e.SensTva == "Livrare" && e.Baza == 110m)
+            && !d394.Neincluse.Any(n => n.TipTvaCod is "N9" or "NIM"));
     }
 
     void Trimestru() {

@@ -359,33 +359,15 @@ public class PoliticaNumerotare : Politica, ICuProvenienta {
     public virtual string Format { get; set; }
 }
 
-// Așezarea unei operațiuni taxabile pe rândul decontului de TVA (felia 12,
-// D3-D2): politica `(TipTva × Sens) → RandD300`, cu N rânduri per pereche.
-//
-// DE CE n rânduri și nu o coloană pe `TipTva` (ca `CodSafTLivrare`): taxarea
-// inversă istorică pe achiziție (TI19) apare ȘI la rd. 16 (regularizări taxă
-// colectată), ȘI la rd. 33 (regularizări taxă dedusă) — o coloană n-ar fi
-// încăput. Iar rândurile formularului se schimbă cu legea (2026 a eliminat 13
-// rânduri și a comprimat numerotarea), deci ținta trebuie să fie o FK
-// verificabilă, nu un string magic.
-//
-// Perechea NEMAPATĂ nu e o eroare: un `TipTva` propriu al clientului, fără
-// mapare, apare la prima proiecție în panoul „Operațiuni neincluse în decont"
-// cu cifrele lui (D3-D4) — raportarea nu refuză ce operarea a acceptat. Ce se
-// REFUZĂ e o mapare care țintește un rând `Total`/`Oglindă`/`Extern`: cifra ar
-// fi suprascrisă tăcut de formulă la prima proiecție, adică exact „un gard care
-// tace devine capcană" (62f).
+// `(TipTva × Sens) → RandD300`, cu n rânduri per pereche (D3-D2, 69b); `Rand` gol = perechea e
+// exclusă din decont, cu `Motiv`, ca singură mapare a perechii (123 d). Nemapata oprește fișierul (E2-D5).
 [NavigationItem("Politici")]
 public class MapareD300 : Politica, ICuProvenienta {
-    // F23-D4 — proveniența rândului: o scrie SEED-ul (pe cel creat și pe cel
-    // găsit pe cheia lui), o stinge GARDIANUL la orice scriere securizată.
     [XafDisplayName("Din seed")]
     [ModelDefault("AllowEdit", "False")]
     public virtual bool DinSeed { get; set; }
 
-    // Validare de culegere pe NAVIGAȚII, nu pe Guid-uri (decizia 40b:
-    // `RuleRequiredField` nu poate sta pe un `Guid` nenullabil — o linie culeasă
-    // fără tip ar produce un INSERT cu FK invalid).
+    // 40b
     public virtual Guid TipTvaId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Tip TVA")]
@@ -393,29 +375,13 @@ public class MapareD300 : Politica, ICuProvenienta {
         CustomMessageTemplate = "Tipul de TVA este obligatoriu.")]
     public virtual TipTva TipTva { get; set; }
 
-    // Latura pe care se aplică maparea — aceeași axă ca `Postare.SensTva`
-    // (achiziție/livrare), fiindcă rândul de decont diferă per sens: N21 e rd. 9
-    // pe livrare și rd. 24 pe achiziție.
     [XafDisplayName("Sens TVA")]
     public virtual SensTva SensTva { get; set; }
 
-    public virtual Guid RandId { get; set; }
+    public virtual Guid? RandId { get; set; }
     [EditorAlias(EditorAliases.LookupPropertyEditor)]
     [XafDisplayName("Rând D300")]
-    [RuleRequiredField("MapareD300_Rand_Necesar", DefaultContexts.Save,
-        CustomMessageTemplate = "Rândul de decont este obligatoriu.")]
-    // AFORDANȚA lookup-ului (fix F7 al review-ului advers): lista oferă doar
-    // rândurile care CHIAR se pot alimenta din mapări. Refuzul rămâne în
-    // validare — filtrul e ce vede operatorul, nu ce garantează sistemul (65).
-    //
-    // Forma e `DataSourceCriteriaProperty`, nu `DataSourceCriteria("Fel = ...")`,
-    // și asta e o constatare MĂSURATĂ, nu o preferință: limbajul de criterii NU
-    // acceptă numele unui membru de enum („Criteria Language Syntax", secțiunea
-    // Constants — `[Status] = Status.InProgress` e explicit greșit; se acceptă
-    // doar valoarea întreagă `= 1` sau forma serializată
-    // `##Enum#Namespace.Tip,Membru#`, care cere în plus `EnumProcessingHelper
-    // .RegisterEnum`). Ambele ar fi mutat comparația din compilator într-un
-    // string — exact ce refuză și comentariul regulii de mai jos.
+    // Limbajul de criterii nu acceptă numele unui membru de enum (DevExpress „Criteria Language Syntax”, Constants).
     [DataSourceCriteriaProperty(nameof(CriteriuRandOperatiuni))]
     public virtual RandD300 Rand { get; set; }
 
@@ -424,9 +390,49 @@ public class MapareD300 : Politica, ICuProvenienta {
     public CriteriaOperator CriteriuRandOperatiuni =>
         CriteriaOperator.FromLambda<RandD300>(r => r.Fel == FelRandD300.Operatiuni);
 
-    // Gardianul D3-D2, ca regulă de fond (nu criteriu în limbaj de criterii:
-    // comparația de enum se scrie o dată, în C#, și nu depinde de parsare).
-    // Ascuns din UI — e purtătorul regulii, nu un câmp de cules.
+    [MaxLength(256)]
+    [XafDisplayName("Motivul excluderii")]
+    public virtual string Motiv { get; set; }
+
+    [NotMapped]
+    [Browsable(false)]
+    [RuleFromBoolProperty("MapareD300_RandSauMotiv", DefaultContexts.Save,
+        CustomMessageTemplate = MesajMotiv)]
+    public bool RandSauMotiv => AreRandSauMotiv(this);
+
+    [NotMapped]
+    [Browsable(false)]
+    [RuleFromBoolProperty("MapareD300_ExcludereSingura", DefaultContexts.Save,
+        CustomMessageTemplate = MesajExcludere)]
+    public bool ExcludereSingura => ExcludereaESingura(((IObjectSpaceLink)this).ObjectSpace, this);
+
+    public const string MesajMotiv = "Alegeți rândul de decont sau, pentru perechea exclusă din decont, motivul excluderii.";
+
+    public const string MesajExcludere = "Perechea exclusă din decont (fără rând) nu poate avea și mapări pe rânduri; "
+        + "păstrați fie excluderea, fie rândurile.";
+
+    public static bool AreRandSauMotiv(MapareD300 mapare) =>
+        mapare.Rand != null || (mapare.RandId ?? Guid.Empty) != Guid.Empty || !string.IsNullOrWhiteSpace(mapare.Motiv);
+
+    public static bool EsteExcludere(MapareD300 mapare) =>
+        mapare.Rand == null && (mapare.RandId ?? Guid.Empty) == Guid.Empty;
+
+    // Starea din `os`, inclusiv obiectele nesalvate și fără cele marcate de ștergere.
+    public static bool ExcludereaESingura(IObjectSpace os, MapareD300 mapare) {
+        var tipId = mapare.TipTva?.ID ?? mapare.TipTvaId;
+        if (os == null || tipId == Guid.Empty)
+            return true;
+        var sensTva = mapare.SensTva;
+        var pereche = os.GetObjectsQuery<MapareD300>().Where(m => m.TipTvaId == tipId && m.SensTva == sensTva).ToList()
+            .Concat(os.ModifiedObjects.OfType<MapareD300>())
+            .Append(mapare)
+            .Distinct()
+            .Where(m => (m.TipTva?.ID ?? m.TipTvaId) == tipId && m.SensTva == sensTva
+                && !os.IsObjectToDelete(m) && !os.IsDeletedObject(m))
+            .ToList();
+        return pereche.Count < 2 || !pereche.Any(EsteExcludere);
+    }
+
     [NotMapped]
     [Browsable(false)]
     [RuleFromBoolProperty("MapareD300_RandOperatiuni", DefaultContexts.Save,
@@ -434,27 +440,11 @@ public class MapareD300 : Politica, ICuProvenienta {
             + "rândurile de total, oglindă și extern se calculează, nu se alimentează din mapări.")]
     public bool RandEsteDeOperatiuni => EsteDeOperatiuni(Rand);
 
-    // F23-D5: aceeași regulă, două uși. Atributul de mai sus e prezentarea ei în
-    // XAF; `GardianEditare` cheamă funcția STATICĂ, fiindcă validarea XAF nu
-    // rulează pe API (55b) și politica devine editabilă pe OData. O regulă, un
-    // corp — nu două jumătăți care pot diverge (77k).
+    // F23-D5: un corp, două uși (atributul XAF și `GardianEditare`).
     public static bool EsteDeOperatiuni(RandD300 rand) =>
         rand == null || rand.Fel == FelRandD300.Operatiuni;
 
-    // A DOUA jumătate a gardului contra dublei numărări (fix F4 al review-ului
-    // advers), geamăna celui din `ContaSeeder.VerificaD300`: aceeași pereche
-    // `(TipTva, Sens)` nu poate ținti simultan un rând ȘI un ascendent al lui.
-    //
-    // Proiecția adună părintele ca „mapările lui DIRECTE + Σ copiii": o pereche
-    // pusă și pe rd. 12.1, și pe rd. 12 intră de două ori în rd. 12 și de acolo
-    // în totalul rd. 19 — un decont care trece validările ANAF și e greșit.
-    // Seed-ul apără seed-ul; regula de aici apără CULEGEREA din XAF, unde
-    // maparea e editabilă (politica e date, decizia 4).
-    //
-    // Verificarea e SIMETRICĂ: nu contează dacă rândul nou e copilul unei mapări
-    // existente sau părintele ei — conflictul e al perechii, nu al ordinii în
-    // care s-au cules cele două. Fraților li se dă voie (TI19/achiziție pe
-    // rd. 16 ȘI rd. 33 e chiar cazul care a cerut nomenclatorul).
+    // Aceeași pereche nu țintește un rând și un ascendent al lui (fix F4); frații sunt permiși (TI19 pe 16 și 33).
     [NotMapped]
     [Browsable(false)]
     [RuleFromBoolProperty("MapareD300_FaraAscendent", DefaultContexts.Save,
@@ -471,18 +461,14 @@ public class MapareD300 : Politica, ICuProvenienta {
     public bool CoerentaCuD394 =>
         CoerentaMapariTva.Incoerente(((IObjectSpaceLink)this).ObjectSpace, TipTva?.ID ?? TipTvaId, SensTva).Count == 0;
 
-    // F23-D5, ca mai sus: un corp, două uși (atributul XAF + `GardianEditare`).
-    // `os` explicit — pe ușa API obiectul poate să nu fie legat de un
-    // ObjectSpace prin `IObjectSpaceLink`, iar gardianul îl are oricum în mână.
+    // `os` explicit: pe ușa API obiectul poate să nu fie legat prin `IObjectSpaceLink`.
     public static bool FaraAscendentMapat(IObjectSpace os, MapareD300 mapare) {
         var tipId = mapare.TipTva?.ID ?? mapare.TipTvaId;
         var rand = mapare.Rand
-            ?? (mapare.RandId != Guid.Empty ? os?.GetObjectByKey<RandD300>(mapare.RandId) : null);
+            ?? (mapare.RandId is Guid randId && randId != Guid.Empty ? os?.GetObjectByKey<RandD300>(randId) : null);
         if (os == null || rand == null || tipId == Guid.Empty)
             return true;
         var sensTva = mapare.SensTva;
-        // Doar mapările VII ale aceleiași perechi: una ștearsă logic nu mai
-        // alimentează nimic, deci nu poate dubla nimic (F5).
         var altele = os.GetObjectsQuery<MapareD300>()
             .Where(m => m.TipTvaId == tipId && m.SensTva == sensTva).ToList();
         foreach (var alta in altele) {

@@ -268,6 +268,34 @@ static class VerificaD394Seed {
                 && faraMotiv != null && faraMotiv.Contains("motiv")
                 && import != null && import.Contains("import")
                 && coerenta == null && MapariVii() == total && RuleazaGardianul() == null);
+
+            MapareD300 D300(IObjectSpace o, string cod, SensTva sens, string rand, string motiv) {
+                var m = o.CreateObject<MapareD300>();
+                m.TipTva = o.FirstOrDefault<TipTva>(x => x.Cod == cod);
+                m.SensTva = sens;
+                m.Rand = rand == null ? null : o.FirstOrDefault<RandD300>(r => r.Cod == rand);
+                m.Motiv = motiv;
+                return m;
+            }
+            var faraRandSiMotiv = PrinGardian(o => D300(o, "NED21", SensTva.Livrare, null, null));
+            var langaRanduri = PrinGardian(o => D300(o, "N21", SensTva.Achizitie, null, "probă"));
+            var randPesteExcludere = PrinGardian(o => D300(o, "NIM", SensTva.Livrare, "14", null));
+            var d394PesteExcludere = PrinGardian(o => {
+                var m = D394(o, "NIM", SensTva.Livrare);
+                m.Tip = TipOperatiuneD394.L; m.Motiv = null;
+            });
+            var exclusaCoerenta = PrinGardian(o => D300(o, "NED21", SensTva.Livrare, null, "probă de excludere"));
+            Console.WriteLine($"     MĂSURAT (SC-DECL-20, gardian): D300 fără rând și motiv: „{faraRandSiMotiv ?? "<ACCEPTAT>"}”; "
+                + $"excludere lângă rd. 24: „{langaRanduri ?? "<ACCEPTAT>"}”; rd. 14 peste excludere: „{randPesteExcludere ?? "<ACCEPTAT>"}”; "
+                + $"D394 NIM/Livrare → L: „{d394PesteExcludere ?? "<ACCEPTAT>"}”.");
+            s.Check("SC-DECL-20 (gardianul de editare, 123 d) excluderea din D300 e o mapare fără rând, cu motiv, singura a "
+                + "perechii, și cere excluderea și în D394: se refuză maparea fără rând și fără motiv, excluderea lângă "
+                + "rândurile perechii, un rând peste excludere și D394 NIM/Livrare → L; NED21/Livrare exclusă cu motiv se salvează",
+                faraRandSiMotiv != null && faraRandSiMotiv.Contains(MapareD300.MesajMotiv)
+                && langaRanduri != null && langaRanduri.Contains(MapareD300.MesajExcludere)
+                && randPesteExcludere != null && randPesteExcludere.Contains(MapareD300.MesajExcludere)
+                && d394PesteExcludere != null && d394PesteExcludere.Contains("exclusă din D300")
+                && exclusaCoerenta == null && MapariVii() == total && RuleazaGardianul() == null);
         }
 
         // ══════ F5 (104i): ștergerea e o decizie, nu o gaură ══════

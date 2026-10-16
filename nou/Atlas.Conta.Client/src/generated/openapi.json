@@ -324856,6 +324856,13 @@
             },
             "nullable": true
           },
+          "Excluse": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/D300Exclus"
+            },
+            "nullable": true
+          },
           "Avertismente": {
             "type": "array",
             "items": {
@@ -324882,6 +324889,48 @@
               "$ref": "#/components/schemas/RefuzDeclaratie"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "D300Exclus": {
+        "type": "object",
+        "properties": {
+          "SensTva": {
+            "type": "string",
+            "nullable": true
+          },
+          "TipTvaId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "TipTvaCod": {
+            "type": "string",
+            "nullable": true
+          },
+          "TipTvaDenumire": {
+            "type": "string",
+            "nullable": true
+          },
+          "Cota": {
+            "type": "number",
+            "format": "double"
+          },
+          "Motiv": {
+            "type": "string",
+            "nullable": true
+          },
+          "Baza": {
+            "type": "number",
+            "format": "double"
+          },
+          "Tva": {
+            "type": "number",
+            "format": "double"
+          },
+          "Randuri": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -330487,10 +330536,16 @@
           },
           "RandId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true
           },
           "Rand": {
             "$ref": "#/components/schemas/RandD300"
+          },
+          "Motiv": {
+            "maxLength": 256,
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -330514,7 +330569,13 @@
           },
           "RandId": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "nullable": true
+          },
+          "Motiv": {
+            "maxLength": 256,
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

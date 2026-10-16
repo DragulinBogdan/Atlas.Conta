@@ -9474,11 +9474,28 @@ export interface components {
             VersiuneExportata?: string | null;
             Randuri?: components["schemas"]["D300Rand"][] | null;
             Nemapate?: components["schemas"]["D300Nemapat"][] | null;
+            Excluse?: components["schemas"]["D300Exclus"][] | null;
             Avertismente?: string[] | null;
             Rectificativa?: boolean;
             PerioadaDeschisa?: boolean;
             DiferenteDeclarat?: components["schemas"]["DecontTvaRand"][] | null;
             RefuzuriXml?: components["schemas"]["RefuzDeclaratie"][] | null;
+        };
+        D300Exclus: {
+            SensTva?: string | null;
+            /** Format: uuid */
+            TipTvaId?: string;
+            TipTvaCod?: string | null;
+            TipTvaDenumire?: string | null;
+            /** Format: double */
+            Cota?: number;
+            Motiv?: string | null;
+            /** Format: double */
+            Baza?: number;
+            /** Format: double */
+            Tva?: number;
+            /** Format: int32 */
+            Randuri?: number;
         };
         D300Nemapat: {
             SensTva?: string | null;
@@ -11435,8 +11452,9 @@ export interface components {
             TipTva?: components["schemas"]["TipTva"];
             SensTva?: components["schemas"]["SensTva"];
             /** Format: uuid */
-            RandId?: string;
+            RandId?: string | null;
             Rand?: components["schemas"]["RandD300"];
+            Motiv?: string | null;
         };
         MapareD300ResourceDelta: {
             /** Format: uuid */
@@ -11446,7 +11464,8 @@ export interface components {
             TipTvaId?: string;
             SensTva?: components["schemas"]["SensTva"];
             /** Format: uuid */
-            RandId?: string;
+            RandId?: string | null;
+            Motiv?: string | null;
         };
         MapareD394: {
             /** Format: uuid */

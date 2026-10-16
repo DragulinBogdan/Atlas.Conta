@@ -826,13 +826,17 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.Property<bool>("DinSeed")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("Motiv")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
                     b.Property<int>("OptimisticLockField")
                         .IsConcurrencyToken()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
 
-                    b.Property<Guid>("RandId")
+                    b.Property<Guid?>("RandId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("SensTva")
@@ -847,6 +851,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
 
                     b.HasIndex("TipTvaId", "SensTva", "RandId")
                         .IsUnique();
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("TipTvaId", "SensTva", "RandId"), false);
 
                     b.ToTable("MapariD300");
                 });
@@ -5179,8 +5185,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.RandD300", "Rand")
                         .WithMany()
                         .HasForeignKey("RandId")
-                        .OnDelete(DeleteBehavior.ClientNoAction)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.ClientNoAction);
 
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.TipTva", "TipTva")
                         .WithMany()

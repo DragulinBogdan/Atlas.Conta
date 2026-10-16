@@ -711,7 +711,7 @@ Intervalul inversat este refuz de configurare, nu refuz fiscal.
 
 SC-CIT-93a (M7, 103i): N19/TI19/CAP19 includ
 31.07.2025 și exclud 01.08.2025; tipurile 21/11 din R6-B8 includ 01.08.2025
-și exclud 31.07.2025; N9 include 31.07.2026 și exclude 01.08.2026. Re-seed-ul
+și exclud 31.07.2025; N9 include 30.09.2026 și exclude 01.10.2026 (123 e). Re-seed-ul
 aliniază intervalele `DinSeed`, păstrează intervalele rândului manual și nu
 recreează un rând refuzat prin `RefuzSeed`. Trecerea zilei nu schimbă `Activ`.
 
