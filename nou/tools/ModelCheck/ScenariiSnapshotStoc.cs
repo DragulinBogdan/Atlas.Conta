@@ -124,6 +124,23 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
                 && s.GestiuneId == Magazie && s.ContId == Cont(Stoc));
             return s.Cantitate == -6 && s.Valoare == -60;
         }));
+        Verifica("SC-CIT-115", "citirea pe loturi = citirea întreagă restrânsă, fără data ca acces", CuSpatiu(os => {
+            Guid[] loturi = [lot, initial];
+            bool Egal(IQueryable<C.Citiri.SoldLot> pe, IQueryable<C.Citiri.SoldLot> toate) {
+                var a = pe.ToArray();
+                var b = toate.Where(s => loturi.Contains(s.LotId)).ToArray();
+                return a.Length > 0 && a.Length == b.Length && a.All(b.Contains);
+            }
+            var granita = Februarie.AddDays(-1);
+            var peLoturi = C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie, loturi: loturi);
+            return Egal(peLoturi, C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie))
+                && Egal(C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie, f.Id, granita, loturi),
+                    C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie, f.Id, granita))
+                && Egal(C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie, f.Id, loturi: loturi),
+                    C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie, f.Id))
+                && peLoturi.ToQueryString().Contains("\"Data\" + ")
+                && !C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie).ToQueryString().Contains("\"Data\" + ");
+        }));
         Storneaza(btr, Februarie);
         Verifica("SC-CIT-71", "storno peste închidere: sursa 8/80, destinația zero, ianuarie intact", CuSpatiu(os => {
             var s = C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie).Where(s => s.LotId == lot).ToArray();

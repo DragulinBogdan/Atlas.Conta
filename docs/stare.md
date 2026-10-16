@@ -6,19 +6,19 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 
 | Ce | Cât |
 |---|---|
-| Decizii | 124: 89 active, 35 amendate parțial, 0 depășite, 0 propuse |
-| Restanțe | 400: 291 deschise, 109 închise |
+| Decizii | 125: 89 active, 35 amendate parțial, 0 depășite, 1 propuse |
+| Restanțe | 402: 292 deschise, 110 închise |
 | Pagini de stare curentă | 19 |
 | Contracte de felie (`Tip: contract`) | 5, deschise 0 |
 | Cataloage vii (`Tip: catalog`) | 6 |
-| Fișiere Markdown în `docs/` | 341 |
-| Citări de decizii din cod (`// N`) | 75 |
+| Fișiere Markdown în `docs/` | 342 |
+| Citări de decizii din cod (`// N`) | 76 |
 
 ## Decizii în vigoare pe arie
 
 - **documente** (53): 2, 3 (amendată de 89), 13, 14, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 28, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 38 (amendată de 81, 84), 40, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 54, 55, 56 (amendată de 77, 81), 58, 63, 64 (amendată de 84), 65, 76, 79 (amendată de 80), 80, 81, 82, 86, 87 (amendată de 97), 89, 93, 95, 97 (amendată de 98), 98, 99, 104 (amendată de 106), 106, 108 (amendată de 110), 109, 114 (amendată de 116), 115, 116 (amendată de 117), 117, 124
 - **motor** (32): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124
-- **stoc** (16): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124
+- **stoc** (17): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124, 125 (propusă)
 - **partide** (15): 1, 31 (amendată de 76, 88), 41, 46 (amendată de 113), 49, 57, 64 (amendată de 84), 76, 82, 86, 95, 96 (amendată de 100, 102), 100 (amendată de 102), 101 (amendată de 102), 102
 - **imobilizari** (5): 87 (amendată de 97), 95, 97 (amendată de 98), 98, 102
 - **perioade** (8): 1, 35, 66, 74 (amendată de 105), 76, 77, 104 (amendată de 106), 124
@@ -31,7 +31,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 - **ecrane** (27): 8, 42 (amendată de 104, 106), 43 (amendată de 104), 56 (amendată de 77, 81), 57, 58, 66, 67, 68, 69, 71 (amendată de 72), 76, 77, 78, 79 (amendată de 80), 80, 81, 84, 85, 86, 87 (amendată de 97), 89, 104 (amendată de 106), 106, 122 (amendată de 123), 123, 124
 - **dezvoltare** (24): 21, 23, 26 (amendată de 112), 35, 36 (amendată de 71), 39, 40, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 52, 56 (amendată de 77, 81), 69, 73 (amendată de 74, 105), 80, 81, 84, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 120
 - **verificare** (33): 1, 2, 3 (amendată de 89), 4, 6, 7, 8, 14, 17, 23, 24, 28, 30, 43 (amendată de 104), 50, 56 (amendată de 77, 81), 66, 70, 73 (amendată de 74, 105), 80, 81, 84, 85, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 106, 118 (amendată de 121), 120, 121, 124
-- **import** (14): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117)
+- **import** (15): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117), 125 (propusă)
 - **README** (6): 42 (amendată de 104, 106), 76, 91 (amendată de 107, 118, 120), 103, 104 (amendată de 106), 110 (amendată de 113)
 - **limite-curente** (29): 37, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 46 (amendată de 113), 53, 55, 72, 75, 77, 80, 81, 84, 85, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 94, 95, 97 (amendată de 98), 102, 103, 104 (amendată de 106), 106, 107, 108 (amendată de 110), 109, 115, 116 (amendată de 117)
 - **(fără arie)** (10): 9, 11, 12, 19, 44, 59, 61, 88 (amendată de 103), 92 (amendată de 102), 105
@@ -46,14 +46,14 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 32 |
+| activă | 31 |
 | după PoC | 220 |
-| migrare | 25 |
+| migrare | 27 |
 | depășită de 091 | 2 |
 | docs | 8 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (32, prag 45)
+### Lista `activă` (31, prag 45)
 
 **motor** (6)
 
@@ -113,17 +113,13 @@ Niciuna.
 - `091-r2` recensământul pe clona Flax per tip rămas (NTC, ITV, RDC, RLF, ASM, LDI, NIR), o dată, înaintea scen…
 - `091-r6` lanțurile transversale fără realizare care să probeze definiția din X.md: SC-X-01 (refuz pe NIR cone…
 
-**import** (1)
-
-- `107-r6` performanța Import1C: 25 → 50 min/lună pe Flax față de 8–10 la baseline 2026-09-21 (~5×)…
-
 ## Felii deschise
 
 Niciun contract deschis declarat cu `Tip: contract`.
 
 ## Decizii invocate din cod
 
-Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33 (1), 40 (1), 42 (2), 43 (1), 46 (2), 48 (2), 49 (1), 53 (1), 55 (1), 57 (4), 77 (1), 79 (4), 82 (2), 83 (2), 85 (1), 86 (1), 87 (2), 89 (3), 90 (4), 91 (2), 92 (1), 97 (1), 98 (2), 99 (2), 101 (1), 102 (1), 103 (2), 104 (7), 106 (1), 107 (7), 109 (1), 112 (1), 115 (5), 119 (1).
+Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33 (1), 40 (1), 42 (2), 43 (1), 46 (2), 48 (2), 49 (1), 53 (1), 55 (1), 57 (4), 77 (1), 79 (4), 82 (2), 83 (2), 85 (1), 86 (1), 87 (2), 89 (3), 90 (4), 91 (2), 92 (1), 97 (1), 98 (2), 99 (2), 101 (1), 102 (1), 103 (2), 104 (7), 106 (1), 107 (7), 109 (1), 112 (1), 115 (5), 119 (1), 125 (1).
 
 ## Paginile stării curente
 

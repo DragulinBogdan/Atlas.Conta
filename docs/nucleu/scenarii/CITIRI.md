@@ -167,6 +167,13 @@ FIFO și raportul păstrează data deschiderii peste granița snapshot-ului.
 Citirea cu excluderea unui document recitește postările, fără a-l păstra
 ascuns în snapshot. Un snapshot absent permite citirea integrală din cub.
 
+SC-CIT-115 (125): peste snapshot-ul lui ianuarie, cumulul la februarie
+cerut pe loturile scenei (lotul recepției și lotul de deschidere) dă exact
+rândurile cumulului întreg restrâns la ele: fără excludere, cu excluderea
+facturii și granița din ajun, cu excluderea fără graniță. SQL-ul citirii pe
+loturi are fereastra pe `"Data" + 0`; citirea fără loturi o păstrează
+indexabilă.
+
 SC-CIT-74: HTTP, înainte/după închidere și reconstrucție: ascunderea
 postărilor sau a membrului Valoare schimbă raportul conform drepturilor.
 Citirea securizată nu folosește snapshot-ul global. Proba pe ObjectSpace

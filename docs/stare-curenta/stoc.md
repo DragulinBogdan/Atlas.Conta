@@ -49,6 +49,12 @@ graniță strict anterioară documentului. Reconstrucția detectează și data
 alterată, pe lângă diferențele de chei și măsuri. Soldurile 0/0 se omit, cele
 0/valoare nenulă rămân. (098, 099, TR-D8)
 
+Soldul cerut pe o listă de loturi (`Loturi.Cumulate(…, loturi)`) restrânge
+snapshot-ul și postările înaintea grupării. Pe ramura postărilor fereastra e
+pe `"Data" + 0`, ca planul generic al unei comenzi pregătite să citească pe
+lot și nu pe toată fereastra de dată. Operandul motorului și gardul de sold
+intermediar citesc așa. (125)
+
 ## Recepția conexă și diferențele de recepție
 
 [Contractul NIR](../nucleu/tr-d8-nir-delta-contract.md) fixează sursa ca
@@ -206,5 +212,5 @@ Regula stă în `Nucleu/Motor/CorectieValorica.cs`; declarația în
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (16; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124.
+Deciziile care numesc pagina în `Arii:` (17; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124, 125 (propusă).
 <!-- /gen:decizii -->

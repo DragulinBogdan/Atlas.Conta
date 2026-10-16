@@ -21,7 +21,7 @@
 > din cod.
 
 <!-- gen:index -->
-### Active (89)
+### Active (90)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -114,6 +114,7 @@
 | 121 | [Ariile stării curente sunt 16, pe responsabilitățile catalogului de funcționalități](121-ariile-pe-familiile-catalogului.md) | 2026-10-15 | activă |
 | 123 | [D300 și D394 se verifică încrucișat pe aceleași fapte: maparea D394 e completă și coerentă cu decontul, iar diferențele…](123-d300-d394-verificare-incrucisata.md) | 2026-10-16 | activă |
 | 124 | [Rezultatul se închide lunar printr-un document generat, exercițiul închis e starea lui decembrie, iar balanța are graniț…](124-exercitiul-se-inchide-pe-decembrie.md) | 2026-10-16 | activă |
+| 125 | [Citirea de sold pe o listă de loturi se face pe lot, nu pe fereastra de dată](125-citirea-pe-loturi-se-face-pe-lot.md) | 2026-10-16 | propusă |
 
 ### Amendate parțial (35)
 
