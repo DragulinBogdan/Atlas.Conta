@@ -320,18 +320,19 @@ static class VerificaDvi {
 
             // ---- D394: declarația vamală NU se declară ----
             var d394 = D394Proiectii.D394(os, febStart, febEnd);
-            var neincluseDvi = d394.Neincluse
+            var excluseDvi = d394.Excluse
                 .Where(n => n.TipTvaCod == "IMP21" || n.TipTvaCod == "IMPTI21").ToList();
             Console.WriteLine($"     MĂSURAT (DVI-V8/privat): {d394.Operatiuni.Count} rânduri op1, din care "
-                + $"{d394.Operatiuni.Count(o => o.Denumire == vama.Denumire)} pe biroul vamal; neincluse pe tipuri "
-                + $"de import: {string.Join(", ", neincluseDvi.Select(n => $"{n.TipTvaCod}/{n.Cauza} {n.Baza}/{n.Tva}"))}.");
+                + $"{d394.Operatiuni.Count(o => o.Denumire == vama.Denumire)} pe biroul vamal; excluse pe tipuri "
+                + $"de import: {string.Join(", ", excluseDvi.Select(n => $"{n.TipTvaCod}/{n.Motiv} {n.Baza}/{n.Tva}"))}.");
             s.Check("DVI-V8 (privat) declarația vamală NU intră în 394: partenerul extern nu se declară, iar biroul "
-                + "vamal nu e o operațiune de raportat — cifrele nu DISPAR însă, ci apar în panoul `Neincluse` cu "
-                + "cauza `TipTvaNemapat`, exact disciplina golurilor de profil (decizia 21)",
+                + "vamal nu e o operațiune de raportat — cifrele nu DISPAR însă, ci apar în `Excluse` cu motivul "
+                + "mapării, fără să oprească fișierul (decizia 21, 123 a)",
                 !d394.Operatiuni.Any(o => o.Denumire == vama.Denumire)
-                && neincluseDvi.Count == 2
-                && neincluseDvi.All(n => n.Cauza == "TipTvaNemapat")
-                && neincluseDvi.Sum(n => n.Baza) == 1500m && neincluseDvi.Sum(n => n.Tva) == 315m);
+                && excluseDvi.Count == 2
+                && excluseDvi.All(n => !string.IsNullOrWhiteSpace(n.Motiv))
+                && !d394.Neincluse.Any(n => n.TipTvaCod is "IMP21" or "IMPTI21")
+                && excluseDvi.Sum(n => n.Baza) == 1500m && excluseDvi.Sum(n => n.Tva) == 315m);
 
             // ---- DVI-r7: codul SAF-T al importului ----
             var saft = SaftProiectii.SaftPeCub(os, 2026, 2);

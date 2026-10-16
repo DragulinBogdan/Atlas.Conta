@@ -769,80 +769,67 @@ internal static class ProfilPrivat {
         return goluri;
     }
 
-    // ---------------- D394 (felia 14, D4-D2) ----------------
+    // ---------------- D394 (felia 14, D4-D2; 123 a) ----------------
     //
-    // Tabelul D4-D2: cotele normale = L/A; taxarea inversă = V (livrare, fără
-    // TVA — beneficiarul o autolichidează) / C (achiziție, cu TVA autolichidată);
-    // NED21 doar pe achiziție = A (achiziție taxabilă, se declară cu TVA-ul
-    // facturat de furnizor, chiar dacă noi nu-l deducem). `AI` NU se mapează:
-    // se derivă din `Partener.TvaLaIncasare` la proiecție.
-    static readonly (string TipTva, SensTva SensTva, TipOperatiuneD394 Tip)[] MapariD394 = [
-        ("N21", SensTva.Livrare, TipOperatiuneD394.L),
-        ("N21", SensTva.Achizitie, TipOperatiuneD394.A),
-        ("N11", SensTva.Livrare, TipOperatiuneD394.L),
-        ("N11", SensTva.Achizitie, TipOperatiuneD394.A),
-        ("N9", SensTva.Livrare, TipOperatiuneD394.L),
-        ("N9", SensTva.Achizitie, TipOperatiuneD394.A),
-        ("N19", SensTva.Livrare, TipOperatiuneD394.L),
-        ("N19", SensTva.Achizitie, TipOperatiuneD394.A),
-        ("TI21", SensTva.Livrare, TipOperatiuneD394.V),
-        ("TI21", SensTva.Achizitie, TipOperatiuneD394.C),
-        ("TI19", SensTva.Livrare, TipOperatiuneD394.V),
-        ("TI19", SensTva.Achizitie, TipOperatiuneD394.C),
-        ("NED21", SensTva.Achizitie, TipOperatiuneD394.A),
+    // `Tip` gol = perechea e exclusă din D394, cu motivul. AI nu se mapează: se
+    // derivă din `Partener.TvaLaIncasare` la proiecție.
+    const string Scutita = "operațiune scutită — nu se declară în 394";
+    const string Neimpozabila = "operațiunea e în afara sferei TVA — nu se declară în 394";
+    const string Vamala = "declarația vamală nu se declară în 394";
+
+    static readonly (string TipTva, SensTva SensTva, TipOperatiuneD394? Tip, string Motiv)[] MapariD394 = [
+        ("N21", SensTva.Livrare, TipOperatiuneD394.L, null),
+        ("N21", SensTva.Achizitie, TipOperatiuneD394.A, null),
+        ("N11", SensTva.Livrare, TipOperatiuneD394.L, null),
+        ("N11", SensTva.Achizitie, TipOperatiuneD394.A, null),
+        ("N9", SensTva.Livrare, TipOperatiuneD394.L, null),
+        ("N9", SensTva.Achizitie, TipOperatiuneD394.A, null),
+        ("N19", SensTva.Livrare, TipOperatiuneD394.L, null),
+        ("N19", SensTva.Achizitie, TipOperatiuneD394.A, null),
+        ("TI21", SensTva.Livrare, TipOperatiuneD394.V, null),
+        ("TI21", SensTva.Achizitie, TipOperatiuneD394.C, null),
+        ("TI19", SensTva.Livrare, TipOperatiuneD394.V, null),
+        ("TI19", SensTva.Achizitie, TipOperatiuneD394.C, null),
+        ("NED21", SensTva.Achizitie, TipOperatiuneD394.A, null),
+        ("NED21", SensTva.Livrare, null, "nedeductibilul e exclusiv de achiziție — nu se livrează"),
+        ("SDD", SensTva.Livrare, null, Scutita),
+        ("SDD", SensTva.Achizitie, null, Scutita),
+        ("SFD", SensTva.Livrare, null, Scutita),
+        ("SFD", SensTva.Achizitie, null, Scutita),
+        ("NIM", SensTva.Livrare, null, Neimpozabila),
+        ("NIM", SensTva.Achizitie, null, Neimpozabila),
+        ("IMP", SensTva.Achizitie, null, "partener extra-UE nu se declară în 394"),
+        ("IMP", SensTva.Livrare, null, "partener extra-UE nu se declară în 394"),
+        ("IMP21", SensTva.Achizitie, null, Vamala),
+        ("IMP21", SensTva.Livrare, null, Vamala),
+        ("IMP11", SensTva.Achizitie, null, Vamala),
+        ("IMP11", SensTva.Livrare, null, Vamala),
+        ("IMPTI21", SensTva.Achizitie, null, Vamala),
+        ("IMPTI21", SensTva.Livrare, null, Vamala),
+        ("IMPTI11", SensTva.Achizitie, null, Vamala),
+        ("IMPTI11", SensTva.Livrare, null, Vamala),
     ];
 
-    // Perechile lăsate DELIBERAT în afara declarației 394, cu motivul lângă ele
-    // (decizia 21: fiecare gaură de profil = decizie explicită). Cifrele lor
-    // apar în panoul `Neincluse` al proiecției (D4-D4), nu dispar.
-    static readonly (string TipTva, SensTva SensTva, string Motiv)[] NemapateDeliberatD394 = [
-        ("NED21", SensTva.Livrare, "nedeductibilul e exclusiv de achiziție — nu se livrează"),
-        // Scutitele și neimpozabilele nu se declară în 394 (formularul cuprinde
-        // doar operațiunile taxabile/cu taxare inversă/regim special).
-        ("SDD", SensTva.Livrare, "operațiune scutită — nu se declară în 394"),
-        ("SDD", SensTva.Achizitie, "operațiune scutită — nu se declară în 394"),
-        ("SFD", SensTva.Livrare, "operațiune scutită — nu se declară în 394"),
-        ("SFD", SensTva.Achizitie, "operațiune scutită — nu se declară în 394"),
-        ("NIM", SensTva.Livrare, "operațiunea e în afara sferei TVA — nu se declară în 394"),
-        ("NIM", SensTva.Achizitie, "operațiunea e în afara sferei TVA — nu se declară în 394"),
-        ("IMP", SensTva.Achizitie, "partener extra-UE nu se declară în 394"),
-        ("IMP", SensTva.Livrare, "partener extra-UE nu se declară în 394"),
-        // DVI-D2 — declarația vamală nu e operațiune cu un partener de declarat:
-        // 394 e pe facturi, iar furnizorul extern nu intră în formular.
-        ("IMP21", SensTva.Achizitie, "declarația vamală nu se declară în 394"),
-        ("IMP21", SensTva.Livrare, "declarația vamală nu se declară în 394"),
-        ("IMP11", SensTva.Achizitie, "declarația vamală nu se declară în 394"),
-        ("IMP11", SensTva.Livrare, "declarația vamală nu se declară în 394"),
-        ("IMPTI21", SensTva.Achizitie, "declarația vamală nu se declară în 394"),
-        ("IMPTI21", SensTva.Livrare, "declarația vamală nu se declară în 394"),
-        ("IMPTI11", SensTva.Achizitie, "declarația vamală nu se declară în 394"),
-        ("IMPTI11", SensTva.Livrare, "declarația vamală nu se declară în 394"),
-    ];
+    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, TipOperatiuneD394? Tip, string Motiv)> TabelD394 =>
+        MapariD394;
 
-    // Lista nemapatelor e parte din CONTRACT (69e/D4-D2): proiecția o citește ca
-    // să deosebească „nemapat deliberat" de „nemapat din greșeală" în `Neincluse`.
-    public static IReadOnlyCollection<(string TipTva, SensTva SensTva, string Motiv)> NemapateD394 =>
-        NemapateDeliberatD394;
-
-    // Idempotent pe PERECHE și cu respectarea ștergerii logice a utilizatorului
-    // (precedentul F5/69b, motivat la `SeedMapareD300`): o mapare ștearsă din
-    // XAF nu se recreează la `--updateDatabase`, dar se SPUNE. Public: ModelCheck
-    // probează re-seed-ul pe funcția reală.
+    // Idempotent pe pereche, cu respectarea ștergerii logice a utilizatorului (F5/69b).
     public static void SeedMapareD394(IObjectSpace os) {
         foreach (var m in MapariD394) {
-            if (!MapareD394.TintaPermisa(m.Tip, m.SensTva))
+            if (!MapareD394.TintaPermisa(m.Tip, m.SensTva) || (m.Tip == null && string.IsNullOrWhiteSpace(m.Motiv)))
                 throw new InvalidOperationException(
-                    $"Tabelul de seed D394 țintește {m.Tip} pentru {m.TipTva}/{m.SensTva} — AI/N nu se mapează, "
-                    + "iar tipul trebuie să fie coerent cu sensul (D4-D2).");
+                    $"Tabelul de seed D394 are {m.TipTva}/{m.SensTva} → {CoerentaMapariTva.Eticheta(m.Tip)}: "
+                    + "ținta trebuie să fie coerentă cu sensul, iar excluderea cere motiv (D4-D2, 123 a).");
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == m.TipTva)
                 ?? throw new InvalidOperationException(
-                    $"Maparea D394 {m.TipTva}/{m.SensTva} → {m.Tip} nu se poate seed-ui: lipsește din bază tipul de TVA {m.TipTva}.");
+                    $"Maparea D394 {m.TipTva}/{m.SensTva} nu se poate seed-ui: lipsește din bază tipul de TVA {m.TipTva}.");
             var sensTva = m.SensTva;
             ContaSeeder.Aliniaza<MapareD394>(os, $"{m.TipTva}/{m.SensTva}",
                 x => x.TipTvaId == tip.ID && x.SensTva == sensTva, mapare => {
                     mapare.TipTvaId = tip.ID;
                     mapare.SensTva = sensTva;
                     mapare.Tip = m.Tip;
+                    mapare.Motiv = m.Motiv;
                 });
         }
     }
@@ -862,29 +849,23 @@ internal static class ProfilPrivat {
             .Select(c => (Guid.Parse(c["TipTvaId"]), Enum.Parse<SensTva>(c[nameof(MapareD300.SensTva)])))
             .ToHashSet();
 
-    // Geamăna lui `GoluriMapariD300` (F23-D8).
+    // Geamăna lui `GoluriMapariD300` (F23-D8): fiecare pereche a tabelului e mapată, exclusă sau ștearsă de utilizator.
     internal static IReadOnlyList<string> GoluriMapariD394(
             IObjectSpace os, IReadOnlyCollection<MapareD394> mapari) {
         var goluri = new List<string>();
-        var coduri = MapariD394.Select(m => m.TipTva)
-            .Concat(NemapateDeliberatD394.Select(n => n.TipTva)).Distinct().ToList();
         var stersDeUtilizator = PerechiRefuzate<MapareD394>(os);
-        foreach (var cod in coduri) {
+        foreach (var cod in MapariD394.Select(m => m.TipTva).Distinct()) {
             var tip = os.FirstOrDefault<TipTva>(t => t.Cod == cod);
             if (tip == null) {
                 goluri.Add($"Tabelul de mapare D394 referă tipul de TVA {cod}, care nu există în bază.");
                 continue;
             }
-            foreach (var sensTva in new[] { SensTva.Achizitie, SensTva.Livrare }) {
-                if (mapari.Any(m => m.TipTvaId == tip.ID && m.SensTva == sensTva))
-                    continue;
-                if (stersDeUtilizator.Contains((tip.ID, sensTva)))
-                    continue;
-                if (!NemapateDeliberatD394.Any(n => n.TipTva == cod && n.SensTva == sensTva))
+            foreach (var sensTva in new[] { SensTva.Achizitie, SensTva.Livrare })
+                if (!mapari.Any(m => m.TipTvaId == tip.ID && m.SensTva == sensTva)
+                        && !stersDeUtilizator.Contains((tip.ID, sensTva)))
                     goluri.Add(
-                        $"Tipul de TVA {cod} nu are mapare D394 pe sensul {sensTva} și nici nu e declarat nemapat "
-                        + "deliberat — operațiunile lui ar cădea tăcut în afara declarației.");
-            }
+                        $"Tipul de TVA {cod} nu are mapare D394 pe sensul {sensTva}, nici ca excludere — "
+                        + "operațiunile lui ar opri fișierul D394.");
         }
         return goluri;
     }

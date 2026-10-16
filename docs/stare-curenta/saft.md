@@ -187,5 +187,5 @@ funcțională declarată în [limitele curente](limite-curente.md). (74d, 74e)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (5; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103, 122.
+Deciziile care numesc pagina în `Arii:` (5; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103, 122 (amendată de 123).
 <!-- /gen:decizii -->

@@ -351,13 +351,13 @@ static class VerificaF24Seed {
             var imp = os.FirstOrDefault<TipTva>(t => t.Cod == "IMP");
             var nim = os.FirstOrDefault<TipTva>(t => t.Cod == "NIM");
             var nemapateImp = ContaSeeder.NemapateD300Privat.Count(n => n.TipTva == "IMP");
-            var nemapateImp394 = ContaSeeder.NemapateD394Privat.Count(n => n.TipTva == "IMP");
+            var nemapateImp394 = ContaSeeder.MapariD394Privat.Count(n => n.TipTva == "IMP" && n.Tip == null && n.Motiv != null);
             Console.WriteLine($"     MĂSURAT (F24-V8/privat): {deSeed} tipuri TVA de seed, {active} active; "
                 + $"IMP = {(imp == null ? "<lipsă>" : $"cotă {imp.Cota}, regim {imp.Regim}, activ {imp.Activ}, "
                     + $"SAF-T achiziție {imp.CodSafTAchizitie ?? "<null>"}")}; "
                 + $"NIM SAF-T achiziție = {nim?.CodSafTAchizitie ?? "<null>"}; "
                 + $"{ContaSeeder.ImpliciteTvaPrivat.Count} implicite în tabel, {implicite} în bază; "
-                + $"IMP nemapat deliberat: {nemapateImp} pe D300, {nemapateImp394} pe D394; "
+                + $"IMP nemapat deliberat pe D300: {nemapateImp}, exclus din D394: {nemapateImp394}; "
                 + $"{goluri.Count} goluri de mapare.");
             s.Check("F24-V8 (privat) tipul `IMP` e rând de nomenclator sub un regim EXISTENT (83g): cotă 0, regim "
                 + "Neimpozabil, activ, fără cod SAF-T — nomenclatorul ANAF n-are cod pentru factura furnizorului "
@@ -368,7 +368,7 @@ static class VerificaF24Seed {
                 && nim != null && nim.CodSafTAchizitie == "308302"
                 && deSeed == 15);
             s.Check("F24-V8 (privat) golul se închide cu RÂND și cu MOTIV: unsprezece implicite de politică, iar `IMP` e "
-                + "declarat nemapat deliberat pe AMBELE sensuri și în D300 („din DVI”), și în D394 („partener "
+                + "declarat nemapat deliberat pe AMBELE sensuri în D300 („din DVI”) și exclus cu motiv din D394 („partener "
                 + "extra-UE nu se declară”) — gardienii de profil rămân verzi prin liste, nu prin excepție în cod",
                 ContaSeeder.ImpliciteTvaPrivat.Count == 11 && implicite == 11
                 && nemapateImp == 2 && nemapateImp394 == 2 && goluri.Count == 0);

@@ -1,6 +1,6 @@
 # Politici
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Configurarea profilului, implicitele, proveniența și explicarea configurației.
 
@@ -32,8 +32,8 @@ tabelele de politici au editor React; `Cont` rămâne doar citire pe OData. (81e
 | Numerotare | Serie nevidă, următorul număr cel puțin 1; formatul opțional folosește argumentele număr și serie (81e) |
 | Scadență | Număr de zile nenegativ (81e) |
 | Închidere TVA | Cele patru conturi sunt toate completate sau toate absente (81e) |
-| Mapare D300 | Destinații de operații; fără mapare simultană la un rând și un strămoș al său (69b, 81e) |
-| Mapare D394 | Operația și sensul trebuie să formeze o combinație permisă (71c, 81e) |
+| Mapare D300 | Destinații de operații; fără mapare simultană la un rând și un strămoș al său; rândul e coerent cu maparea D394 a perechii (69b, 81e, 123 b) |
+| Mapare D394 | Operația și sensul trebuie să formeze o combinație permisă; fără operație, motivul excluderii e obligatoriu; ținta e coerentă cu rândurile D300 ale perechii, iar importul se mapează numai ca excludere (71c, 81e, 123 a, b) |
 | Politică de amortizare | Un rând per tip material de clasă de imobilizări (natura verificată la commit): contul de amortizare, cheltuiala cu amortizarea și cheltuiala la cedare; fișa fără politică blochează generarea lunară și ieșirea (87d) |
 | Regulă de deductibilitate | Categoria fiscală, felul (plafon lunar sau procent), valoarea, valabilitatea de la o dată cu temei; aplicată doar utilizării neexclusive când e marcată așa (87d) |
 | Închidere de perioadă | Un singur rând per fel de constatare; gardianul refuză al doilea înaintea indexului unic (F27-D2) |
@@ -97,5 +97,5 @@ calculului. Panoul `/politici/explica` afișează răspunsul fără niciun calcu
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (14; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 4, 20, 51, 52, 69, 71 (amendată de 72), 81, 83 (amendată de 84, 86, 104), 84, 87 (amendată de 97), 102, 104 (amendată de 106), 112, 113.
+Deciziile care numesc pagina în `Arii:` (15; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 4, 20, 51, 52, 69, 71 (amendată de 72), 81, 83 (amendată de 84, 86, 104), 84, 87 (amendată de 97), 102, 104 (amendată de 106), 112, 113, 123.
 <!-- /gen:decizii -->

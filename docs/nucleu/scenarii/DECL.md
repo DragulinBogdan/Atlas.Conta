@@ -1,7 +1,7 @@
 # DECL — declarațiile D300 și D394 în XML
 
 - Tip: catalog
-- Actualizat: 2026-10-15
+- Actualizat: 2026-10-16
 
 Catalogul fixează fișierele de depus ale etapei E2, conform
 [contractului E2](../../api/e2-depunere-xml-contract.md). Proba este
@@ -44,9 +44,15 @@ primesc numerele DCLT101, DCLT102…
 | SC-DECL-12 | Bunurile unui rând își împart rândul rotunjit (122 b), ambele profiluri: cinci bunuri de 0,60 pe un rând de 3 lei → 1, 1, 1, 0, 0 (regula veche dădea −1, 1, 1, 1, 1); 2,60 și −2,40 pe un rând de 0 lei → 2 și −2; 500 de rânduri aleatoare (sămânța 122): lei întregi, suma egală cu rândul, semnul păstrat, abatere sub 2 lei. | acceptat |
 | SC-DECL-13 | Decembrie, privat: FCL N21 100,40 către client și FCL N21 200,40 către furnizor (amândoi tip 1). `DiferenteRotunjire` = [L 21%, 2 rânduri, bază −1, TVA 0]: fișierul are 100 + 200 = 300 de lei, totalul rotunjit o dată 301. XSD și DUK fără erori și fără atenționări. | acceptat |
 | SC-DECL-14 | Fișierul confirmat (122 i), privat: D394 decembrie cu persoane afiliate se reface din `Parametri` cu aceeași amprentă; alți parametri → `DEPUNERE_FISIER_DIFERIT`; telefonul societății schimbat după export → aceeași amprentă (antetul e în parametri); amprenta fără parametri → `DEPUNERE_DATE`; confirmarea păstrează amprenta și parametrii; aceeași cerere e idempotentă. D300 ianuarie cu sold precedent 12,34, temei 2, pro-rata 50 și `bifaInterne` 0 se reface cu aceeași amprentă. | acceptat |
+| SC-DECL-16 | Mapările D300 și D394 sunt coerente (123 a, b), privat. Gardianul de seed refuză: `SDD`/livrare → AI; `SDD`/achiziție → L; `NED21`/livrare exclusă fără motiv; `N21`/livrare → V (D300 o pune pe rd. 9, care permite L, LS); `IMP21`/achiziție → A (importul se mapează numai ca excludere). Excluderea cu motiv trece. Gardianul de editare refuză la salvare D394 `N21`/livrare → V, D300 `N21`/livrare → rd. 13 (D394 e L, rd. 13 permite V), excluderea fără motiv și `IMPTI21`/achiziție → C; o excludere cu alt motiv se salvează. Cele 30 de mapări ale profilului rămân după fiecare probă. | refuzat |
+| SC-DECL-17 | August, privat: FCL N21 50 și FCL SFD 100 (scutită). Fișierul D394 se generează fără refuzuri, XSD v5 și DUK fără erori și fără atenționări; SFD 100 e în `Excluse`, cu motivul, iar `Neincluse` e gol (123 a). În punte, SFD/livrare: D300 100, exclus 100, declarat 0. | acceptat |
+| SC-DECL-18 | FCT N21 200 înregistrată la 02.09 și primită la 28.08, privat. Puntea din august: D300 0, doar în perioada D394 200/42, declarat 200, diferență −200, documentul numit. Puntea din septembrie: D300 200, doar în perioada D300 200/42, declarat 0, diferență 200. Pe aprilie, august și septembrie, fiecare rând se închide (D300 − doar D300 + doar D394 = declarat + exclus + neinclus, bază și TVA), iar declaratul, exclusul și neinclusul din punte sunt sumele `Operatiuni`, `Excluse` și `Neincluse` (123 c). | acceptat |
 | SC-DECL-15 | Corectarea confirmării (122 i), privat, D394 decembrie: reconfirmarea aceleiași versiuni fără fișier înlocuiește confirmarea cu fișier (aceasta rămâne retrasă, cea nouă o numește în `Inlocuieste`); reconfirmarea cu fișier atașează fișierul ulterior; retragerea fără motiv → `DEPUNERE_DATE`; retragerea cu motiv scoate luna din „depusă”; a doua retragere → `DEPUNERE_NECONFIRMATA`. Garda D300 e în SC-CIT-84. | acceptat |
 
 ## Validare
+
+Decizia 123, 2026-10-16: SC-DECL-17 și SC-DECL-18 verzi la `--scenarii DECL privat`
+(`run-verificari/d123/decl-privat.log`); SC-DECL-16 rulează în integrală (`VerificaD394Seed`). Integrala e verde pe ambele profiluri (privat 5599, bugetar 4091, fără FAIL; a doua rulare privată pe aceeași bază, tot verde), în `run-verificari/d123/`. Calea reală, pe o bază nouă din seed (`run-verificari/d123/ui-porneste.ps1`): HTTP D394 august cu SFD în `Excluse` și puntea cu D123-FCT-1; ecranul React D394 cu panoul de excluse și puntea; în XAF, N21/livrare → V refuzat la salvare cu mesajul rândului 9, iar baza rămâne neschimbată.
 
 Discuția deciziei 122, 2026-10-15: SC-DECL-12…14 verzi pe ambele profiluri
 (`run-verificari/20261015-200648-030`); calea HTTP a confirmării cu fișier
