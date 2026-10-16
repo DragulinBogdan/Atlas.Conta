@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Atlas.Conta.BackOffice.Module.Motor;
 
 // Comenzile perioadei (F27-D1/D2).
-public static class PerioadaService {
+public static partial class PerioadaService {
     // `Cheie` = constatarea concretă (acceptarea se dă pe ea), `Fel` = familia (F27-D2).
     // `Fel` e numele membrului `FelConstatareInchidere` pentru constatările DE
     // CONȚINUT și cheia structurală pentru celelalte: blocantele lanțului nu se
@@ -263,6 +263,7 @@ public static class PerioadaService {
         FelConstatareInchidere.DraftInPerioada => "DRAFT-IN-PERIOADA",
         FelConstatareInchidere.RestScadent => "REST-SCADENT",
         FelConstatareInchidere.RezNeinchis => "REZ-NEINCHIS",
+        FelConstatareInchidere.ExSoldRezidual => "EX-SOLD-REZIDUAL",
         _ => fel.ToString().ToUpperInvariant(),
     };
 
@@ -276,17 +277,8 @@ public static class PerioadaService {
         // Verificarea rulează DIN NOU, în tranzacție: raportul pe care l-a citit
         // operatorul e o fotografie, refuzul e al stării de acum (F27-D2).
         var constatari = Verifica(os, an, luna);
-        var acceptateCurate = (acceptate ?? [])
-            .Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).ToHashSet();
-        var neacoperite = constatari
-            .Where(c => c.Severitate == SeveritateConstatare.Blocant
-                || !acceptateCurate.Contains(c.Cheie))
-            .ToList();
-        // Refuzul poartă lista ÎNTREAGĂ, nu doar rândurile vinovate: ecranul o
-        // arată ca să se accepte constatări concrete, nu un flag de forțare.
-        if (neacoperite.Count > 0)
-            throw new OperareException(string.Join("\n",
-                constatari.Select(c => $"{c.Severitate}: {c.Text} [{c.Cheie}]")));
+        var acceptateCurate = Acceptate(acceptate);
+        RefuzaNeacoperite(constatari, acceptateCurate);
 
         var perioada = Gaseste(os, an, luna);
         // Referințele de dinaintea lui P, citite ÎNAINTE ca P să devină închisă.
@@ -306,12 +298,7 @@ public static class PerioadaService {
         perioada.InchisaLa = acum;
         perioada.InchisaPrimaOara ??= acum;
         var rand = Istoric(os, perioada, FelInchiderePerioada.Inchidere, acum, deId, de);
-        // Doar cheile care CORESPUND unei constatări de acum: cele rămase dintr-un
-        // raport vechi s-au ignorat la verificare, deci n-au ce căuta în istoric.
-        var scrise = constatari.Select(c => c.Cheie).Where(acceptateCurate.Contains)
-            .Distinct().OrderBy(c => c, StringComparer.Ordinal).ToArray();
-        if (scrise.Length > 0)
-            rand.Acceptari = JsonSerializer.Serialize(scrise);
+        rand.Acceptari = Acceptari(constatari, acceptateCurate);
         os.CommitChanges();
         tx.Commit();
         return rand;
@@ -328,6 +315,8 @@ public static class PerioadaService {
             erori.Add($"Perioada {Eticheta(an, luna)} nu e definită — nu se poate redeschide.");
         else if (!perioada.Inchisa)
             erori.Add($"Perioada {Eticheta(an, luna)} e deschisă — nu are ce redeschide.");
+        else if (perioada.ExercitiuInchis)
+            erori.Add($"Exercițiul {an} e închis — redeschideți întâi exercițiul, apoi luna {Eticheta(an, luna)}.");
         if (string.IsNullOrWhiteSpace(motiv))
             erori.Add("Redeschiderea unei perioade cere un motiv scris.");
 
@@ -355,6 +344,25 @@ public static class PerioadaService {
         os.CommitChanges();
         tx.Commit();
         return rand;
+    }
+
+    static HashSet<string> Acceptate(IReadOnlyCollection<string> acceptate) =>
+        (acceptate ?? []).Where(c => !string.IsNullOrWhiteSpace(c)).Select(c => c.Trim()).ToHashSet();
+
+    // Refuzul poartă lista ÎNTREAGĂ, nu doar rândurile vinovate: ecranul o
+    // arată ca să se accepte constatări concrete, nu un flag de forțare.
+    static void RefuzaNeacoperite(IReadOnlyList<ConstatareInchidere> constatari, HashSet<string> acceptate) {
+        if (constatari.Any(c => c.Severitate == SeveritateConstatare.Blocant || !acceptate.Contains(c.Cheie)))
+            throw new OperareException(string.Join("\n",
+                constatari.Select(c => $"{c.Severitate}: {c.Text} [{c.Cheie}]")));
+    }
+
+    // Doar cheile care CORESPUND unei constatări de acum: cele rămase dintr-un
+    // raport vechi s-au ignorat la verificare, deci n-au ce căuta în istoric.
+    static string Acceptari(IReadOnlyList<ConstatareInchidere> constatari, HashSet<string> acceptate) {
+        var scrise = constatari.Select(c => c.Cheie).Where(acceptate.Contains)
+            .Distinct().OrderBy(c => c, StringComparer.Ordinal).ToArray();
+        return scrise.Length > 0 ? JsonSerializer.Serialize(scrise) : null;
     }
 
     // `FOR UPDATE` pe rândul perioadei, înaintea oricărei citiri a comenzii

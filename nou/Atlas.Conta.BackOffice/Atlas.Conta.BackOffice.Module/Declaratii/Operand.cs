@@ -48,7 +48,7 @@ public readonly record struct CorectieActivaFapt(decimal Valoare, decimal Recept
 }
 
 /// <summary>Lotul unei linii de corecție valorică și faptele lui; <paramref name="Reper"/> lipsește când lotul n-are linie de intrare sau cont de stoc.</summary>
-public sealed record CorectieValoricaFapt(N.ReperLot? Reper, IReadOnlyList<N.FaptPostat> Fapte);
+public sealed record CorectieValoricaFapt(N.ReperLot? Reper, IReadOnlyList<N.FaptPostat> Fapte, int? ExercitiuInchis);
 
 public sealed record TransformareFapt(N.RolTransformare? Rol, decimal? PretProdus);
 

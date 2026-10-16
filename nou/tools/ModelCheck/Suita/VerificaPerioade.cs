@@ -234,6 +234,12 @@ static class VerificaPerioade {
                 RefuzGardianPer(os)?.Contains("există deja") == true);
         }
         using (var os = s.Provider.CreateObjectSpace()) {
+            var x = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
+            x.ExercitiuInchis = true;
+            s.Check($"PER-V8e ({eticheta}) starea exercițiului e a motorului, ca starea lunii (E3-D7)",
+                RefuzGardianPer(os)?.Contains("doar motorul") == true);
+        }
+        using (var os = s.Provider.CreateObjectSpace()) {
             var p5 = os.FirstOrDefault<PerioadaFiscala>(y => y.An == An && y.Luna == 5);
             var rand = os.CreateObject<InchiderePerioada>();
             rand.PerioadaId = p5.ID;

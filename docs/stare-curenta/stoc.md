@@ -1,6 +1,6 @@
 # Stoc
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-16.** [Index](README.md)
 
 Loturile și evaluarea FIFO, citirea stocului, recepția conexă și diferențele ei, transformarea, descărcarea de gestiune și corecția valorii lotului; plus invarianții cubului și citirile contabile ale lui.
 
@@ -193,6 +193,9 @@ corecție, fără TVA; nu naște lot și nu generează NIR. (119, CV-D1)
   `CoduriRefuz`. Nucleul emite motivul (`MotivCorectieValorica`), iar
   declarantul și materializarea îl traduc prin `CoduriRefuz.Refuz`. Regimul
   pe stare citește aceleași garduri fără a executa comanda. (CV-D7, CV-D10)
+- `CV_AN_INCHIS` se dă pe exercițiul închis, nu pe anul calendaristic: un
+  consum din anul anterior primește cota corecției cât timp exercițiul lui e
+  deschis. (E3-D10)
 
 Regula stă în `Nucleu/Motor/CorectieValorica.cs`; declarația în
 `DeclarantFacturaIntrare.Corectie.cs`; faptele lotului în

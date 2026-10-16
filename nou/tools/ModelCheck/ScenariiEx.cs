@@ -9,7 +9,7 @@ using C = Atlas.Conta.BackOffice.Module.Cub;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 /// <summary>Familia EX (E3): închiderea lunară a conturilor de rezultat, REZ-NEINCHIS, politica și seed-ul.</summary>
-sealed class ScenariiEx(Func<IObjectSpace> deschide, Action<string, bool> check,
+sealed partial class ScenariiEx(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide)
     : ScenaDocumente(deschide, check, privat, inchide, "EX", 1975) {
     DateOnly Sfarsit => new(An, 1, 31);
@@ -23,8 +23,8 @@ sealed class ScenariiEx(Func<IObjectSpace> deschide, Action<string, bool> check,
     FacturaScena Castig(decimal v) {
         var d = Nota(Ianuarie, new LinieNtcScena(ContPartideLiber, Venit, v)); Opereaza(d.Id); return d;
     }
-    Guid Genereaza(int luna = 1) => CuSpatiu(os => {
-        var d = InchidereRezultatService.Genereaza(os, An, luna, Loc)
+    Guid Genereaza(int luna = 1, int? an = null) => CuSpatiu(os => {
+        var d = InchidereRezultatService.Genereaza(os, an ?? An, luna, Loc)
             ?? throw new InvalidOperationException("Scena cere un draft IRZ.");
         os.CommitChanges(); return d.ID;
     });
@@ -51,6 +51,7 @@ sealed class ScenariiEx(Func<IObjectSpace> deschide, Action<string, bool> check,
         Pliere();
         Stale();
         Cronologie();
+        Exercitiu();
     }
 
     void Seed() {

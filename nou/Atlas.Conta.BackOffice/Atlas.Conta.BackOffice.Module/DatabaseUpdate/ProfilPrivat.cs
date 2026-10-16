@@ -1180,9 +1180,8 @@ internal static class ProfilPrivat {
         });
     }
 
-    // Severitatea constatărilor de închidere de perioadă (F27-D2). Privatul e
-    // plătitor de TVA: luna nu se închide fără decontul ei făcut, deci `ItvLipsa`
-    // e BLOCANT. Restul scadent e informativ la cerere, deci `Ignorat` din seed.
+    // Severitatea constatărilor de închidere (F27-D2, E3-D7). Privatul e plătitor de TVA, deci `ItvLipsa`
+    // e BLOCANT; restul scadent e informativ la cerere, deci `Ignorat` din seed.
     static void SeedPoliticiInchiderePerioada(IObjectSpace os) =>
         ContaSeeder.SeedPoliticiInchidere(os, new() {
             [FelConstatareInchidere.ItvLipsa] = SeveritateConstatare.Blocant,
@@ -1190,6 +1189,7 @@ internal static class ProfilPrivat {
             [FelConstatareInchidere.DraftInPerioada] = SeveritateConstatare.Avertisment,
             [FelConstatareInchidere.RestScadent] = SeveritateConstatare.Ignorat,
             [FelConstatareInchidere.RezNeinchis] = SeveritateConstatare.Blocant,
+            [FelConstatareInchidere.ExSoldRezidual] = SeveritateConstatare.Blocant,
         });
 
     // E3-D2, E3-D4: 6 și 7 se închid lunar în 121, fără coordonate; 121 trece în anul nou.

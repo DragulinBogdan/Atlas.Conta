@@ -35,7 +35,8 @@ public sealed partial class DeclarantFacturaIntrare {
             IReadOnlyList<N.AlocareLot> alocari;
             try {
                 alocari = N.CorectieValorica.Aloca(
-                    N.CorectieValorica.Beneficiari(reper, linie.CorectieValorica.Fapte, doc.DataInregistrare), linie.Valoare);
+                    N.CorectieValorica.Beneficiari(reper, linie.CorectieValorica.Fapte, doc.DataInregistrare,
+                        linie.CorectieValorica.ExercitiuInchis), linie.Valoare);
             }
             catch (N.CorectieValoricaRefuzata e) {
                 refuzuri.Add(CoduriRefuz.Refuz(e, linie.Id));

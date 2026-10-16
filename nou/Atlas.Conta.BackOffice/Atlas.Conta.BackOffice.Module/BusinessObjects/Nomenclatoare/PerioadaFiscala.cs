@@ -32,6 +32,15 @@ public class PerioadaFiscala : Editabila {
     [XafDisplayName("Închisă prima oară")]
     public virtual DateTime? InchisaPrimaOara { get; set; }
 
+    // E3-D7: numai pe decembrie; o scrie doar motorul, ca starea lunii.
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Exercițiu închis")]
+    public virtual bool ExercitiuInchis { get; set; }
+
+    [ModelDefault("AllowEdit", "False")]
+    [XafDisplayName("Exercițiu închis la")]
+    public virtual DateTime? ExercitiuInchisLa { get; set; }
+
     [XafDisplayName("Istoric")]
     public virtual ObservableCollection<InchiderePerioada> Istoric { get; set; } = new();
 }
@@ -68,4 +77,6 @@ public class InchiderePerioada : RandRegistru {
 public enum FelInchiderePerioada {
     [XafDisplayName("Închidere")] Inchidere = 1,
     [XafDisplayName("Redeschidere")] Redeschidere = 2,
+    [XafDisplayName("Închiderea exercițiului")] InchidereExercitiu = 3,
+    [XafDisplayName("Redeschiderea exercițiului")] RedeschidereExercitiu = 4,
 }

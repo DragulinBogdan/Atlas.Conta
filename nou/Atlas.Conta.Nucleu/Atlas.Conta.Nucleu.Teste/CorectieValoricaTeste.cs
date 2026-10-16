@@ -133,7 +133,7 @@ public partial class CorectieValoricaTeste {
         cub.Consuma(1m, Z11);
         Assert.Equal((1m, 0.33m, 0.67m, 1m), cub.Stare());
 
-        var alocari = CorectieValorica.Aloca(CorectieValorica.Beneficiari(cub.Reper, cub.Fapte, Z15), 0.02m);
+        var alocari = CorectieValorica.Aloca(CorectieValorica.Beneficiari(cub.Reper, cub.Fapte, Z15, cub.ExercitiuInchis), 0.02m);
         Assert.Equal([(true, 1m, 0.01m), (false, 1m, 0.01m), (false, 1m, 0m)],
             alocari.Select(a => (a.Beneficiar.Stoc, a.Beneficiar.Pondere, a.Valoare)));
         Assert.Equal(Z10, alocari[1].Beneficiar.Fapt.Postare.Coordonate.Data);
@@ -275,17 +275,29 @@ public partial class CorectieValoricaTeste {
     }
 
     [Fact]
-    public void ConsumulDinAnulAnteriorEsteRefuzatDarStoculRamasNu() {
+    public void ConsumulDinExercitiulInchisEsteRefuzatDarStoculRamasNu() {
         var decembrie = new DateOnly(2025, 12, 20);
-        var cub = new CubMic();
+        var cub = new CubMic { ExercitiuInchis = 2025 };
         cub.Receptioneaza(100m, 1000m, decembrie);
         cub.Corecteaza(200m, Z15);
         Assert.Equal((100m, 1200m, 0m, 1200m), cub.Stare());
 
-        var consumat = new CubMic();
+        var consumat = new CubMic { ExercitiuInchis = 2025 };
         consumat.Receptioneaza(100m, 1000m, decembrie);
         consumat.Consuma(60m, decembrie);
         Assert.Equal(MotivCorectieValorica.AnInchis, Refuz(() => consumat.Corecteaza(200m, Z15)));
+    }
+
+    [Fact]
+    public void ConsumulDinAnulAnteriorCuExercitiulDeschisPrimesteCotaLui() {
+        var decembrie = new DateOnly(2025, 12, 20);
+        foreach (var exercitiuInchis in new int?[] { null, 2024 }) {
+            var cub = new CubMic { ExercitiuInchis = exercitiuInchis };
+            cub.Receptioneaza(100m, 1000m, decembrie);
+            cub.Consuma(60m, decembrie);
+            cub.Corecteaza(200m, Z15);
+            Assert.Equal((40m, 480m, 720m, 1200m), cub.Stare());
+        }
     }
 
     [Fact]
@@ -311,7 +323,7 @@ public partial class CorectieValoricaTeste {
     public void ConsumulStornatNuRamanePondere() {
         var cub = Partial();
         cub.Storneaza(cub.Bon, Z11);
-        var beneficiari = CorectieValorica.Beneficiari(cub.Reper, cub.Fapte, Z15);
+        var beneficiari = CorectieValorica.Beneficiari(cub.Reper, cub.Fapte, Z15, cub.ExercitiuInchis);
         Assert.Equal([(true, 100m, 1000m)], beneficiari.Select(b => (b.Stoc, b.Pondere, b.ValoareActiva)));
     }
 

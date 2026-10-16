@@ -22,6 +22,8 @@ static class ProbeBlocajScriere {
         (Modul + "Motor/ImperechereService.cs", "ImperechereService.Sterge", "ștergerea împerecherii"),
         (Modul + "Motor/PerioadaService.cs", "PerioadaService.Inchide", "închiderea perioadei"),
         (Modul + "Motor/PerioadaService.cs", "PerioadaService.Redeschide", "redeschiderea perioadei"),
+        (Modul + "Motor/PerioadaService.Exercitiu.cs", "PerioadaService.InchideExercitiul", "închiderea exercițiului"),
+        (Modul + "Motor/PerioadaService.Exercitiu.cs", "PerioadaService.RedeschideExercitiul", "redeschiderea exercițiului"),
         (Modul + "Api/Perioade/PerioadeApply.cs", "PerioadeApply.Reconstruieste", "reconstrucția snapshot-urilor"),
         (Modul + "Api/Amo/AmoApply.cs", "AmoApply.Genereaza", "generarea amortizării lunare"),
         (Modul + "Api/Amo/AmoApply.cs", "AmoApply.Regenereaza", "regenerarea amortizării lunare"),

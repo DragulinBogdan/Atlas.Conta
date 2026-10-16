@@ -133,7 +133,8 @@
       "AmoLipsa": "Amortizarea lunară lipsește sau nu e operată",
       "DraftInPerioada": "Document în lucru cu data înregistrării în perioadă",
       "RestScadent": "Document operat cu rest scadent în perioadă",
-      "RezNeinchis": "Conturile de rezultat au sold la sfârșitul lunii"
+      "RezNeinchis": "Conturile de rezultat au sold la sfârșitul lunii",
+      "ExSoldRezidual": "Conturile închiderii au sold la sfârșitul exercițiului"
     },
     "FelDeductibilitate": {
       "PlafonLunar": "Plafon lunar",
@@ -141,7 +142,9 @@
     },
     "FelInchiderePerioada": {
       "Inchidere": "Închidere",
-      "Redeschidere": "Redeschidere"
+      "Redeschidere": "Redeschidere",
+      "InchidereExercitiu": "Închiderea exercițiului",
+      "RedeschidereExercitiu": "Redeschiderea exercițiului"
     },
     "FelLinieIesire": {
       "AmortizareCumulata": "Amortizare cumulată",
@@ -1754,6 +1757,8 @@
       "DefaultProperty": null,
       "Membri": {
         "An": "An",
+        "ExercitiuInchis": "Exercițiu închis",
+        "ExercitiuInchisLa": "Exercițiu închis la",
         "ID": "ID",
         "Inchisa": "Închisă",
         "InchisaLa": "Închisă la",

@@ -228,8 +228,8 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
 | Pas | Conținut | Probă | Stare |
 |---|---|---|---|
 | 0 | contractul, scopul E3, rândurile din catalog, textele „1174” corectate; owner pe E3-D7 (31.12) și E3-D9 (seed-ul de pornire) | docskit verde | închis 2026-10-16 |
-| 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; pe o lună închisă de 1C, netul pe cont al liniilor = divergența explicată | implementat 2026-10-16 |
-| 2 | exercițiul pe decembrie: comenzile, constatările, istoricul; rândurile `Anual`; `CV_AN_INCHIS` pe exercițiu | familia `EX`; SC-X-12; teste de nucleu; ModelCheck pe ambele profiluri | — |
+| 1 | `PoliticaInchidereConturi` cu seed-ul; `InchidereRezultat` cu generare, previzualizare, regenerare; `REZ-NEINCHIS`; migrația | familia de scenarii `EX`, definită în acest pas; ModelCheck pe ambele profiluri; pe o lună închisă de 1C, netul pe cont al liniilor = divergența explicată | închis 2026-10-16 (PR #54) |
+| 2 | exercițiul pe decembrie: comenzile, constatările, istoricul; rândurile `Anual`; `CV_AN_INCHIS` pe exercițiu | familia `EX`; SC-X-12; teste de nucleu; ModelCheck pe ambele profiluri | implementat 2026-10-16 |
 | 3 | balanța pe an (E3-D8): proiecția, DTO-ul, openapi, coloana în React | SC-CIT pe doi ani; drift openapi; SAF-T neschimbat pe lunile de probă | — |
 | 4 | XAF: comenzile pe perioadă și exercițiu, lista închiderilor; ușile HTTP cu refuzurile (80) | `refuzuri.ps1` pe host viu; browser | — |
 | 5 | regresia integrală, review advers, decizia, închiderea | integrala pe ambele profiluri; nucleu; HTTP; docskit | — |
@@ -251,7 +251,8 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
 - Seed-ul bugetar păstrează pe 121 și 117 coordonatele notei legacy de
   deschidere (repartitorul, unitatea, proiectul, codurile funcțional și
   economic) plus sursa de finanțare; pe 521.03.00, codurile și sursa (E3-D9).
-  Owner-ul confirmă coordonatele; o schimbare e numai seed.
+  Owner-ul a confirmat coordonatele la 2026-10-16; o schimbare ulterioară e
+  numai seed.
 - Cheia rămâne atomul complet (owner, 2026-10-16), deși 1C închide pe cont:
   nota lui de închidere (121 = 6xx) nu poartă materialul și repartitorul
   postărilor originale. Pe `Atlas.Conta.Import1C.Flax`, ianuarie 2025,
@@ -265,6 +266,26 @@ perioada de ajustare (E3-D6), exercițiul diferit de anul calendaristic.
 - Ușa OData a politicii, ecranul de generare și ușile HTTP ale IRZ sunt ale
   pasului 4; în pasul 1 politica se editează din XAF, iar comenzile au
   stratul `InchidereRezultatApply`.
+
+## Tranșări la pasul 2 (2026-10-16)
+
+- `EX-SOLD-REZIDUAL` e al șaselea fel din politica de închidere
+  (`ExSoldRezidual`), `Blocant` pe ambele profiluri, ca `REZ-NEINCHIS`.
+  Constatările structurale au cheile `DECEMBRIE-NEDEFINIT`,
+  `DECEMBRIE-DESCHIS`, `EXERCITIU-INCHIS` și
+  `EXERCITIU-PRECEDENT-DESCHIS:{an}`; exercițiul precedent cu decembrie
+  nedefinit e închis prin absență, ca la lanțul lunilor.
+- Închiderea exercițiului blochează decembrie anului și pe al anului
+  precedent, iar redeschiderea pe al anului și pe al anului următor, în
+  ordinea anilor, ca o închidere și o redeschidere concurente să nu lase un
+  exercițiu închis după unul deschis.
+- `CV_AN_INCHIS` refuză consumul din orice an până la ultimul exercițiu
+  închis inclusiv. Un an fără decembrie definit nu are exercițiu închis.
+- Proba E3-D9 folosește pe privat rândul 121 → 1171, pe bugetar
+  520.01 → 521.01.00. Rândul privat e numai al scenei: E3-D2 rămâne, seed-ul
+  privat n-are rânduri anuale.
+- Ușile HTTP, comenzile XAF și coloanele noi din DTO-ul perioadei sunt ale
+  pasului 4; openapi nu se schimbă în pasul 2.
 
 ## Regula de oprire
 
