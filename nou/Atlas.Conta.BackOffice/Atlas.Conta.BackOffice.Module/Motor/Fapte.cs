@@ -115,6 +115,7 @@ internal static class Fapte {
         var explicite = linii.OfType<ILinieCuPostareExplicita>().ToList();
         var repartitori = Repartitori(os, [doc.PredatorId, doc.PrimitorId,
             .. explicite.SelectMany(l => new[] { l.RepartitorDebitId, l.RepartitorCreditId }).OfType<Guid>(),
+            .. linii.OfType<ILinieCuDiferentaInventar>().Select(l => l.DiferentaCuleasa().Imputat).OfType<Guid>(),
             .. reguliContare.SelectMany(r => new[] { r.OverrideDebit?.RepartitorId,
                 r.OverrideCredit?.RepartitorId, r.Comun?.RepartitorId }).OfType<Guid>()]);
         var sursa = Sursa(os, doc);

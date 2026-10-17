@@ -43,6 +43,8 @@ Fără TVA, partidă sau valută. Proveniență: regulă, dacă nu se spune altf
 | SC-LDI-19 | Folosinta: Plus LDI MAG2 1/25; anulare/reoperare, apoi storno, lot 0/0; D 303.02.00/C 791.00.00 25 și inverse. | acceptat |
 | SC-LDI-20 | Plus 0,001 bucăți la preț pozitiv 0,001: cantitate 0,001 și valoare rotunjită 0; două postări, fără inventarea unui ban. | acceptat |
 | SC-LDI-21 | Folosinta: Plus MAG2 2/50; corecție după închiderea lunii, noul plus 3/60 pe lot nou; la 31.01 original 2/50, în februarie original 0/0 și nou 3/60. | acceptat |
+| SC-LDI-23 | Operand scris de mână: minus 1/10 cu cauza Imputabilă pe un partener, politica LDI × clasă × Imputabilă pe 461 (urmărește partide): D 461 10 cu partidă pe partener, nicio postare pe cheltuială. Fără politică: `INVENTAR_POLITICA`; imputabilă fără imputat: `INVENTAR_CAUZA`; cauza Perisabilitate pe plus: `INVENTAR_CAUZA`. | acceptat / refuz | 129 (099-r1) | `ProbeLdiOperand` | verificat pe ambele profiluri |
+| SC-LDI-24 | Recepție 10/100; LDI minus 2 cu cauza Imputabilă pe furnizor: C stoc 20, D 461 (bugetar 461.01.09) 20 pe furnizor, cu partidă 20; lotul 8/80. | acceptat | 129 (099-r1) | `ScenariiLdi` / ID | verificat pe ambele profiluri |
 | SC-LDI-22 | Lot OF creat real prin LDI sub politica Magazie; restaurare Folosinta. BTR nou refuză stocul inexistent pe noua cheie. Storno inversează exact 1/25, original intact. | refuz fără fallback / inversare acceptată |
 
 ## Limite

@@ -5,7 +5,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
-public sealed class DeclarantDiferenteInventar : IDeclarant {
+public sealed class DeclarantDiferenteInventar : IDeclarantCuDiferente {
     public static readonly DeclarantDiferenteInventar Instanta = new();
     DeclarantDiferenteInventar() { }
     public bool ConteazaPrinReguli => true;
@@ -20,6 +20,7 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
         var decizii = new List<N.Decizie>();
         var ipoteze = new List<N.Ipoteza>();
         var reguliStoc = new List<N.VersiunePolitica>();
+        var partide = new HashSet<Guid>();
         var solduri = new Dictionary<CheieLotFapt, N.Sold>();
         if (operand.Linii.Count == 0)
             refuzuri.Add(new(CoduriRefuz.LiniiLipsa, "Lista de inventar cere cel puțin o linie.", null));
@@ -51,6 +52,20 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
             }
             else if (lot.LinieIntrareId is Guid origine && proprii.Contains(origine))
                 Refuza(CoduriRefuz.InventarStructuraInvalida, "Minusul nu poate consuma un lot propriu documentului.");
+            // 126: minusul fără cauză e neimputabil; plusul are o singură cauză.
+            var cauza = plus ? CauzaDiferentei.Plus : culeasa.DiferentaInventar.Cauza ?? CauzaDiferentei.Neimputabila;
+            if (plus ? culeasa.DiferentaInventar.Cauza is not (null or CauzaDiferentei.Plus)
+                    : cauza is not (CauzaDiferentei.Perisabilitate or CauzaDiferentei.Imputabila or CauzaDiferentei.Neimputabila))
+                Refuza(CoduriRefuz.InventarCauza, "Cauza diferenței nu este permisă pe această direcție a inventarului.");
+            var imputat = cauza == CauzaDiferentei.Imputabila && culeasa.DiferentaInventar.Imputat is Guid cine
+                ? operand.Repartitori.GetValueOrDefault(cine) : null;
+            if (cauza == CauzaDiferentei.Imputabila && imputat?.Fel is not (N.FelRepartitor.Partener or N.FelRepartitor.Angajat))
+                Refuza(CoduriRefuz.InventarCauza, "Lipsa imputabilă cere partenerul sau angajatul imputat pe linie.");
+            // 126: cheltuiala și plusul rămân pe derivarea tipului din regula de contare; imputarea vine din politică.
+            var politici = cauza == CauzaDiferentei.Imputabila
+                ? operand.PoliticiDiferenta.Where(p => p.Clasa == linie.ClasaId && p.Cauza == cauza).ToList() : null;
+            if (politici is { Count: not 1 })
+                Refuza(CoduriRefuz.InventarPolitica, "Lipsa imputabilă cere o singură politică de diferență pe clasă.");
             var stoc = Potrivire.Stoc(operand.ReguliStoc, linie.Fapt).SelectMany(p => p.Reguli).ToArray();
             if (stoc.Length != 1 || stoc[0].Latura != LaturaDocument.Predator || stoc[0].Semn != 1
                     || stoc[0].TipStoc is not (TipStoc.Magazie or TipStoc.Marfuri or TipStoc.Folosinta))
@@ -59,6 +74,15 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
             if (refuzuri.Count != initial) continue;
             reguliStoc.Add(PoliticiConsumate.Versiunea(stoc[0]));
             var cont = contare!.Value;
+            var contDiferenta = plus ? cont.ContCredit : cont.ContDebit;
+            if (politici?[0] is { } politica) {
+                reguliStoc.Add(PoliticiConsumate.Versiunea(politica));
+                contDiferenta = imputat?.Fel == N.FelRepartitor.Angajat ? politica.ContPersonal ?? politica.Cont : politica.Cont;
+                if (!operand.Conturi.ContainsKey(contDiferenta) || !Partide.Urmareste(operand, contDiferenta)) {
+                    Refuza(CoduriRefuz.InventarPolitica, "Imputarea cere un cont existent, cu urmărire pe partide.");
+                    continue;
+                }
+            }
             var contStoc = plus ? cont.ContDebit : cont.ContCredit;
             if (contStoc != lot.ContImplicitId) {
                 Refuza(CoduriRefuz.ContStocLipsa, "Contul de stoc rezolvat trebuie să fie contul lotului.");
@@ -83,12 +107,20 @@ public sealed class DeclarantDiferenteInventar : IDeclarant {
             var real = new N.Capat { Cont = contStoc, Repartitor = doc.Predator.Coordonata, Produs = lot.ProdusId,
                 Unitate = unitate, Analiza = Contari.Analiza(linie.Analiza,
                     plus ? cont.Regula.OverrideDebit : cont.Regula.OverrideCredit, cont.Regula.Comun) };
-            var virtuala = new N.Capat { Cont = plus ? cont.ContCredit : cont.ContDebit,
+            N.UnitateSold? partida = imputat != null && Partide.Urmareste(operand, contDiferenta)
+                ? Partide.Proprie(operand, contDiferenta, imputat.Id) : null;
+            if (partida != null && partide.Add(partida.Id)) decizii.Add(new N.PartidaDeschisa(linie.Id, partida));
+            var virtuala = new N.Capat { Cont = contDiferenta,
                 Contrapondere = plus ? N.Contrapondere.Inventar : N.Contrapondere.Consum,
+                Repartitor = imputat == null ? null : operand.Repartitor(imputat.Id), Unitate = partida,
                 Produs = lot.ProdusId, Analiza = Contari.Analiza(linie.Analiza,
                     plus ? cont.Regula.OverrideCredit : cont.Regula.OverrideDebit, cont.Regula.Comun) };
             miscari.Add(new(plus ? virtuala : real, plus ? real : virtuala, q, 0m, v, new(doc.Id, linie.Id)));
-            Contari.Decide(cont, linie.Id, decizii);
+            if (politici == null) Contari.Decide(cont, linie.Id, decizii);
+            else {
+                decizii.Add(new N.ContRezolvat(linie.Id, contStoc, (plus ? cont.SursaDebit : cont.SursaCredit).ToString(), cont.Regula.Id));
+                decizii.Add(new N.ContRezolvat(linie.Id, contDiferenta, $"Diferență: {cauza}"));
+            }
         }
         if (refuzuri.Count > 0) return null;
         ipoteze.AddRange(PoliticiConsumate.Ipoteze(operand, decizii, [.. reguliStoc]));

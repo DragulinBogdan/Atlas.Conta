@@ -101,12 +101,21 @@ public class ListaDiferenteInventar : Document {
 // inventariată (hook-ul de mai sus). Pe MINUS câmpurile astea sunt inerte —
 // gardul `NasteLot` le scoate din joc, iar culegerea le golește (F6-D3).
 [Appearance("LDI_Linie_Plus_FaraLot", AppearanceItemType.ViewItem, "Directie = 'Plus'",
-    TargetItems = nameof(Lot), Enabled = false)]
+    TargetItems = nameof(Lot) + ";" + nameof(CauzaDiferentei) + ";" + nameof(PartenerDiferenta), Enabled = false)]
+[Appearance("LDI_Linie_FaraImputat", AppearanceItemType.ViewItem, "CauzaDiferentei <> 'Imputabila' Or CauzaDiferentei Is Null",
+    TargetItems = nameof(PartenerDiferenta), Enabled = false)]
 [Appearance("LDI_Linie_Minus_FaraCulegere", AppearanceItemType.ViewItem, "Directie = 'Minus'",
     TargetItems = nameof(Produs) + ";" + nameof(PretEvaluare) + ";" + nameof(DataExpirare)
         + ";" + nameof(LotFabricatie), Enabled = false)]
 public class ListaDiferenteInventarDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteLot, ILinieCuDiferentaInventar {
-    public Declaratii.DiferentaInventarFapt DiferentaCuleasa() => new(Directie, PretEvaluare);
+    public Declaratii.DiferentaInventarFapt DiferentaCuleasa() => new(Directie, PretEvaluare, CauzaDiferentei, PartenerDiferentaId);
+
+    // 099-r1: cauza minusului; fără ea minusul e neimputabil (126); imputatul numai pe imputabilă.
+    [XafDisplayName("Cauza diferenței")]
+    public virtual CauzaDiferentei? CauzaDiferentei { get; set; }
+    public virtual Guid? PartenerDiferentaId { get; set; }
+    [XafDisplayName("Imputat"), EditorAlias(EditorAliases.LookupPropertyEditor)]
+    public virtual Repartitor PartenerDiferenta { get; set; }
     // Direcția explicită (testul bazei §4) — se materializează în semnul
     // Cantitate-ii din bază la operare; UI-ul culege cantitatea pozitivă.
     [XafDisplayName("Direcție")]

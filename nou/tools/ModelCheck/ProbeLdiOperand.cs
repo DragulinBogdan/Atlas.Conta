@@ -29,10 +29,13 @@ static class ProbeLdiOperand {
             new(Guid.NewGuid(), tip, null, -1, SursaCont.Explicit, cost,
                 SursaCont.TipMaterial, null, true, null, null, null)];
         RegulaStocFapt regula = new(Guid.NewGuid(), LaturaDocument.Predator, null, TipStoc.Magazie, 1, true);
+        var imputare = Guid.NewGuid();
+        var imputat = new RepartitorFapt(Guid.NewGuid(), N.FelRepartitor.Partener, null, default);
+        PoliticaDiferentaFapt[] diferente = [new(clasa, CauzaDiferentei.Imputabila, imputare, null)];
         Operand Operand(params LinieOperand[] linii) => new(doc, linii, contare, [regula], null,
-            new Dictionary<Guid, TipTvaFapt>(), new Dictionary<Guid, ContFapt>(),
+            new Dictionary<Guid, TipTvaFapt>(), new Dictionary<Guid, ContFapt> { [imputare] = new(imputare, "461", true, false) },
             new Dictionary<CheieLotFapt, N.Sold> { [new(m.Lot!.Id, stoc, m.Lot.ProdusId, gest)] = new(50m, 0m, 5m, 0m) }, null, [], null, null, null,
-            new(2015, 1));
+            new(2015, 1)) { PoliticiDiferenta = diferente, Repartitori = new Dictionary<Guid, RepartitorFapt> { [imputat.Id] = imputat } };
         foreach (var conventie in new[] { MidpointRounding.ToEven, MidpointRounding.AwayFromZero }) {
             N.Contract Contract(Operand o) {
                 var refuzuri = new List<N.Refuz>(); var rot = new N.Rotunjire(conventie);
@@ -51,6 +54,17 @@ static class ProbeLdiOperand {
                 && valid.Tranzactii[0].Postari.Single(x => x.Coordonate.Cont == venit).Valoare == 20
                 && valid.Tranzactii[0].Postari.Single(x => x.Coordonate.Cont == cost).Valoare == 10);
             Refuza("tip", Operand(p with { TipMaterialId = Guid.NewGuid() }), CoduriRefuz.ProdusAltTip);
+            var imputabila = m with { DiferentaInventar = m.DiferentaInventar! with { Cauza = CauzaDiferentei.Imputabila, Imputat = imputat.Id } };
+            var imputata = Contract(Operand(imputabila));
+            check($"SC-LDI-23/{conventie}: minusul imputabil merge pe contul politicii, cu partidă pe imputat; cheltuiala nu se atinge",
+                imputata.EsteAcceptat && imputata.Tranzactii[0].Postari.Single(x => x.Coordonate.Cont == imputare) is { Valoare: 10 } pi
+                && pi.Coordonate.Unitate is { Fel: N.FelUnitate.Partida }
+                && !imputata.Tranzactii[0].Postari.Any(x => x.Coordonate.Cont == cost));
+            Refuza("politica", Operand(imputabila) with { PoliticiDiferenta = [] }, CoduriRefuz.InventarPolitica);
+            Refuza("cauza pe plus", Operand(p with { DiferentaInventar = p.DiferentaInventar! with { Cauza = CauzaDiferentei.Perisabilitate } }),
+                CoduriRefuz.InventarCauza);
+            Refuza("imputat lipsă", Operand(m with { DiferentaInventar = m.DiferentaInventar! with { Cauza = CauzaDiferentei.Imputabila } }),
+                CoduriRefuz.InventarCauza);
             Refuza("produs", Operand(p with { ProdusId = Guid.NewGuid() }), CoduriRefuz.ProdusAltTip);
             Refuza("natura", Operand(p with { Natura = NaturaClasa.Serviciu }), CoduriRefuz.NaturaNepotrivita);
             Refuza("cont", Operand(p with { ContImplicitTipId = null }), CoduriRefuz.RegulaContareLipsa);

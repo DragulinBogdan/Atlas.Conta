@@ -19,6 +19,8 @@ public static class CoduriRefuz {
     public const string ReceptieStructuraInvalida = "RECEPTIE_STRUCTURA_INVALIDA";
     public const string InventarStructuraInvalida = "INVENTAR_STRUCTURA_INVALIDA";
     public const string InventarStocNeacoperit = "INVENTAR_STOC_NEACOPERIT";
+    public const string InventarCauza = "INVENTAR_CAUZA";
+    public const string InventarPolitica = "INVENTAR_POLITICA";
     public const string AsamblareNebalansata = "ASAMBLARE_NEBALANSATA";
     public const string AsamblareStructuraInvalida = "ASAMBLARE_STRUCTURA_INVALIDA";
     public const string AsamblareProdusNepozitiv = "ASAMBLARE_PRODUS_NEPOZITIV";

@@ -82,7 +82,7 @@ sealed partial class ScenariiLdi(Func<IObjectSpace> deschide, Action<string, boo
         var stamp = Amprenta(plus.Id);
         Refuza("SC-LDI-04", () => Storneaza(plus.Id, Ianuarie), "Operat");
         Verifica("SC-LDI-04", "repetarea nu scrie", stamp == Amprenta(plus.Id));
-        Mixt(); Rotunjiri(); Dependenti(); Refuzuri(); Performanta(); Marfuri();
+        Mixt(); Rotunjiri(); Dependenti(); Refuzuri(); Performanta(); Marfuri(); Imputabila();
         var dupaInchidereFolosinta = Folosinta();
         var corectie = Culege(new Linie(DirectieDiferenta.Plus, 2, 15)); Opereaza(corectie.Id);
         var intarziat = Culege(new Linie(DirectieDiferenta.Plus, 1, 10));
@@ -101,6 +101,26 @@ sealed partial class ScenariiLdi(Func<IObjectSpace> deschide, Action<string, boo
     }
 
     N.Contract Contract(Guid id) => CuSpatiu(os => Contractare.Contracteaza(os, os.GetObjectByKey<Document>(id)));
+
+    // 126, 099-r1: minusul imputabil merge pe contul politicii, cu partidă pe imputat; stocul iese evaluat din sold.
+    void Imputabila() {
+        var lot = Receptioneaza(new LinieFctScena(10, 10)).Linii[0];
+        var ldi = Culege(new Linie(DirectieDiferenta.Minus, 2, Lot: lot));
+        Comanda(os => {
+            var l = os.GetObjectByKey<ListaDiferenteInventarDetaliu>(ldi.Linii[0].Id);
+            l.CauzaDiferentei = CauzaDiferentei.Imputabila; l.PartenerDiferentaId = Furnizor; os.CommitChanges();
+        });
+        Opereaza(ldi.Id);
+        var imputare = Privat ? "461" : "461.01.09";
+        Verifica("SC-LDI-24", $"minus imputabil 2/20: C stoc 20, D {imputare} 20 pe furnizor, fără cheltuială", CuSpatiu(os => {
+            var postari = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == ldi.Id).ToList();
+            return postari.Count == 2 && postari.Any(p => p.Cont == Cont(imputare) && p.Sens == N.Sens.Debit && p.Valoare == 20
+                    && p.Repartitor == Furnizor && p.FelUnitate == N.FelUnitate.Partida)
+                && postari.Any(p => p.Cont == Cont(Stoc) && p.Sens == N.Sens.Credit && p.Valoare == 20);
+        }));
+        SoldPartida("SC-LDI-24", Partida(ldi.Id, imputare)!.Value, Ianuarie, 20);
+        Sold("SC-LDI-24", lot, 8, 80);
+    }
 
     void Mixt() {
         var lot = Receptioneaza(new LinieFctScena(5, 20)).Linii[0];

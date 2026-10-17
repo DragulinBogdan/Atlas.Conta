@@ -4,6 +4,22 @@ using DevExpress.ExpressApp;
 namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 
 internal static class SeedDiferente {
+    // 099-r1 (126): imputarea minusului de inventar, ca la NIR; cheltuiala și plusul rămân pe regula de contare.
+    internal static void LDI(IObjectSpace os, string imputat, string personal, params string[] clase) {
+        var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == "LDI");
+        Guid Cont(string simbol) => os.FirstOrDefault<Cont>(c => c.Simbol == simbol)?.ID
+            ?? throw new InvalidOperationException($"Politica LDI cere contul {simbol} în profil.");
+        foreach (var cod in clase) {
+            var clasa = os.FirstOrDefault<ClasaProdus>(c => c.Cod == cod)
+                ?? throw new InvalidOperationException($"Clasa {cod} lipsește din profil.");
+            ContaSeeder.Aliniaza<PoliticaDiferenta>(os, $"LDI/{CauzaDiferentei.Imputabila}/{cod}",
+                p => p.TipDocumentId == tip.ID && p.ClasaId == clasa.ID && p.Cauza == CauzaDiferentei.Imputabila, p => {
+                    p.TipDocumentId = tip.ID; p.ClasaId = clasa.ID; p.Cauza = CauzaDiferentei.Imputabila;
+                    p.ContId = Cont(imputat); p.ContPersonalId = Cont(personal);
+                });
+        }
+    }
+
     // T-r2: reziduul lotului golit de retur; minusul e neimputabil, plusul e venit.
     internal static void Reziduu(IObjectSpace os, string codTip, string minus, string plus, params string[] clase) {
         var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == codTip);

@@ -9,9 +9,16 @@ public static class NormalizariTip {
     public static void Aplica(IObjectSpace os, Document doc) {
         switch (doc) {
             case ListaDiferenteInventar ldi:
-                foreach (var linie in Vii(os, ldi).OfType<ListaDiferenteInventarDetaliu>())
+                foreach (var linie in Vii(os, ldi).OfType<ListaDiferenteInventarDetaliu>()) {
                     if (linie.Directie == DirectieDiferenta.Minus)
                         GolesteIntrarea(linie);
+                    else
+                        linie.CauzaDiferentei = null;
+                    if (linie.CauzaDiferentei != CauzaDiferentei.Imputabila) {
+                        linie.PartenerDiferenta = null;
+                        linie.PartenerDiferentaId = null;
+                    }
+                }
                 break;
             case Asamblare asm:
                 foreach (var linie in Vii(os, asm).OfType<AsamblareDetaliu>()) {

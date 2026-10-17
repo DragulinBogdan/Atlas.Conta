@@ -43,7 +43,12 @@ Loturile și evaluarea FIFO, citirea stocului, recepția conexă și diferențel
 
 Cititorul de lot folosește cheia lot/cont/produs/gestiune, cu Transfer și
 inversele lui; gestiunea lotului e repartitorul postării cu lot.
-BCS/BTR/DSC/LDI/ASM evaluează ieșirile din soldul cubului. FIFO și pinurile
+BCS/BTR/DSC/LDI/ASM evaluează ieșirile din soldul cubului. Linia de minus a
+listei de inventar culege cauza diferenței: fără ea minusul e neimputabil;
+perisabilitatea și neimputabila se contează pe cheltuiala derivată din tip
+(regula de contare), imputabila pe contul politicii de diferențe LDI × clasă
+(461, iar pe bugetar 428 pentru angajați), cu partidă pe imputat. Plusul
+rămâne pe venitul regulii (7588 / 791). (129) FIFO și pinurile
 DSC folosesc data înregistrării și coordonatele complete. Raportul de stoc
 arată contul, gestiunea și costul unitar din sold; etichetele lipsă nu
 elimină sumele. Postările marcate cu contrapondere n-au lot, deci nu intră în
@@ -223,5 +228,5 @@ Regula stă în `Nucleu/Motor/CorectieValorica.cs`; declarația în
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (20; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124, 125 (propusă), 126 (propusă), 127 (propusă), 128 (propusă).
+Deciziile care numesc pagina în `Arii:` (21; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124, 125 (propusă), 126 (propusă), 127 (propusă), 128 (propusă), 129 (propusă).
 <!-- /gen:decizii -->
