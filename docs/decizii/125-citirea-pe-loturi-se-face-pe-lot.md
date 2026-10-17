@@ -1,8 +1,8 @@
 # 125 — Citirea de sold pe o listă de loturi se face pe lot, nu pe fereastra de dată
 
 - Data: 2026-10-16
-- Stare: propusă
-- Execuție: firul import-1c-perf: (a)–(b) felia 1 (PR #60, mersă 2026-10-16, dda393a2); (c)–(d) felia 2, branch `import-1c-perf-cpu`; măsurat pe Import1C ianuarie–martie 2025, pe 5446, bază nouă la fiecare rulare (`run-verificari/profilare-import/b0`, `b1`, `b2`)
+- Stare: activă
+- Execuție: firul import-1c-perf: (a)–(b) felia 1 (PR #60, mersă 2026-10-16, dda393a2); (c)–(d) felia 2, branch `import-1c-perf-cpu`; măsurat pe Import1C ianuarie–martie 2025, pe 5446, bază nouă la fiecare rulare (`run-verificari/profilare-import/b0`, `b1`, `b2`); owner-ul a aprobat decizia la 2026-10-17
 - Arii: stoc, import
 - Amendează: —
 - Închide: 107-r6, 125-r1, 125-r2
@@ -58,3 +58,4 @@ Fără review advers: schimbarea e locală citirii, iar echivalența e probată 
 
 - 2026-10-16: scrisă la pasul 1 al firului import-1c-perf; propusă owner-ului.
 - 2026-10-16: (c)–(d) adăugate la felia 2 (micro-corecturi, la alegerea owner-ului); 125-r1 și 125-r2 închise, 125-r3 intrată.
+- 2026-10-17: aprobată de owner; trece în `activă`.

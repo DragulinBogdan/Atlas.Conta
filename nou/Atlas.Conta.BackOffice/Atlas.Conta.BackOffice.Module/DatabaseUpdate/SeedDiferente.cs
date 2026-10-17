@@ -4,7 +4,7 @@ using DevExpress.ExpressApp;
 namespace Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 
 internal static class SeedDiferente {
-    // 099-r1 (126): imputarea minusului de inventar, ca la NIR; cheltuiala și plusul rămân pe regula de contare.
+    // 099-r1 (129): imputarea minusului de inventar, ca la NIR; cheltuiala și plusul rămân pe regula de contare.
     internal static void LDI(IObjectSpace os, string imputat, string personal, params string[] clase) {
         var tip = os.FirstOrDefault<TipDocument>(t => t.Cod == "LDI");
         Guid Cont(string simbol) => os.FirstOrDefault<Cont>(c => c.Simbol == simbol)?.ID

@@ -1,8 +1,8 @@
 # 128 — Golirea lotului prin retur la furnizor trece reziduul pe politica de diferențe
 
 - Data: 2026-10-17
-- Stare: propusă
-- Execuție: firul „rotund”, felia R3 (2026-10-17), branch `rotund-r3`; ModelCheck integral verde pe ambele profiluri
+- Stare: activă
+- Execuție: firul „rotund”, felia R3 (2026-10-17), branch `rotund-r3`; ModelCheck integral verde pe ambele profiluri; owner-ul a aprobat decizia la 2026-10-17
 - Arii: stoc, motor, politici
 - Amendează: —
 - Închide: T-r2
@@ -35,3 +35,4 @@ Nimic nou. Importul 1C va întâlni goliri cu reziduu pe RLF; ele trec acum pe 6
 ## Istoric
 
 - 2026-10-17: scrisă la felia R3 a firului „rotund”; propusă owner-ului.
+- 2026-10-17: aprobată de owner; trece în `activă`.

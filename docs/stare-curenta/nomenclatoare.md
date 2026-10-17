@@ -67,5 +67,5 @@ iar refuzurile de domeniu 422. (72c, 72e)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (4; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 72, 73 (amendată de 74, 105), 122 (amendată de 123), 127 (propusă).
+Deciziile care numesc pagina în `Arii:` (4; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 72, 73 (amendată de 74, 105), 122 (amendată de 123), 127.
 <!-- /gen:decizii -->

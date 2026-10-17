@@ -26,7 +26,7 @@
 
 ## Tranșări
 
-- Abatere de la „conturile ca la NIR” pe cheltuială, cu motiv: maparea NIR e pe clasă (de ex. OF → 603.00.00 pe bugetar), iar LDI conta pe tip (303.02.00 → 603.02.00), la fel ca BCS pe lanțul Folosință (093). Mutarea pe clasă ar fi schimbat contul și ar fi rupt lanțul; owner-ul a cerut conturile neschimbate. Pe imputare maparea NIR se aplică întocmai.
+- Abatere de la „conturile ca la NIR” pe cheltuială, cu motiv: maparea NIR e pe clasă (de ex. OF → 603.00.00 pe bugetar), iar LDI conta pe tip (303.02.00 → 603.02.00), la fel ca BCS pe lanțul Folosință (093). Mutarea pe clasă ar fi schimbat contul și ar fi rupt lanțul. Pe imputare maparea NIR se aplică întocmai. Răspunsul inițial al owner-ului („conturile minusului = maparea NIR pe ambele profiluri”, „plusul mutat în politica de diferențe”) a fost depășit de această tranșare; owner-ul a confirmat abaterea la 2026-10-17.
 - Plusul nu trece pe politica de diferențe: aceleași conturi stau deja în regula de contare, iar mutarea n-ar adăuga nimic.
 
 ## Ce rămâne deschis
@@ -36,3 +36,4 @@
 ## Istoric
 
 - 2026-10-17: scrisă la felia R4 a firului „rotund”; propusă owner-ului.
+- 2026-10-17: owner-ul confirmă abaterea de la răspunsul inițial (cheltuiala pe tip, plusul pe regula de contare).

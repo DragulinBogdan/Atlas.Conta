@@ -1,8 +1,8 @@
 # 127 — Validarea judecă lotul fixat, anularea PIF judecă AMO pe lună, produsul cu stoc nu-și schimbă clasa, lotul nu se naște negativ
 
 - Data: 2026-10-17
-- Stare: propusă
-- Execuție: firul „rotund”, felia R1 (2026-10-17), branch `rotund-r1`; ModelCheck integral verde pe ambele profiluri
+- Stare: activă
+- Execuție: firul „rotund”, felia R1 (2026-10-17), branch `rotund-r1`; ModelCheck integral verde pe ambele profiluri; owner-ul a aprobat decizia la 2026-10-17
 - Arii: motor, stoc, imobilizari, nomenclatoare
 - Amendează: —
 - Închide: S-r7, S-r8, F26-r18, NG-r2
@@ -35,3 +35,4 @@ Nimic nou. Liniile negative din Flax (325) sunt întrebări de migrare (091-r4).
 ## Istoric
 
 - 2026-10-17: scrisă la felia R1 a firului „rotund”; propusă owner-ului.
+- 2026-10-17: aprobată de owner; trece în `activă`.

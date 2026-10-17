@@ -84,6 +84,13 @@ descrierea a ce există e în [starea curentă](stare-curenta/README.md).
 
 ## Etapa curentă
 
+**„Rotund” declarat.** La 2026-10-17 PoC-ul s-a oprit
+([decizia 130](decizii/130-rotund-declarat.md)): cele șapte condiții din
+091 (g) și 120 (b) sunt îndeplinite, iar registrul nu mai are restanțe
+`activă`. Etapa următoare e migrarea (091 f): conectorul 1C, deschiderea din
+balanță și reconcilierea, cu contract și decizie proprii; restanțele
+`migrare` din registru sunt intrarea ei.
+
 **E3 — Închiderea exercițiului.** Deschisă 2026-10-16 de owner, aliniată
 cu contractul [E3 — închiderea exercițiului](nucleu/e3-inchiderea-exercitiului-contract.md):
 conturile de venituri și cheltuieli se închid lunar în 121 printr-un
@@ -93,7 +100,7 @@ de an.
 Gata când: fiecare rând `E3` din catalog e `livrată`, adică scenariile
 etapei și SC-X-12 sunt verificate pe ambele profiluri, iar contractul e
 închis cu review-ul advers (pasul 5).
-Stare: închisă 2026-10-16 (decizia 124, PR #54–#58); rândurile `E3` sunt `livrată`. Etapa următoare o fixează owner-ul.
+Stare: închisă 2026-10-16 (decizia 124, PR #54–#58); rândurile `E3` sunt `livrată`.
 Funcționalitățile: rândurile `E3` din [catalog](functionalitati.md).
 
 E2 (depunerea fiscală, contractul
