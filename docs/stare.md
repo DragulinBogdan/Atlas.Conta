@@ -7,7 +7,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 129: 89 active, 35 amendate parțial, 0 depășite, 5 propuse |
-| Restanțe | 403: 276 deschise, 127 închise |
+| Restanțe | 403: 274 deschise, 129 închise |
 | Pagini de stare curentă | 19 |
 | Contracte de felie (`Tip: contract`) | 5, deschise 0 |
 | Cataloage vii (`Tip: catalog`) | 6 |
@@ -46,24 +46,14 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 6 |
-| după PoC | 231 |
+| activă | 2 |
+| după PoC | 233 |
 | migrare | 25 |
 | depășită de 091 | 2 |
 | docs | 8 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (6, prag 45)
-
-**stoc** (3)
-
-- `86-r1` taxele vamale și accizele în costul de achiziție (ajustare de cost pe lot)
-- `86-r2` anularea/stornarea unei FCT legate la o DVI operată nu se refuză
-- `86-r11` DVI ca document stins: restul polimorf în ImperechereService.Total + ramura în DocumenteCuRest
-
-**partide** (1)
-
-- `T-r5` DVI deschide partidă pe contrapartida cu RolTert (401 probat…
+### Lista `activă` (2, prag 45)
 
 **dezvoltare** (1)
 
