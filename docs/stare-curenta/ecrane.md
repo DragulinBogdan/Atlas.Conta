@@ -1,6 +1,6 @@
 # Ecrane
 
-**Actualizat: 2026-10-16.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Formularele React (selectoare, căutare, cache, ecranele fiscale) și ecranele XAF Blazor (regim, liste, grile de linii), plus harta ecranelor disponibile.
 
@@ -183,7 +183,7 @@ de citire mapată `ToView("PostareVizual")`, fără `BaseObject`, cu cheia `ID`,
 toate coloanele postării și codurile nomenclatoarelor alături (`ContSimbol`,
 `RepartitorCod`, `PartenerFiscalCod`, `LocCod`, `ProdusCod`, `UnitateCod`,
 `DocumentNumar`, `TipTvaCod`, dimensiunile bugetare, `TranzactieFel`);
-view-ul SQL e creat în `InitialCreate`, odată cu tabela, cu `LEFT JOIN` pe
+view-ul SQL e creat de migrația de bază (`Migrations/Sql/PostareVizual.sql`), odată cu tabela, cu `LEFT JOIN` pe
 nomenclatoare — `Repartitori` de trei ori, pentru repartitor, partener fiscal
 și loc — și o expresie pentru unitate (partida = codul repartitorului + data
 deschiderii; lotul = codul produsului + data lotului; fișa = numărul de

@@ -1,6 +1,6 @@
 # Termeni
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Glosarul numește termenii paginilor de stare curentă și trimite la regula
 fiecăruia, fără s-o dubleze. Un termen intră aici la prima lui folosire
@@ -388,7 +388,7 @@ imobilizărilor; reevaluarea e funcționalitate deschisă (F-IMO-04 în
 Singurul registru al faptelor operate: tranzacții și postări append-only,
 complet rezolvate, scrise doar de motorul de operare în tranzacția comenzii,
 partiționate pe spațiu (`Contabil`, `Stoc`; funcție de unitate, nu câmp);
-migrațiile lui se scriu în SQL, peste `InitialCreate`, și nu transformă
+schema lui stă în SQL (`Migrations/Sql`, chemat din migrația de bază), iar migrațiile lui nu transformă
 date. Regula: [motor § Cubul persistat](motor.md#cubul-persistat) (S-D1, S-D2, S-r4, D9-D2, 102b).
 Înrudit: tranzacție, postare. În cod: `Module/Cub/`, `Spatiu`.
 

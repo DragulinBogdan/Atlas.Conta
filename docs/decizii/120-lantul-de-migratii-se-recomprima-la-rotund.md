@@ -2,7 +2,7 @@
 
 - Data: 2026-10-13
 - Stare: activă
-- Execuție: hotărâtă de owner 2026-10-13, la discuția redenumirii coloanei `Latura` de pe `Postare`. Amendează 091 (g); precizează 102 (e) și 110 (i). Recomprimarea finală nu este făcută
+- Execuție: hotărâtă de owner 2026-10-13, la discuția redenumirii coloanei `Latura` de pe `Postare`. Amendează 091 (g); precizează 102 (e) și 110 (i). Recomprimarea finală făcută la 2026-10-17 (firul „rotund”, R7): `20261017101337_InitialCreate`, `Migrations/Sql`, proba `compara-scheme.ps1`
 - Arii: dezvoltare, verificare
 - Amendează: 91 (g)
 - Docs: `docs/stare-curenta/dezvoltare.md`; precedentele: 102-r1 (C102), D9-D6 din `docs/nucleu/tr-d9-taierea-contract.md`, C111-D7 din `docs/nucleu/c111-coordonate-contract.md`.
@@ -37,5 +37,10 @@ Lanțul a fost recomprimat de trei ori în `InitialCreate`, de fiecare dată cu 
 
 ## Ce rămâne deschis
 
-- **Proba din (c) nu există încă** ca unealtă; se scrie odată cu recomprimarea.
-- **Mutarea din (e) nu este făcută.** SQL-ul stă azi în patru blocuri în `InitialCreate` (tabela `Postare` partiționată cu indecșii ei, `cub_partida_id`, `PostareVizual`). Forma locului (fișiere `.sql` încorporate sau o clasă chemată din migrație) se alege la mutare.
+- [închis 2026-10-17] Proba din (c): `nou/tools/ModelCheck/scripts/compara-scheme.ps1`, cu urmele lanțului listate separat.
+- [închis 2026-10-17] Mutarea din (e): fișiere `.sql` încorporate (`Migrations/Sql`), chemate prin `SqlBaza`.
+
+## Istoric
+
+- 2026-10-13: hotărâtă de owner.
+- 2026-10-17: recomprimarea finală (R7 din firul „rotund”); schema identică cu lanțul vechi, 5 urme `AddColumn`; bazele vii rebazate prin `rebazeaza-istoric.ps1`.
