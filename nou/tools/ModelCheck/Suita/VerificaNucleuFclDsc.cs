@@ -246,7 +246,7 @@ static class VerificaNucleuFclDsc {
                 && ProbeCub.Tranzactii(os, fclPredatorGresit.ID).Count == 0
                 && ProbeCub.Tranzactii(os, fclPrimitorGresit.ID).Count == 0);
 
-            // Bugetarul n-are DSC (tip inert), n-are partide pe creanță și n-are TVA:
+            // Bugetarul n-are DSC (tip inert) și n-are TVA:
             // restul scenei e al profilului privat.
             if (!privat) {
                 CurataNucFclDsc(os);

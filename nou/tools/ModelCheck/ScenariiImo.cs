@@ -145,7 +145,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
     void Suport() {
         var f = Fisa(); var lipsa = Pif(f, initial: 200);
         RefuzDeclaratie("SC-IMO-03", lipsa.Id, CoduriRefuz.SuportInsuficient);
-        Refuza("SC-IMO-03", () => Opereaza(lipsa.Id), CoduriRefuz.SuportInsuficient); FaraEfecte("SC-IMO-03", lipsa.Id);
+        RefuzaOperarea("SC-IMO-03", lipsa.Id, CoduriRefuz.SuportInsuficient); FaraEfecte("SC-IMO-03", lipsa.Id);
         Verifica("SC-IMO-03", "refuzul nu schimbă fișa și nu scrie registrul dual", CuSpatiu(os =>
             os.GetObjectByKey<Imobilizare>(f).Stare == StareImobilizare.Noua));
         var factura = Factura(Ianuarie, new LinieFctScena(1, 1200, Stoc: false, Tip: Activ));
@@ -177,7 +177,7 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
         var p2 = Pif(Fisa(), 800, 800, sursa: factura.Linii[0].Id);
         Opereaza(p1.Id); Opereaza(p2.Id);
         var p3 = Pif(Fisa(), 1, 1, sursa: factura.Linii[0].Id);
-        Refuza("SC-IMO-02", () => Opereaza(p3.Id), "plafon"); FaraEfecte("SC-IMO-02", p3.Id);
+        RefuzaOperarea("SC-IMO-02", p3.Id, "plafon"); FaraEfecte("SC-IMO-02", p3.Id);
         Storneaza(p2.Id, Ianuarie); Storneaza(p1.Id, Ianuarie); Storneaza(factura.Id, Ianuarie);
     }
     void Concurenta() {
@@ -426,16 +426,16 @@ sealed partial class ScenaImo(Func<IObjectSpace> deschide, Action<string, bool> 
     }
     void Refuzuri() {
         SuportNota(); var f = Fisa(); var p = Pif(f, durata: -1);
-        Refuza("SC-IMO-21", () => Opereaza(p.Id), "durat"); FaraEfecte("SC-IMO-21", p.Id);
+        RefuzaOperarea("SC-IMO-21", p.Id, "durat"); FaraEfecte("SC-IMO-21", p.Id);
         Comanda(os => { os.GetObjectByKey<PunereInFunctiuneDetaliu>(p.Linii[0].Id).DurataLuni = 12; os.CommitChanges(); });
         Opereaza(p.Id); var a = Amo(2);
         Comanda(os => { os.GetObjectsQuery<AmortizareLunaraDetaliu>().Single(l => l.DocumentId == a).Valoare += 1; os.CommitChanges(); });
-        Refuza("SC-IMO-21", () => Opereaza(a), "corespund"); FaraEfecte("SC-IMO-21", a);
+        RefuzaOperarea("SC-IMO-21", a, "corespund"); FaraEfecte("SC-IMO-21", a);
         Comanda(os => { os.GetObjectsQuery<AmortizareLunaraDetaliu>().Single(l => l.DocumentId == a).Valoare -= 1; os.CommitChanges(); });
         Opereaza(a); var c = Cas(f, 2);
-        Refuza("SC-IMO-21", () => Opereaza(c), "amortizare"); FaraEfecte("SC-IMO-21", c);
+        RefuzaOperarea("SC-IMO-21", c, "amortizare"); FaraEfecte("SC-IMO-21", c);
         var factura = Factura(Ianuarie, new LinieFctScena(1, 1200, Stoc: false, Tip: Activ));
         var q = Pif(Fisa(), sursa: factura.Linii[0].Id);
-        Refuza("SC-IMO-21", () => Opereaza(q.Id), "operat"); FaraEfecte("SC-IMO-21", q.Id);
+        RefuzaOperarea("SC-IMO-21", q.Id, "operat"); FaraEfecte("SC-IMO-21", q.Id);
     }
 }

@@ -27,7 +27,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         var negativ = Factura(Ianuarie, new LinieFctScena(2, -5));
         Verifica("SC-FCT-17", "dry-run refuză lotul născut negativ", CuSpatiu(os =>
             ComenziDocument.Sistem(os).Valideaza(negativ.Id)).Any(r => r.Contains(CoduriRefuz.LotValoareNegativa)));
-        Refuza("SC-FCT-17", () => Opereaza(negativ.Id), CoduriRefuz.LotValoareNegativa);
+        RefuzaOperarea("SC-FCT-17", negativ.Id, CoduriRefuz.LotValoareNegativa);
         FaraEfecte("SC-FCT-17", negativ.Id);
         var f = Factura(Ianuarie, new LinieFctScena(4, 2.5m));
         var lot = f.Linii[0].Lot!.Value;
@@ -134,7 +134,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             Verifica("SC-FCT-12", "fără cod economic și fără angajament: dry-run refuzat pe contul furnizorului — "
                 + string.Join(" | ", dryRun), dryRun.Count == 1 && dryRun[0].Contains(ContFurnizor)
                 && dryRun[0].Contains("credit") && dryRun[0].EndsWith("cere: Cod economic."));
-            Refuza("SC-FCT-12", () => Opereaza(fara.Id), "cere: Cod economic"); FaraEfecte("SC-FCT-12", fara.Id);
+            RefuzaOperarea("SC-FCT-12", fara.Id, "cere: Cod economic"); FaraEfecte("SC-FCT-12", fara.Id);
             Verifica("SC-FCT-12", "refuzul nu naște NIR conex", CuSpatiu(os =>
                 !os.GetObjectsQuery<Document>().Any(d => d.DocumentSursaId == fara.Id)));
 
@@ -281,7 +281,7 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             RefuzDeclaratie(id, f.Id, cod);
             Verifica(id, "dry-run refuzat", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(f.Id)).Count > 0);
             FaraEfecte(id, f.Id);
-            Refuza(id, () => Opereaza(f.Id), fragment);
+            RefuzaOperarea(id, f.Id, fragment);
             FaraEfecte(id, f.Id);
         }
     }
@@ -322,6 +322,8 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         Storneaza(f.Id, Februarie);
         Postari("SC-FCT-04", f.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(f, 0, 0, 100, 21, tva));
         Postari("SC-FCT-04", f.Id, N.FelTranzactie.Storno, Februarie, Randuri(f, 0, 0, -100, -21, tva, An * 100 + 2));
+        SoldPartida("SC-FCT-04", Partida(f.Id, ContFurnizor)!.Value, new(An, 1, 31), -121);
+        SoldPartida("SC-FCT-04", Partida(f.Id, ContFurnizor)!.Value, Februarie, 0);
         var nou = Corecteaza(c.Id); FaraEfecte("SC-FCT-06", nou);
         Postari("SC-FCT-06", c.Id, N.FelTranzactie.Storno, Februarie, Randuri(c, 0, 0, -100, -21, tva));
         FacturaScena corectie;

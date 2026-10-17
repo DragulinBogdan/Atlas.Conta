@@ -77,7 +77,7 @@ sealed partial class ScenariiNir(Func<IObjectSpace> deschide, Action<string, boo
         Sold("SC-NIR-04", s.Linii[0], 2, 30); Sold("SC-NIR-04", s.Linii[0], 0, 0, Februarie);
         Corectie(original);
         CorectieConexaInchisa();
-        Refuza("SC-NIR-11", () => Opereaza(tarziu.Id), "închis"); FaraEfecte("SC-NIR-11", tarziu.Id);
+        RefuzaOperarea("SC-NIR-11", tarziu.Id, "închis"); FaraEfecte("SC-NIR-11", tarziu.Id);
         Comanda(os => { os.GetObjectByKey<Document>(tarziu.Id).DataInregistrare = Februarie; os.CommitChanges(); });
         Opereaza(tarziu.Id);
         var partida = N.UnitateSold.DeschidePartida(Cont(ContFurnizor), Furnizor, tarziu.Id, Februarie).Id;

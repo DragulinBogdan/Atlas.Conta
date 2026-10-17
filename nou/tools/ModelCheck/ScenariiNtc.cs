@@ -61,7 +61,7 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         foreach (var (doc, cod, mesaj) in new[] { (fara, "LINII_LIPSA", "linie"), (zero, "VALOARE_ZERO", "nenulă"),
                      (cont, "CONT_EXPLICIT_LIPSA", "cont"), (externul, "PREDATOR_NEPOTRIVIT", "PREDATOR_NEPOTRIVIT") }) {
             RefuzDeclaratie("SC-NTC-18", doc.Id, cod);
-            Refuza("SC-NTC-18", () => Opereaza(doc.Id), mesaj); FaraEfecte("SC-NTC-18", doc.Id);
+            RefuzaOperarea("SC-NTC-18", doc.Id, mesaj); FaraEfecte("SC-NTC-18", doc.Id);
         }
     }
 
@@ -79,7 +79,7 @@ sealed class ScenariiNtc(Func<IObjectSpace> deschide, Action<string, bool> check
         SoldPartida("SC-NTC-24", p1, Ianuarie, -60); SoldPartida("SC-NTC-24", p2, Ianuarie, 0);
         var strain = Nota(Ianuarie, new LinieNtcScena(ContFurnizor, Serviciu, 10, PartenerNou(), PartidaDebit: p2));
         RefuzDeclaratie("SC-NTC-25", strain.Id, "PARTIDA_NUMITA_INVALIDA");
-        Refuza("SC-NTC-25", () => Opereaza(strain.Id), "Partida numită"); FaraEfecte("SC-NTC-25", strain.Id);
+        RefuzaOperarea("SC-NTC-25", strain.Id, "Partida numită"); FaraEfecte("SC-NTC-25", strain.Id);
         Storneaza(n1.Id, Ianuarie);
         SoldPartida("SC-NTC-26", p1, Ianuarie, -60); SoldPartida("SC-NTC-26", p2, Ianuarie, -30);
     }

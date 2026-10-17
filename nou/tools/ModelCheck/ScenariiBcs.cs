@@ -92,17 +92,21 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         os.CommitChanges();
     }
 
-    Guid Receptioneaza(decimal cantitate = 10m, decimal pret = 10m) {
+    Guid Receptioneaza(decimal cantitate = 10m, decimal pret = 10m, Guid? produsExistent = null, DateOnly? data = null) {
         Guid facturaId, lotId;
         using (var os = deschide()) {
-            var produs = os.CreateObject<Produs>();
-            produs.Cod = Marcaj + "-" + ++numar;
-            produs.Denumire = produs.Cod;
-            produs.UM = "BUC";
-            produs.TipMaterial = os.GetObjectsQuery<TipMaterial>().Single(t => t.ID == tip);
+            Produs produs;
+            if (produsExistent is Guid existent) produs = os.GetObjectByKey<Produs>(existent);
+            else {
+                produs = os.CreateObject<Produs>();
+                produs.Cod = Marcaj + "-" + ++numar;
+                produs.Denumire = produs.Cod;
+                produs.UM = "BUC";
+                produs.TipMaterial = os.GetObjectsQuery<TipMaterial>().Single(t => t.ID == tip);
+            }
             var fct = os.CreateObject<FacturaIntrare>();
-            fct.Numar = produs.Cod;
-            fct.Data = Intrare;
+            fct.Numar = Marcaj + "-F" + ++numar;
+            fct.Data = data ?? Intrare;
             fct.Predator = os.GetObjectsQuery<Partener>().Single(p => p.ID == furnizor);
             fct.Primitor = os.GetObjectsQuery<Gestiune>().Single(g => g.ID == magazie);
             var linie = os.CreateObject<FacturaIntrareDetaliu>();
@@ -297,6 +301,16 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         Comanda(os => ComenziDocument.Sistem(os).Opereaza(ultima));
         Postari("SC-BCS-07", ultima, N.FelTranzactie.Operare, new(An, 1, 11), (lot, 2m, 0.67m));
         Sold("SC-BCS-07", lot, Sfarsit, 0m, 0m);
+        var produs = Citeste(os => os.GetObjectByKey<Lot>(lot).ProdusId);
+        var reintrare = Receptioneaza(2m, 5m, produs, new(An, 1, 20));
+        var dupa = Culege(new(An, 1, 21), (reintrare, 1m));
+        Comanda(os => ComenziDocument.Sistem(os).Opereaza(dupa));
+        Postari("SC-BCS-07", dupa, N.FelTranzactie.Operare, new(An, 1, 21), (reintrare, 1m, 5m));
+        Sold("SC-BCS-07", lot, Sfarsit, 0m, 0m);
+        Sold("SC-BCS-07", reintrare, Sfarsit, 1m, 5m);
+        Verifica("SC-BCS-07", "re-intrarea pe produsul golit: FIFO oferă numai lotul nou", Citeste(os =>
+            C.Citiri.Loturi.Disponibile(os, C.Citiri.CitireCumul.Integrala, Sfarsit, produs, magazie, credit)
+                .Select(s => s.LotId).ToList() is [var singur] && singur == reintrare));
 
         var dual = Receptioneaza(3m, 3.333333m);
         var valori = new[] { 3.33m, 3.34m, 3.33m };

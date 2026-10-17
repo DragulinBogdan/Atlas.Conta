@@ -82,7 +82,7 @@ sealed partial class ScenariiNir {
         }
         foreach (var cauza in new[] { CauzaDiferentei.Imputabila, CauzaDiferentei.Plus }) {
             var (_, nc) = Constatat(3, cauza);
-            Refuza("SC-NIR-21/refuz", () => Opereaza(nc), DeclarantNir.CauzaInvalida); FaraEfecte("SC-NIR-21/refuz", nc);
+            RefuzaOperarea("SC-NIR-21/refuz", nc, DeclarantNir.CauzaInvalida); FaraEfecte("SC-NIR-21/refuz", nc);
         }
         var (fi, ni) = Constatat(3, CauzaDiferentei.Imputabila, Client); Opereaza(ni);
         Delta("SC-NIR-22", ni, Imputat, 25);
@@ -162,7 +162,7 @@ sealed partial class ScenariiNir {
         Schimba(nir, 0);
         Verifica("SC-NIR-stoc", "dry-run vede consumul existent", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(nir))
             .Any(e => e.Contains(C.ReceptiiConexe.Stoc)));
-        Refuza("SC-NIR-stoc", () => Opereaza(nir), C.ReceptiiConexe.Stoc); FaraEfecte("SC-NIR-stoc", nir);
+        RefuzaOperarea("SC-NIR-stoc", nir, C.ReceptiiConexe.Stoc); FaraEfecte("SC-NIR-stoc", nir);
     }
 
     void DouaActive() {
@@ -174,7 +174,7 @@ sealed partial class ScenariiNir {
             l.LotId = f.Linii[0].Lot; l.Cantitate = 4; l.LinieSursaReceptieId = f.Linii[0].Id;
             l.CodEconomicId = Economic; os.CommitChanges(); return n.ID;
         });
-        Refuza("SC-NIR-27", () => Opereaza(alt), C.ReceptiiConexe.Activa); FaraEfecte("SC-NIR-27", alt);
+        RefuzaOperarea("SC-NIR-27", alt, C.ReceptiiConexe.Activa); FaraEfecte("SC-NIR-27", alt);
     }
 
     void CorectieConexaInchisa() {
@@ -210,7 +210,7 @@ sealed partial class ScenariiNir {
             Comanda(os => { os.GetObjectByKey<NIR>(n).Detalii.OfType<NirDetaliu>().Single().CodFunctionalId = null; os.CommitChanges(); });
             Verifica("SC-NIR-22/analiza", "imputarea fără clasificația cerută este refuzată în dry-run",
                 CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(n)).Any(e => e.Contains("428.01.02") && e.Contains("Cod funcțional")));
-            Refuza("SC-NIR-22/analiza", () => Opereaza(n), "Cod funcțional"); FaraEfecte("SC-NIR-22/analiza", n);
+            RefuzaOperarea("SC-NIR-22/analiza", n, "Cod funcțional"); FaraEfecte("SC-NIR-22/analiza", n);
             Schimba(n, 3, CauzaDiferentei.Imputabila, angajat);
         }
         Opereaza(n);

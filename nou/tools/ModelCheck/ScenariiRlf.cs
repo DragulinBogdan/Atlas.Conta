@@ -66,9 +66,9 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
             var inert = Retur(new LinieRlfScena(lot, 2));
             Verifica("SC-RLF-12", $"dry-run refuzat cu {CoduriRefuz.TipFaraDeclaratie}",
                 CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(inert.Id)).Any(e => e.Contains(CoduriRefuz.TipFaraDeclaratie)));
-            Refuza("SC-RLF-12", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RLF-12", inert.Id);
+            RefuzaOperarea("SC-RLF-12", inert.Id, CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RLF-12", inert.Id);
             Comanda(os => { os.GetObjectByKey<Document>(inert.Id).Numar = Marcaj + "-INERT"; os.CommitChanges(); });
-            Refuza("SC-RLF-14", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RLF-14", inert.Id);
+            RefuzaOperarea("SC-RLF-14", inert.Id, CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RLF-14", inert.Id);
             SoldLot("SC-RLF-14", lot.Lot!.Value, Magazie, Ianuarie, 10, 100);
             return;
         }
@@ -193,10 +193,10 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
             (Retur(new LinieRlfScena(lot, 2, Tip: "3028")), CoduriRefuz.ProdusAltTip, "alt Tip"),
             (Retur(new LinieRlfScena(lot, 2, cap)), CoduriRefuz.TvaCapitalizat, "capitalizat") }) {
             RefuzDeclaratie("SC-RLF-11", d.Id, cod);
-            Refuza("SC-RLF-11", () => Opereaza(d.Id), mesaj); FaraEfecte("SC-RLF-11", d.Id);
+            RefuzaOperarea("SC-RLF-11", d.Id, mesaj); FaraEfecte("SC-RLF-11", d.Id);
         }
         var peste = Retur(new LinieRlfScena(lot, 11));
-        Refuza("SC-RLF-11", () => Opereaza(peste.Id), "negativ"); FaraEfecte("SC-RLF-11", peste.Id);
+        RefuzaOperarea("SC-RLF-11", peste.Id, "negativ"); FaraEfecte("SC-RLF-11", peste.Id);
     }
 
     void PestePerioada() {

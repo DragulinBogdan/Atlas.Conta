@@ -145,7 +145,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         Sold("SC-ASM-08", mixt.Doc.Linii[0], 1, 60, Februarie);
         Corectie("SC-ASM-10", corectieDoc, corectieLot, 1, 50, 1, 50);
         Corectie("SC-ASM-18", dualCorectie.Doc, dualCorectie.Lot, 2, 6.67m, 0, 0);
-        Refuza("SC-ASM-15", () => Opereaza(intarziat.Id), "închis"); FaraEfecte("SC-ASM-15", intarziat.Id);
+        RefuzaOperarea("SC-ASM-15", intarziat.Id, "închis"); FaraEfecte("SC-ASM-15", intarziat.Id);
         Comanda(os => { var doc = os.GetObjectByKey<Document>(intarziat.Id); doc.DataInregistrare = Februarie; os.CommitChanges(); });
         Opereaza(intarziat.Id);
         Postari("SC-ASM-15", intarziat.Id, N.FelTranzactie.Transfer, Februarie,
@@ -199,7 +199,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         var lot = Receptioneaza(new LinieFctScena(2, 50)).Linii[0];
         var rau = Culege([(lot, 2)], [(1, 99.99m, null)]);
         RefuzDeclaratie("SC-ASM-12", rau.Id, CoduriRefuz.AsamblareNebalansata);
-        Refuza("SC-ASM-12", () => Opereaza(rau.Id), CoduriRefuz.AsamblareNebalansata); FaraEfecte("SC-ASM-12", rau.Id);
+        RefuzaOperarea("SC-ASM-12", rau.Id, CoduriRefuz.AsamblareNebalansata); FaraEfecte("SC-ASM-12", rau.Id);
         Sold("SC-ASM-12", lot, 2, 100); Sold("SC-ASM-12", rau.Linii[1], 0, 0);
         foreach (var caz in new[] { "lot", "zero", "consum", "produs", "propriu", "insuficient" }) {
             var d = Culege([(lot, caz == "insuficient" ? 3 : 2)], [(1, caz == "insuficient" ? 150 : 100, null)]);
@@ -257,7 +257,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
     // D9-D3: refuzul de dezechilibru, apoi comanda reală de distribuire pe aceleași fapte.
     void Redistribuie(string id, FacturaScena d, decimal consum, decimal produse) {
         RefuzDeclaratie(id, d.Id, CoduriRefuz.AsamblareNebalansata);
-        Refuza(id, () => Opereaza(d.Id), $"P−C={produse - consum}"); FaraEfecte(id, d.Id);
+        RefuzaOperarea(id, d.Id, $"P−C={produse - consum}"); FaraEfecte(id, d.Id);
         Distribuie(d.Id);
         var dupa = ValoriLinii(d.Id);
         Verifica(id, $"distribuirea aduce produsele la consumul evaluat {consum} și nu persistă nimic din evaluare",
@@ -329,7 +329,7 @@ sealed class ScenariiAsm(Func<IObjectSpace> deschide, Action<string, bool> check
         var bcs = Consum(lot.Lot!.Value, 1); Opereaza(bcs);
         var stamp = Amprenta(bcs);
         RefuzDeclaratie("SC-ASM-19", d.Id, CoduriRefuz.AsamblareNebalansata);
-        Refuza("SC-ASM-19", () => Opereaza(d.Id), CoduriRefuz.AsamblareNebalansata); FaraEfecte("SC-ASM-19", d.Id);
+        RefuzaOperarea("SC-ASM-19", d.Id, CoduriRefuz.AsamblareNebalansata); FaraEfecte("SC-ASM-19", d.Id);
         Verifica("SC-ASM-19", "BCS intermediar păstrat", stamp == Amprenta(bcs));
         var rest = Scara.ConventieBani == MidpointRounding.ToEven ? 5.01m : 5m;
         Sold("SC-ASM-19", lot, 1, rest);

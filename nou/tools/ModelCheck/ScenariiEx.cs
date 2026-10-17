@@ -134,7 +134,7 @@ sealed partial class ScenariiEx(Func<IObjectSpace> deschide, Action<string, bool
     void Stale() {
         var baza = Cheltuiala(10); var doc = Genereaza();
         var plus = Cheltuiala(5);
-        Refuza("SC-EX-06", () => Opereaza(doc), "s-au schimbat"); FaraEfecte("SC-EX-06", doc);
+        RefuzaOperarea("SC-EX-06", doc, "s-au schimbat"); FaraEfecte("SC-EX-06", doc);
         Verifica("SC-EX-06", "draftul e raportat stale", CuSpatiu(os => InchidereRezultatApply.Stale(os, doc)) == true);
         var nou = CuSpatiu(os => InchidereRezultatApply.Regenereaza(os, doc));
         Verifica("SC-EX-06", "regenerarea înlocuiește draftul", nou.DocumentId is Guid id && id != doc

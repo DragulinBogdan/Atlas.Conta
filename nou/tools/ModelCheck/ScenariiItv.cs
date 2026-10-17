@@ -81,7 +81,7 @@ sealed class ScenariiItv(Func<IObjectSpace> deschide, Action<string, bool> check
     void Stale() {
         var baza = Baza(21, 42); var doc = Genereaza();
         var plus = Nota(Ianuarie, new LinieNtcScena("4426", "628", 7)); Opereaza(plus.Id);
-        Refuza("SC-ITV-08", () => Opereaza(doc), "s-au schimbat"); FaraEfecte("SC-ITV-08", doc);
+        RefuzaOperarea("SC-ITV-08", doc, "s-au schimbat"); FaraEfecte("SC-ITV-08", doc);
         Verifica("SC-ITV-08", "citirea raportează stale", CuSpatiu(os => InchidereTvaApply.Citeste(os, doc).Stale) == true);
         var nou = CuSpatiu(os => InchidereTvaApply.Regenereaza(os, doc).DocumentId!.Value); Opereaza(nou);
         Randuri("SC-ITV-08", nou, N.FelTranzactie.Operare, Sfarsit, ("4427", "4426", 28), ("4427", "4423", 14));

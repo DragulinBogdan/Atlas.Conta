@@ -49,7 +49,7 @@ sealed partial class ScenariiCvl {
             CorectieApi(Zi(16), new() { CorectieValoareLot = true, LotId = caz.Lot, Valoare = 50m, TipTvaId = tva })));
         Verifica("SC-CVL-25", "API: tipul de TVA cerut pe linia de corecție rămâne pe draft",
             CuSpatiu(os => FacturaIntrareApply.Citeste(os, cuTva)).Linii.Single().TipTvaId == tva);
-        Refuza("SC-CVL-25", () => Opereaza(cuTva), CoduriRefuz.CvStructura);
+        RefuzaOperarea("SC-CVL-25", cuTva, CoduriRefuz.CvStructura);
         Refuza("SC-CVL-25", () => CuSpatiu(os => FacturaIntrareApply.Aplica(os, null,
             CorectieApi(Zi(16), new() { TipMaterialId = tipLot, Cantitate = 1m, PretUnitar = 10m, LotId = caz.Lot }))), "numai pe linia de corecție");
         Refuza("SC-CVL-18", () => CuSpatiu(os => FacturaIntrareApply.Aplica(os, null,
@@ -115,7 +115,7 @@ sealed partial class ScenariiCvl {
         });
         Verifica("SC-CVL-25", "XAF: tipul de TVA ales pe linia de corecție rămâne la salvare",
             CuSpatiu(os => FacturaIntrareApply.Citeste(os, idTva)).Linii.Single().TipTvaId == tvaAles);
-        Refuza("SC-CVL-25", () => Opereaza(idTva), CoduriRefuz.CvStructura);
+        RefuzaOperarea("SC-CVL-25", idTva, CoduriRefuz.CvStructura);
         Este("SC-CVL-25", "XAF: corecția cu TVA refuzată nu lasă efecte", caz, 40m, 480m, 720m, 1200m);
 
         // Linia salvată obișnuită și-a născut lotul; comutată pe corecție, lotul ei nefinalizat dispare.

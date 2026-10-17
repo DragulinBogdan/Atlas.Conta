@@ -69,9 +69,9 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
             var inert = Retur(new LinieRdcScena(100));
             Verifica("SC-RDC-16", $"dry-run refuzat cu {CoduriRefuz.TipFaraDeclaratie}",
                 CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(inert.Id)).Any(e => e.Contains(CoduriRefuz.TipFaraDeclaratie)));
-            Refuza("SC-RDC-16", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RDC-16", inert.Id);
+            RefuzaOperarea("SC-RDC-16", inert.Id, CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RDC-16", inert.Id);
             Comanda(os => { os.GetObjectByKey<Document>(inert.Id).Numar = Marcaj + "-INERT"; os.CommitChanges(); });
-            Refuza("SC-RDC-19", () => Opereaza(inert.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RDC-19", inert.Id);
+            RefuzaOperarea("SC-RDC-19", inert.Id, CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-RDC-19", inert.Id);
             return;
         }
         Venituri(); Stocuri(); Compensare(); Refuzuri(); PestePerioada();
@@ -187,7 +187,7 @@ sealed class ScenariiRdc(Func<IObjectSpace> deschide, Action<string, bool> check
             (Retur(new LinieRdcScena(100, capitalizat)), CoduriRefuz.TvaCapitalizat, "capitalizat"),
             (externul, CoduriRefuz.PredatorNepotrivit, CoduriRefuz.PredatorNepotrivit) }) {
             RefuzDeclaratie("SC-RDC-13", d.Id, cod);
-            Refuza("SC-RDC-13", () => Opereaza(d.Id), mesaj); FaraEfecte("SC-RDC-13", d.Id);
+            RefuzaOperarea("SC-RDC-13", d.Id, mesaj); FaraEfecte("SC-RDC-13", d.Id);
         }
     }
 

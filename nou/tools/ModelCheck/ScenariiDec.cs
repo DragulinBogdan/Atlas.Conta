@@ -110,13 +110,13 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         Opereaza(q.Id); Postari("SC-DEC-12", q.Id, N.FelTranzactie.Operare, Ianuarie, Simple(q, 100));
         var negativ = Culege(-1);
         RefuzDeclaratie("SC-DEC-11", negativ.Id, CoduriRefuz.ValoareNepozitiva);
-        Refuza("SC-DEC-11", () => Opereaza(negativ.Id), "pozitiv"); FaraEfecte("SC-DEC-11", negativ.Id);
+        RefuzaOperarea("SC-DEC-11", negativ.Id, "pozitiv"); FaraEfecte("SC-DEC-11", negativ.Id);
         var gol = Culege(cate: 0);
         RefuzDeclaratie("SC-DEC-11", gol.Id, CoduriRefuz.LiniiLipsa);
-        Refuza("SC-DEC-11", () => Opereaza(gol.Id), "lini"); FaraEfecte("SC-DEC-11", gol.Id);
+        RefuzaOperarea("SC-DEC-11", gol.Id, "lini"); FaraEfecte("SC-DEC-11", gol.Id);
         var gresit = Culege(); Comanda(os => { os.GetObjectByKey<Document>(gresit.Id).PredatorId = Loc; os.CommitChanges(); });
         RefuzDeclaratie("SC-DEC-11", gresit.Id, CoduriRefuz.PredatorNepotrivit);
-        Refuza("SC-DEC-11", () => Opereaza(gresit.Id), "predator"); FaraEfecte("SC-DEC-11", gresit.Id);
+        RefuzaOperarea("SC-DEC-11", gresit.Id, "predator"); FaraEfecte("SC-DEC-11", gresit.Id);
         int Citiri(int cate) { var f = Culege(1, cate: cate); using var os = Deschide();
             var doc = os.GetObjectByKey<Document>(f.Id); doc.PregatesteOperare(os);
             NumaratorSql.Instanta.Reseteaza(); var contract = Contractare.Contracteaza(os, doc);
@@ -138,7 +138,7 @@ sealed class ScenariiDec(Func<IObjectSpace> deschide, Action<string, bool> check
         SoldPartida("SC-DEC-06", P(original.Id), Ianuarie, -100);
         SoldPartida("SC-DEC-06", P(original.Id), Februarie, 0);
         SoldPartida("SC-DEC-06", P(corectie), Februarie, -80);
-        Refuza("SC-DEC-14", () => Opereaza(tarziu.Id), "închis"); FaraEfecte("SC-DEC-14", tarziu.Id);
+        RefuzaOperarea("SC-DEC-14", tarziu.Id, "închis"); FaraEfecte("SC-DEC-14", tarziu.Id);
         Comanda(os => { os.GetObjectByKey<Document>(tarziu.Id).DataInregistrare = Februarie; os.CommitChanges(); }); Opereaza(tarziu.Id);
         var rt = Privat ? Fiscale(tarziu, "N21", 100, 21) : Simple(tarziu, 100);
         Postari("SC-DEC-14", tarziu.Id, N.FelTranzactie.Operare, Februarie,

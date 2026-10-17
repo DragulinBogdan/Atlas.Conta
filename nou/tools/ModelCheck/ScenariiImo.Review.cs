@@ -91,7 +91,7 @@ sealed partial class ScenaImo {
         Opereaza(factura.Id);
         var p = Pif(Fisa());
         RefuzDeclaratie("SC-IMO-26", p.Id, CoduriRefuz.SuportInsuficient);
-        Refuza("SC-IMO-26", () => Opereaza(p.Id), CoduriRefuz.SuportInsuficient);
+        RefuzaOperarea("SC-IMO-26", p.Id, CoduriRefuz.SuportInsuficient);
         FaraEfecte("SC-IMO-26", p.Id);
         Comanda(os => {
             var erori = C.Materializare.Refuzuri(os, os.GetObjectByKey<Document>(p.Id),
@@ -108,18 +108,18 @@ sealed partial class ScenaImo {
         foreach (var zi in new[] { 10, 25 }) {
             var nota = Nota(Zi(1, zi), new LinieNtcScena(Capital, Activ, 1, Loc, Magazie));
             RefuzDeclaratie("SC-IMO-27", nota.Id, "POZITIE_FARA_FISA_NEGATIVA");
-            Refuza("SC-IMO-27", () => Opereaza(nota.Id), "POZITIE_FARA_FISA_NEGATIVA");
+            RefuzaOperarea("SC-IMO-27", nota.Id, "POZITIE_FARA_FISA_NEGATIVA");
             FaraEfecte("SC-IMO-27", nota.Id);
         }
         Sold("SC-IMO-27", f, 1200, 200, 900, 0);
         var amort = Nota(Zi(1, 25), new LinieNtcScena(Amortizare, Capital, 1, Magazie, Loc));
         RefuzDeclaratie("SC-IMO-27", amort.Id, CoduriRefuz.PozitieFaraFisaNegativa);
-        Refuza("SC-IMO-27", () => Opereaza(amort.Id), CoduriRefuz.PozitieFaraFisaNegativa);
+        RefuzaOperarea("SC-IMO-27", amort.Id, CoduriRefuz.PozitieFaraFisaNegativa);
         FaraEfecte("SC-IMO-27", amort.Id);
         var supliment = SuportNota(20);
         var altaGestiune = Nota(Zi(1, 25), new LinieNtcScena(Capital, Activ, 1, Loc, Destinatie));
         RefuzDeclaratie("SC-IMO-27", altaGestiune.Id, CoduriRefuz.PozitieFaraFisaNegativa);
-        Refuza("SC-IMO-27", () => Opereaza(altaGestiune.Id), CoduriRefuz.PozitieFaraFisaNegativa);
+        RefuzaOperarea("SC-IMO-27", altaGestiune.Id, CoduriRefuz.PozitieFaraFisaNegativa);
         FaraEfecte("SC-IMO-27", altaGestiune.Id);
         var iesire = Nota(Zi(1, 25), new LinieNtcScena(Capital, Activ, 20, Loc, Magazie)); Opereaza(iesire.Id);
         Refuza("SC-IMO-28", () => Anuleaza(supliment.Id), "POZITIE_FARA_FISA_NEGATIVA");

@@ -62,7 +62,13 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         var f = Vinde(new LinieFclScena(1, 100)); Opereaza(f.Id);
         var inc = Trezorerie(true, 40); Opereaza(inc.Id);
         var original = Amprenta(f.Id);
+        Refuza("SC-FCL-09", () => Imperecheaza(inc.Id, f.Id, 101, Ianuarie), "depăș");
+        Verifica("SC-FCL-09", "depășirea nu creează împerechere", CuSpatiu(os =>
+            !os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentId == f.Id)) && Amprenta(f.Id) == original);
         var imp = Imperecheaza(inc.Id, f.Id, 40, Ianuarie);
+        var incasare = Amprenta(inc.Id);
+        Refuza("SC-FCL-09", () => Storneaza(inc.Id, Ianuarie), "imperecheri");
+        Verifica("SC-FCL-09", "stornarea încasării împerecheate e refuzată fără scriere", Amprenta(inc.Id) == incasare);
         TransferPartida("SC-FCL-09", inc.Id, f.Id, ContClient, Client, N.Sens.Credit, 40, Ianuarie);
         SoldPartida("SC-FCL-09", Partida(f.Id, ContClient, Client)!.Value, Ianuarie, 60);
         var tva = Privat ? "N21" : null;
@@ -74,11 +80,9 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         TransferPartida("SC-FCL-09", inc.Id, f.Id, ContClient, Client, N.Sens.Credit, -40, Februarie);
         Verifica("SC-FCL-09", "factura intactă și împerechere inversată", Amprenta(f.Id) == original
             && CuSpatiu(os => os.GetObjectsQuery<Imperechere>().Where(i => i.DocumentId == f.Id).Sum(i => i.Suma)) == 0);
-        if (Privat) {
-            SoldPartida("SC-FCL-09", Partida(f.Id, ContClient, Client)!.Value, new(An, 1, 31), 60);
-            SoldPartida("SC-FCL-09", Partida(f.Id, ContClient, Client)!.Value, Februarie, 100);
-            SoldPartida("SC-FCL-09", Partida(inc.Id, ContClient, Client)!.Value, Februarie, -40);
-        }
+        SoldPartida("SC-FCL-09", Partida(f.Id, ContClient, Client)!.Value, new(An, 1, 31), 60);
+        SoldPartida("SC-FCL-09", Partida(f.Id, ContClient, Client)!.Value, Februarie, 100);
+        SoldPartida("SC-FCL-09", Partida(inc.Id, ContClient, Client)!.Value, Februarie, -40);
         FacturiInchise(p, c, tva);
         if (dsc is { } stoc) DescarcariInchise(stoc.Peste, stoc.Corectie);
     }
@@ -89,6 +93,10 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         FaraEfecte("SC-FCL-01", f.Id); Opereaza(f.Id);
         Postari("SC-FCL-01", f.Id, N.FelTranzactie.Operare, Ianuarie, Venituri(f, 0, 100));
         SoldPartida("SC-FCL-01", Partida(f.Id, ContClient, Client)!.Value, Ianuarie, 100);
+        var tarziu = Vinde(new LinieFclScena(1, 70));
+        Intarziat("SC-FCL-15", tarziu.Id, new(An, 1, 25));
+        SoldPartida("SC-FCL-15", Partida(tarziu.Id, ContClient, Client)!.Value, new(An, 1, 20), 0);
+        SoldPartida("SC-FCL-15", Partida(tarziu.Id, ContClient, Client)!.Value, new(An, 1, 25), 70);
         var m = Vinde(new LinieFclScena(1, 100), new LinieFclScena(1, 50)); Opereaza(m.Id);
         Postari("SC-FCL-02", m.Id, N.FelTranzactie.Operare, Ianuarie, [.. Venituri(m, 0, 100), .. Venituri(m, 1, 50)]);
         Storneaza(f.Id, new(An, 1, 20));
@@ -101,7 +109,7 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         Anuleaza(m.Id); FaraEfecte("SC-FCL-05", m.Id);
         var invalid = Vinde(new LinieFclScena(0, 100));
         RefuzDeclaratie("SC-FCL-08", invalid.Id, CoduriRefuz.CantitateNepozitiva);
-        Refuza("SC-FCL-08", () => Opereaza(invalid.Id), "cantitate"); FaraEfecte("SC-FCL-08", invalid.Id);
+        RefuzaOperarea("SC-FCL-08", invalid.Id, "cantitate"); FaraEfecte("SC-FCL-08", invalid.Id);
         if (!Privat) return;
         foreach (var cod in new[] { "TI21", "SDD" }) {
             var special = Vinde(new LinieFclScena(1, 100, cod)); Opereaza(special.Id);
@@ -227,10 +235,8 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         Refuza("SC-FCL-04", () => Anuleaza(p.Id), "închis"); Storneaza(p.Id, Februarie);
         Postari("SC-FCL-04", p.Id, N.FelTranzactie.Operare, Ianuarie, Venituri(p, 0, 100, taxa, tva));
         Postari("SC-FCL-04", p.Id, N.FelTranzactie.Storno, Februarie, Venituri(p, 0, -100, -taxa, tva, An * 100 + 2));
-        if (Privat) {
-            SoldPartida("SC-FCL-04", Partida(p.Id, ContClient, Client)!.Value, new(An, 1, 31), 121);
-            SoldPartida("SC-FCL-04", Partida(p.Id, ContClient, Client)!.Value, Februarie, 0);
-        }
+        SoldPartida("SC-FCL-04", Partida(p.Id, ContClient, Client)!.Value, new(An, 1, 31), 100 + taxa);
+        SoldPartida("SC-FCL-04", Partida(p.Id, ContClient, Client)!.Value, Februarie, 0);
         var nou = Corecteaza(c.Id); FaraEfecte("SC-FCL-06", nou);
         FacturaScena corectie;
         using (var os = Deschide()) {
@@ -272,9 +278,20 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         var r = Iesire(false, (mic, 1), (mic, 2)); Opereaza(r.Id);
         Postari("SC-DSC-07", r.Id, N.FelTranzactie.Operare, Ianuarie, [.. Costuri(r, 0, 1, 0.33m), .. Costuri(r, 1, 2, 0.67m)]);
         SoldLot("SC-DSC-07", mic.Lot!.Value, Magazie, Ianuarie, 0, 0);
+        var nou = Receptioneaza(new LinieFctScena(2, 5, Tip: "371", Produs: mic.Produs)).Linii[0];
+        var dupa = Iesire(false, (nou, 1)); Opereaza(dupa.Id);
+        SoldLot("SC-DSC-07", mic.Lot!.Value, Magazie, Ianuarie, 0, 0);
+        SoldLot("SC-DSC-07", nou.Lot!.Value, Magazie, Ianuarie, 1, 5);
+        NumaiLotul("SC-DSC-07", mic.Produs!.Value, Magazie, "371", Ianuarie, nou.Lot!.Value);
+        Intarziat("SC-DSC-10", Iesire(false, (nou, 1)).Id, new(An, 1, 25));
+        SoldLot("SC-DSC-10", nou.Lot!.Value, Magazie, new(An, 1, 20), 1, 5);
+        SoldLot("SC-DSC-10", nou.Lot!.Value, Magazie, new(An, 1, 25), 0, 0);
         var invalid = Iesire(false, (lot, 11));
         RefuzDeclaratie("SC-DSC-08", invalid.Id, "STOC_INSUFICIENT");
-        Refuza("SC-DSC-08", () => Opereaza(invalid.Id), "STOC_INSUFICIENT"); FaraEfecte("SC-DSC-08", invalid.Id);
+        RefuzaOperarea("SC-DSC-08", invalid.Id, "STOC_INSUFICIENT"); FaraEfecte("SC-DSC-08", invalid.Id);
+        var zero = Iesire(false, (lot, 0));
+        RefuzDeclaratie("SC-DSC-08", zero.Id, CoduriRefuz.CantitateNepozitiva);
+        RefuzaOperarea("SC-DSC-08", zero.Id, "cantitate"); FaraEfecte("SC-DSC-08", zero.Id);
         var p = Iesire(false, (Receptioneaza(new LinieFctScena(10, 10, Tip: "371")).Linii[0], 4)); Opereaza(p.Id);
         var c = Iesire(false, (Receptioneaza(new LinieFctScena(10, 10, Tip: "371")).Linii[0], 4)); Opereaza(c.Id);
         return (p, c);

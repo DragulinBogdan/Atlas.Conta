@@ -58,7 +58,7 @@ sealed partial class ScenariiCvl {
         Anuleaza(reNir.Nir);
         foreach (var q in new[] { 98m, 102m }) {
             ConstatNir(reNir, q);
-            Refuza("SC-CVL-19", () => Opereaza(reNir.Nir), CoduriRefuz.CvDependenti);
+            RefuzaOperarea("SC-CVL-19", reNir.Nir, CoduriRefuz.CvDependenti);
         }
         ConstatNir(reNir, 100m);
         Opereaza(reNir.Nir);

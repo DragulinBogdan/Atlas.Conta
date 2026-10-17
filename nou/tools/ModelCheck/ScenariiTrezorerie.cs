@@ -106,7 +106,7 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
                     os.CommitChanges(); return new FacturaScena(doc.ID, [new(l.ID, null, null)]);
                 });
                 var refuzat = Document();
-                Refuza(id, () => Opereaza(refuzat.Id), CuSpatiu(os => os.GetObjectByKey<Cont>(contPropriu).Simbol));
+                RefuzaOperarea(id, refuzat.Id, CuSpatiu(os => os.GetObjectByKey<Cont>(contPropriu).Simbol));
                 FaraEfecte(id, refuzat.Id);
                 Flag(contPropriu, FeluriRepartitor.Nedeclarat);
                 var acceptat = Document(); Opereaza(acceptat.Id);
@@ -179,6 +179,11 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         SoldPartida(Id(inc, "01"), Partida(f.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, Ianuarie, inc ? -100 : 100);
         var m = Trezorerie(inc, 40, 60); Opereaza(m.Id);
         Postari(Id(inc, "02"), m.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(m, inc, 40, 60));
+        SoldPartida(Id(inc, "02"), Partida(m.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, Ianuarie, inc ? -100 : 100);
+        var tarziu = Trezorerie(inc, 30);
+        Intarziat(Id(inc, "10"), tarziu.Id, new(An, 1, 25));
+        SoldPartida(Id(inc, "10"), Partida(tarziu.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, new(An, 1, 20), 0);
+        SoldPartida(Id(inc, "10"), Partida(tarziu.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, new(An, 1, 25), inc ? -30 : 30);
         Storneaza(f.Id, new(An, 1, 20));
         Postari(Id(inc, "03"), f.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(f, inc, 100));
         Postari(Id(inc, "03"), f.Id, N.FelTranzactie.Storno, new(An, 1, 20), Randuri(f, inc, -100));
@@ -189,7 +194,7 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         Anuleaza(m.Id); FaraEfecte(Id(inc, "05"), m.Id);
         var invalid = Trezorerie(inc, 0);
         RefuzDeclaratie(Id(inc, "07"), invalid.Id, CoduriRefuz.ValoareNepozitiva);
-        Refuza(Id(inc, "07"), () => Opereaza(invalid.Id), "pozitiv");
+        RefuzaOperarea(Id(inc, "07"), invalid.Id, "pozitiv");
         FaraEfecte(Id(inc, "07"), invalid.Id);
     }
 
@@ -215,5 +220,7 @@ sealed class ScenariiTrezorerie(Func<IObjectSpace> deschide, Action<string, bool
         Postari(Id(inc, "06"), c.Id, N.FelTranzactie.Storno, Februarie, Randuri(c, inc, -100));
         Postari(Id(inc, "06"), c.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(c, inc, 100));
         SoldPartida(Id(inc, "06"), Partida(nou, ContTert(inc), inc ? Client : Furnizor)!.Value, Februarie, inc ? -80 : 80);
+        SoldPartida(Id(inc, "06"), Partida(c.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, new(An, 1, 31), inc ? -100 : 100);
+        SoldPartida(Id(inc, "06"), Partida(c.Id, ContTert(inc), inc ? Client : Furnizor)!.Value, Februarie, 0);
     }
 }

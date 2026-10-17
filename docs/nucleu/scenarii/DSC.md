@@ -15,8 +15,9 @@ virtuală Client, cu partenerul client, fără unitate. Nu deschide partidă.
 | SC-DSC-04 | Descărcare4/40 în ianuarie închis; storno februarie: ianuarie6/60, februarie10/100. | acceptat | 088 | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
 | SC-DSC-05 | Anulare4/40 în luna deschisă → Draft, zero efecte proprii; lot10/100. | acceptat | invariant III | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
 | SC-DSC-06 | Corecție legată în februarie a descărcării4/40: invers, noua ieșire3/30; lot7/70, cost net30. | acceptat | 088h | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
-| SC-DSC-07 | Lot3/1; două linii1 și2 → cost0,33+0,67; lot0/0. | acceptat | 325 documente cu lot repetat; golirea ia restul | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
-| SC-DSC-08 | Ieșire11 din10: STOC_INSUFICIENT prin declarație; comanda refuzată de gardianul registrului, zero efecte. | refuzat | 090j | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
+| SC-DSC-07 | Lot3/1; două linii1 și2 → cost0,33+0,67; lot0/0. Re-intrare pe același produs (2 × 5) și descărcare 1: lotul vechi 0/0, cel nou 1/5; FIFO oferă numai lotul nou. | acceptat | 325 documente cu lot repetat; golirea ia restul | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
+| SC-DSC-08 | Ieșire11 din10: STOC_INSUFICIENT prin declarație; comanda refuzată de gardianul registrului, zero efecte. Descărcarea cantității 0: `CANTITATE_NEPOZITIVA`, dry-run și operare refuzate, fără efecte. | refuzat | 090j | `ScenariiVanzare` / ID-ul rândului | verificat privat; neaplicabil bugetar |
+| SC-DSC-10 | Document întârziat: descărcare 1 cu `DataInregistrare` 25.01: postările la 25.01; lotul 1/5 la 20.01 și 0/0 la 25.01. | acceptat | F27-D4, R6b | `ScenariiVanzare` / ID | verificat, privat |
 | SC-DSC-09 | Bugetar: zero reguli DSC; lot 10/100, descărcare 2. Dry-run și operare refuzate cu `TIP_FARA_DECLARATIE`, înaintea validării frunzei, cu sau fără număr cules; zero efecte, lot 10/100. Înaintea tăierii refuza frunza („nu are regulă de contare de cost"). | refuzat | D9-D5, D9-A6 (I6) | `ScenariiTaiere` / ID-ul rândului | verificat, bugetar (TR-D9a, pasul 6) |
 
 Lanțul real FCL→DSC este SC-FCL-10. Cititorii de producție la TR-D8,

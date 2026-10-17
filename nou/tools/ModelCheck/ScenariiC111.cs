@@ -840,7 +840,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
         Comanda(os => { os.GetObjectByKey<Cont>(cont).FeluriRepartitor = FeluriRepartitor.Partener; os.CommitChanges(); });
         try {
             var (_, faraTert, _) = Constatat(null, null);
-            Refuza("SC-C111-14", () => Opereaza(faraTert), "Repartitor");
+            RefuzaOperarea("SC-C111-14", faraTert, "Repartitor");
             FaraEfecte("SC-C111-14", faraTert);
         }
         finally { Comanda(os => { os.GetObjectByKey<Cont>(cont).FeluriRepartitor = feluri; os.CommitChanges(); }); }
@@ -935,7 +935,7 @@ sealed class ScenaC111(Func<IObjectSpace> deschide, Action<string, bool> check, 
                 new(liber, Credit, 10, Repartitor: Loc, Linie: peTert.Linii[0].Id, Economic: Economic));
         foreach (var (cont, nume) in new[] { (terti, "partener"), (optional, "partener sau niciunul") }) {
             var peLoc = NotaPe(Ianuarie, cont, liber, 10);
-            Refuza("SC-C111-30", () => Opereaza(peLoc.Id), "Repartitor de felul Partener (primit:");
+            RefuzaOperarea("SC-C111-30", peLoc.Id, "Repartitor de felul Partener (primit:");
             FaraEfecte("SC-C111-30", peLoc.Id);
         }
         var optionalCuTert = NotaPe(Ianuarie, optional, liber, 10, repartitorDebit: Furnizor);

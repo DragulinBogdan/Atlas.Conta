@@ -12,13 +12,14 @@ regresia încasărilor rămâne în suita integrală.
 | ID | Pași și așteptare | Rezultat | Proveniență | Proba | Stare |
 |---|---|---|---|---|---|
 | SC-INC-01 | Dry-run fără efecte; încasare100 → D5311=100 pe CASA, C4111=100 pe partida proprie, cantitate0. | acceptat | 031c | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
-| SC-INC-02 | Două linii40+60 → patru postări, total100, aceeași partidă de client. | acceptat | 031a | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-INC-02 | Două linii40+60 → patru postări, total100, aceeași partidă de client. Partida unică are soldul −100. | acceptat | 031a | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 | SC-INC-03 | Storno100 în aceeași lună →−100, sold propriu0; originalul păstrat, repetarea refuzată. | acceptat / repetarea refuzată | 090i | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 | SC-INC-04 | Încasare100 în ianuarie închis; storno februarie → sold−100 la31.01,0 în februarie. | acceptat | 088 | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 | SC-INC-05 | Anulare în luna deschisă → Draft și zero efecte proprii. | acceptat | invariant III | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
-| SC-INC-06 | Corecție în februarie a încasării100 din ianuarie închis: original inversat; corecție80 → sold original0, corecție−80. | acceptat | 088h | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
+| SC-INC-06 | Corecție în februarie a încasării100 din ianuarie închis: original inversat; corecție80 → sold original0, corecție−80. Originalul: partidă −100 la 31.01 și 0 în februarie. | acceptat | 088h | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 | SC-INC-07 | Linie0: VALOARE_NEPOZITIVA prin declarație și refuz pe comandă, fără efecte. | refuzat | contract declarant | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri aplicabile |
 | SC-INC-09 | Oglinda lui SC-PLT-09: regulă cu ambele conturi explicite (D cont propriu / C462), predator creditor, primitor cont propriu de mandat. Cu flag pe contul propriu: refuz pe debit, zero efecte. Fără flag: C462 cu partenerul creditorului, D cont propriu fără repartitor. | refuzat / acceptat | D9-6B-R1 (2026-10-07) | `ScenariiTrezorerie` / ID-ul rândului | verificat pe ambele profiluri |
+| SC-INC-10 | Document întârziat: încasare 30 cu `DataInregistrare` 25.01: postările la 25.01; partida 0 la 20.01 și −30 la 25.01. Plafonul și refuzul stornării împerecheate: SC-FCL-09. | acceptat | F27-D4, R6b | `ScenariiTrezorerie` / ID | verificat pe ambele profiluri |
 
 Stingerea FCL→INC este probată în [FCL.md](FCL.md); SC-X-03 cu avans și
 retur rămâne deschis. Conturile bugetare nu au RolTert, deci probele de
