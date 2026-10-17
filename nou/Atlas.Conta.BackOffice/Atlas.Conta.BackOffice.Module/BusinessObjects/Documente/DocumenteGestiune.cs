@@ -151,6 +151,7 @@ public class NirDetaliu : DocumentDetaliu, ILinieCuAtributeLot, ILinieCareNasteL
         Cub.ReceptiiConexe.VerificaEditare(os, this, erori);
     [XafDisplayName("Cauza diferenței")]
     public virtual CauzaDiferentei? CauzaDiferentei { get; set; }
+    [VisibleInListView(false), VisibleInDetailView(false)]
     public virtual Guid? PartenerDiferentaId { get; set; }
     [XafDisplayName("Imputat"), EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Repartitor PartenerDiferenta { get; set; }

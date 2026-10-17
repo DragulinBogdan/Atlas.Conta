@@ -1,6 +1,6 @@
 # Verificare
 
-**Actualizat: 2026-10-16.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 ModelCheck, scenariile, probele pe sursă, pe model și HTTP, scările de perf
 și documentația.
@@ -176,6 +176,15 @@ prin `MotorOperare`) rulează întâi gardurile comenzii și validarea clasei
 (`Document.ValideazaOperare`), care refuză cu text ÎNAINTEA declarantului;
 acolo se asertează familia mesajului și absența efectelor. Refuzul laturii
 poartă aceeași linie `COD: mesaj` pe ambele uși (`STR-LATURI-REFUZ`). (T-D13)
+
+Citirile după fiecare pas al ciclului (rândul 8) se probează în utilitarele
+scenei: `SoldLot` și `SoldPartida` din `ScenaDocumente` (și `Sold` din
+`ScenariiBcs`) compară suma brută a postărilor cu `Loturi.Cumulate` /
+`Partide.Cumulate` pe citirea integrală și pe cea vizibilă, iar fișa și balanța
+la acea dată, pe cheia unității (cont × gestiune × produs, cont × partener), cu
+suma unităților cheii. După o lună închisă citirea integrală trece prin
+snapshot, deci aceeași probă verifică și snapshot-ul. `ScenariiBcs` rulează
+invarianții cubului pe faptele scenei. (126h)
 
 Cataloagele [BCS, FCT, PLT/INC, BTR și FCL/DSC](../nucleu/scenarii/README.md)
 au loturi independente, cu fixture prin documentele reale și comenzile

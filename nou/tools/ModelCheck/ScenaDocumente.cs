@@ -427,6 +427,29 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             && p.Repartitor == gestiune && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
         Verifica(id, $"lot/gestiune la {data}: {q}/{v}", sold.Sum(p => p.Cantitate) == q
             && sold.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) == v);
+        CitiriLaPas(id, data, os => {
+            var cititori = new[] { C.Citiri.CitireCumul.Integrala, C.Citiri.CitireCumul.Vizibila }
+                .Select(c => C.Citiri.Loturi.Cumulate(os, c, data).Where(s => s.LotId == lot && s.GestiuneId == gestiune).ToList());
+            var chei = sold.Where(p => p.Produs != null).Select(p => (p.Cont, Produs: p.Produs.Value)).Distinct();
+            return cititori.All(r => r.Sum(s => s.Cantitate) == q && r.Sum(s => s.Valoare) == v)
+                && chei.All(k => PeCheie(os, data, k.Cont, gestiune, k.Produs,
+                    C.Citiri.Loturi.Cumulate(os, C.Citiri.CitireCumul.Integrala, data)
+                        .Where(s => s.ContId == k.Cont && s.GestiuneId == gestiune && s.ProdusId == k.Produs).Sum(s => s.Valoare)));
+        });
+    }
+
+    // 126, R6a: rândul 8 al ciclului; după fiecare pas citit, cititorii de producție dau suma brută, iar fișa și
+    // balanța pe cheia unității dau suma unităților cheii.
+    void CitiriLaPas(string id, DateOnly data, Func<IObjectSpace, bool> verifica) =>
+        Verifica(id, $"cititorii de producție la {data}: soldul pe unitate, fișa și balanța pe cheia ei", CuSpatiu(verifica));
+
+    internal static bool PeCheie(IObjectSpace os, DateOnly data, Guid cont, Guid repartitor, Guid? material, decimal unitati) {
+        var fisa = ContabilProiectii.FisaSold(os, cont, DateOnly.MinValue, data, repartitorId: repartitor, materialId: material,
+            citire: C.Citiri.CitireCumul.Integrala);
+        var balanta = ContabilProiectii.Balanta(os, new(data.Year, data.Month, 1), data, repartitorId: repartitor,
+            materialId: material, citire: C.Citiri.CitireCumul.Integrala).Where(r => r.ContId == cont).ToList();
+        return fisa.SoldFinalDebit - fisa.SoldFinalCredit == unitati
+            && balanta.Sum(r => r.SoldFinalDebit - r.SoldFinalCredit) == unitati;
     }
 
     protected decimal[] ValoriLinii(Guid doc) => CuSpatiu(os => os.GetObjectsQuery<DocumentDetaliu>()
@@ -443,6 +466,15 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             && p.Data <= data && p.Carte == N.Carte.Contabil).ToList());
         Verifica(id, $"sold partidă {net} la {data}",
             sold.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) == net);
+        CitiriLaPas(id, data, os => {
+            var cititori = new[] { C.Citiri.CitireCumul.Integrala, C.Citiri.CitireCumul.Vizibila }
+                .Select(c => C.Citiri.Partide.Cumulate(os, c, data).Where(s => s.UnitateId == unitate).ToList());
+            var chei = sold.Where(p => p.Repartitor != null).Select(p => (p.Cont, Partener: p.Repartitor.Value)).Distinct();
+            return cititori.All(r => r.Sum(s => s.Debit - s.Credit) == net)
+                && chei.All(k => PeCheie(os, data, k.Cont, k.Partener, null,
+                    C.Citiri.Partide.Cumulate(os, C.Citiri.CitireCumul.Integrala, data)
+                        .Where(s => s.ContId == k.Cont && s.PartenerId == k.Partener).Sum(s => s.Debit - s.Credit)));
+        });
     }
 
     protected void FaraEfecte(string id, Guid doc) {
