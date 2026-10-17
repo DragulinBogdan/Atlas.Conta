@@ -264,8 +264,9 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 
 - [DIM-2 — Inventarul dimensiunilor culese per tip (pasul 1, decizia 54e)](dim/dim-2-inventar.md)
 
-### `docs/import/` (5)
+### `docs/import/` (6)
 
+- [E4 — migrarea din 1C: deschiderea la o graniță de lună, lunile de după prin motor, diferențele cu nume](import/e4-migrarea-contract.md)
 - [FAZA 1C — conector de import + reconciliere pe an fiscal complet (design)](import/faza-1c-design.md)
 - [M1 — Deschiderea de terți din BalantaNivel3 și stingerile 2025 pe partide inițiale (contract)](import/m1-deschidere-terti-contract.md)
 - [M1 — review advers Codex](import/m1-review-codex.md)

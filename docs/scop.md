@@ -1,6 +1,6 @@
 # Scopul Atlas.Conta
 
-**Actualizat: 2026-10-16.**
+**Actualizat: 2026-10-17.**
 
 Țintele și non-țintele de mai jos au fost propuse de agent și acceptate de
 owner la 2026-10-14 (kitul de guvernanță, §3.9.9). De acum, o schimbare de
@@ -83,6 +83,19 @@ descrierea a ce există e în [starea curentă](stare-curenta/README.md).
 | `import` | Import1C și reconcilierea cu legacy | T4 | există |
 
 ## Etapa curentă
+
+**E4 — Migrarea din 1C.** Deschisă 2026-10-17 de owner, cu contractul
+[E4 — migrarea din 1C](import/e4-migrarea-contract.md): baza clientului se
+deschide din 1C la o graniță de lună (conturi, loturi, partide, fișe de
+imobilizări), lunile de după se importă prin motor, iar fiecare diferență
+față de sursă are nume. Proba e anul 2025 al Flax, integral, plus o
+trecere la 01.01.2026.
+Gata când: deschiderea e exactă la ambele granițe, lunile 2025-01…12 și
+2026-01 se importă fără eșec și fără diferență fără nume, exercițiul 2025
+se închide pe baza de import, SAF-T L pe decembrie trece DUK, iar niciun
+rând din registru nu mai are starea `migrare`.
+Stare: contract propus 2026-10-17, pasul 0.
+Funcționalitățile: rândurile `E4` din [catalog](functionalitati.md).
 
 **„Rotund” declarat.** La 2026-10-17 PoC-ul s-a oprit
 ([decizia 130](decizii/130-rotund-declarat.md)): cele șapte condiții din
