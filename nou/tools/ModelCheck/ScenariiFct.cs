@@ -21,6 +21,39 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         RegulaReceptiei();
         LotulNascut();
         PestePerioada();
+        GranitaInchisa();
+    }
+
+    // SC-X-10: după închiderea lui ianuarie, documentul întârziat și corecția lui nu ating luna închisă.
+    void GranitaInchisa() {
+        var ian = (Start: new DateOnly(An, 1, 1), Sfarsit: new DateOnly(An, 1, 31));
+        string BalantaIanuarie() => CuSpatiu(os => string.Join("|", Module.Proiectii.ContabilProiectii
+            .Balanta(os, ian.Start, ian.Sfarsit, citire: Module.Cub.Citiri.CitireCumul.Integrala).ToList()
+            .OrderBy(r => r.ContId).Select(r => $"{r.ContId}:{r.RulajDebit}:{r.RulajCredit}:{r.SoldFinalDebit}:{r.SoldFinalCredit}")));
+        void Neatinsa(string pas, string inainte) {
+            Verifica("SC-X-10", $"{pas}: balanța lui ianuarie neschimbată", BalantaIanuarie() == inainte);
+            Verifica("SC-X-10", $"{pas}: reconstrucția are zero diferențe", CuSpatiu(os => {
+                using var tx = TranzactieComanda.Incepe(os);
+                return SolduriService.Reconstruieste(os).Referinte.All(r => r.ContabilDiferite == 0 && r.StocDiferite == 0);
+            }));
+        }
+        var ianuarie = BalantaIanuarie();
+        var t = Factura(Ianuarie, new LinieFctScena(2, 10));
+        Intarziat("SC-X-10", t.Id, Februarie);
+        Neatinsa("documentul întârziat", ianuarie);
+        SoldLot("SC-X-10", t.Linii[0].Lot!.Value, Magazie, ian.Sfarsit, 0, 0);
+        SoldLot("SC-X-10", t.Linii[0].Lot!.Value, Magazie, Februarie, 2, 20);
+        var inainte = Amprenta(t.Id);
+        Refuza("SC-X-10", () => Storneaza(t.Id, ian.Sfarsit), "nu poate preceda data înregistrării");
+        Verifica("SC-X-10", "stornoul datat în ianuarie nu scrie", Amprenta(t.Id) == inainte);
+        var nou = Corecteaza(t.Id);
+        Verifica("SC-X-10", "corecția: storno legat și document nou cu motiv", CuSpatiu(os =>
+            os.GetObjectByKey<Document>(t.Id).Stare == StareDocument.Stornat
+            && os.GetObjectByKey<Document>(nou) is { CorecteazaId: var sursa, MotivCorectie: MotivCorectie.EroareMateriala }
+            && sursa == t.Id));
+        Opereaza(nou);
+        Neatinsa("corecția", ianuarie);
+        SoldLot("SC-X-10", t.Linii[0].Lot!.Value, Magazie, Februarie, 0, 0);
     }
 
     void LotulNascut() {
@@ -299,6 +332,13 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
             new[] { f.Id, nir, bcs }.Select(Amprenta).SequenceEqual(amprente));
         SoldLot("SC-X-01", f.Linii[0].Lot!.Value, Magazie, new(An, 1, 20), 6, 60);
         SoldPartida("SC-X-01", Partida(f.Id, ContFurnizor)!.Value, new(An, 1, 20), -100);
+        Refuza("SC-X-01", () => Storneaza(f.Id, new(An, 1, 20)), "STOC_INSUFICIENT");
+        Verifica("SC-X-01", "fără NIR, refuzul vine din consumul lotului; nimic scris",
+            new[] { f.Id, nir, bcs }.Select(Amprenta).SequenceEqual(amprente));
+        Storneaza(bcs, new(An, 1, 20));
+        Storneaza(f.Id, new(An, 1, 20));
+        SoldLot("SC-X-01", f.Linii[0].Lot!.Value, Magazie, new(An, 1, 20), 0, 0);
+        SoldPartida("SC-X-01", Partida(f.Id, ContFurnizor)!.Value, new(An, 1, 20), 0);
     }
 
     void TaxareInversa(Guid factura) {

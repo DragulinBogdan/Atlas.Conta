@@ -13,17 +13,17 @@ Cele mai valoroase scenarii sunt cele pe care niciun import nu le exercită
 
 | Id | Lanț | Ce probează |
 |---|---|---|
-| SC-X-01 | FCT cu recepție → BCS din lotul recepționat → storno FCT | refuzul stornoului cu dependenți; lotul cu ieșiri nu dispare |
+| SC-X-01 | FCT cu recepție → NIR conex → BCS 4 → storno FCT → storno NIR → storno FCT → storno BCS → storno FCT | refuz întâi pe conexul operat, apoi pe consum (`STOC_INSUFICIENT`, sold pe lot, 025d), fără scriere; după stornarea consumului stornoul FCT trece, lot 0/0, partida 0 (`ScenariiFct`) |
 | SC-X-02 | FCT → NIR conex operat → BCS | o singură recepție în cub (T-D9, `PoliticaConex`) |
-| SC-X-03 | FCL cu avans (INC anterior) → transfer INC → FCL → RDC parțial | două partide, plafonul pe rest, creanța netă după retur |
+| SC-X-03 | INC 150 → FCL 200 + TVA cu regularizarea avansului −100 pe 419 → împerecherea INC pe FCL | două partide pe factură (creanță 142, 419 100); peste rest `PARTIDA_PROPRIE_INSUFICIENTA` fără scriere; 142 stinge creanța, INC rămâne −8; privat. Pasul RDC (creanța netă după retur) e după PoC (126) (`ScenariiVanzare`) |
 | SC-X-04 | FCT → PLT parțială → PLT rest → storno PLT a doua | partida se redeschide exact cu suma stornată |
 | SC-X-05 | recepție 100 × 10 → BCS 60 → corecție de preț +200 → storno BCS | 091 (h): inversare 600 + compensare 120 înapoi pe lot; datoria rămâne |
 | SC-X-06 | recepție 100 × 10 → BCS 60 → corecție de preț +200 → storno corecție → storno BCS | corecția este inversată înaintea consumului; inversarea BCS readuce 600 pe lot, fără compensarea încă o dată a celor 120 |
 | SC-X-07 | recepție 100 × 10 → BCS 60 → corecție de preț +200 → corecție de preț +100 → storno BCS | inversare 600 + compensare cumulată 180; stoc final 1.300, datorie 1.300, consum net zero |
-| SC-X-08 | BTR între gestiuni → BCS din gestiunea primitoare → storno BTR | refuz: lotul mutat are ieșiri |
+| SC-X-08 | BTR 4 între gestiuni → BCS 1 din gestiunea primitoare → storno BTR; apoi BTR 2 → storno BTR | stornoul se judecă pe sold (025d, owner 2026-10-17): refuz `STOC_INSUFICIENT` cât destinația nu acoperă, acceptat după al doilea transfer; consumul rămâne operat (`ScenariiBtr`) |
 | SC-X-09 | ASM din două loturi → DSC din produsul rezultat → RLF pe unul din componente | circuit numeric și inversări în [ASM.md](ASM.md); reevaluarea cu nepropagare rămâne TR-D9 (design §11) |
-| SC-X-10 | închidere de lună cu documente operate → document întârziat în luna închisă → corecție | perioada închisă ca graniță absolută; storno legat + document nou |
-| SC-X-11 | `Deschidere` (contabil bloc + stoc pe lot + terți pe partidă) → PLT pe partida de deschidere → FCL nouă | partida fără document se stinge prin aceeași cheie ca una cu document |
+| SC-X-10 | ianuarie închis → FCT cu `Data` în ianuarie și `DataInregistrare` în februarie → storno datat 31.01 → corecție | postările în februarie; stornoul înaintea înregistrării refuzat fără scriere; corecția = storno legat + document nou cu motiv; după fiecare pas balanța lui ianuarie neschimbată și reconstrucția fără diferențe (`ScenariiFct`) |
+| SC-X-11 | `Deschidere` (contabil bloc + stoc pe lot + terți pe partidă) → PLT pe partida de deschidere → FCT nouă → PLT pe FCT | cele două stingeri au aceeași formă de cheie (partidă pe furnizor, debit, contabil, fără contrapondere); partida facturii 0 (`ScenariiDeschidere`) |
 | SC-X-12 | închiderile lunare 6/7 → 121 pe tot anul → decembrie închis → exercițiul închis → balanța lui ianuarie din anul nou | E3-D8: `SoldInceputAn` = soldul final la 31.12 pe fiecare cheie, 6 și 7 la zero, fără nicio tranzacție `Deschidere`; snapshot-ul de referință egal cu suma postărilor; pe bugetar 121 și 489 în 117. Verificat în `ScenariiEx` (E3, pașii 2–3): cu decembrie 1975 și 1976 închise, balanța din snapshot = balanța din postări, iar `SoldInceputAn` din ianuarie 1976 = soldul final la 31.12.1975 pe fiecare cheie |
 | SC-X-13 | DVI legată la FCT → ajustarea costului pe lot cu taxa vamală → BCS din lot | 86-r1: `Atribuit` pe lot, costul ieșirii după ajustare; după PoC, cu 86-r1 (126 g) |
 | SC-X-14 | Faptele fiscale din fiecare scenă, înainte de curățenie: operare → storno/corecție | unicitate Bază/Taxă independent de Carte, absență explicită pe liniile fără TVA; FCT/FCL 100/21, RDC −100/−21, RLF −20/−4,20, DVI 100/21; matricea completă în [DVI-B7](../tr-d7b-dvi-baza-fiscala-contract.md#dvi-b7--probe-obligatorii-înainte-de-activare); implementat în `UnicitateFiscala` și scenele catalogului |

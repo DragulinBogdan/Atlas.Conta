@@ -181,5 +181,13 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         Refuza("SC-X-08", () => Storneaza(d.Id, new(An, 1, 20)), "STOC_INSUFICIENT");
         Verifica("SC-X-08", "lanțul rămâne intact", Amprenta(d.Id) + Amprenta(bcs) == inainte);
         Solduri("SC-X-08", lot, new(An, 1, 20), 6, 60, 3, 30);
+        // 025d, owner 2026-10-17: stornoul se judecă pe sold; cu destul stoc în destinație trece.
+        var al2lea = Iesire(true, (lot, 2)); Opereaza(al2lea.Id);
+        Solduri("SC-X-08", lot, new(An, 1, 20), 4, 40, 5, 50);
+        var consumul = Amprenta(bcs);
+        Storneaza(d.Id, new(An, 1, 20));
+        Solduri("SC-X-08", lot, new(An, 1, 20), 8, 80, 1, 10);
+        Verifica("SC-X-08", "ieșirea din destinație rămâne operată, neatinsă de stornoul transferului", Amprenta(bcs) == consumul
+            && CuSpatiu(os => os.GetObjectByKey<Document>(bcs).Stare) == StareDocument.Operat);
     }
 }

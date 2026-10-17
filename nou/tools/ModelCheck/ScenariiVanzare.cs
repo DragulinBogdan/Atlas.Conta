@@ -11,7 +11,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
-record LinieFclScena(decimal Cantitate, decimal Pret, string Tva = null, LinieScena Lot = null);
+record LinieFclScena(decimal Cantitate, decimal Pret, string Tva = null, LinieScena Lot = null, string Tip = null);
 
 sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> check,
     bool privat, Action<IObjectSpace, int, int> inchide)
@@ -27,7 +27,7 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
         foreach (var spec in linii) {
             var l = os.CreateObject<FacturaIesireDetaliu>(); l.Document = d;
             l.Pozitie = rezultat.Count + 1; l.Cantitate = spec.Cantitate; l.PretUnitar = spec.Pret;
-            l.TipMaterialId = Tip(os, spec.Lot != null ? "371" : Venit); l.CodEconomicId = Economic;
+            l.TipMaterialId = Tip(os, spec.Tip ?? (spec.Lot != null ? "371" : Venit)); l.CodEconomicId = Economic;
             if (spec.Tva != null) l.TipTva = os.GetObjectsQuery<TipTva>().Single(t => t.Cod == spec.Tva);
             l.LotId = spec.Lot?.Lot; l.ProdusId = spec.Lot?.Produs;
             rezultat.Add(new(l.ID, l.LotId, l.ProdusId));
@@ -57,7 +57,33 @@ sealed class ScenariiVanzare(Func<IObjectSpace> deschide, Action<string, bool> c
                     Linie: l.Id, Spatiu: N.Spatiu.Stoc)];
     }
 
+    // SC-X-03 (fără pasul RDC, owner 2026-10-17): avansul regularizat pe factură deschide două partide,
+    // iar încasarea se împerechează numai până la restul creanței.
+    void AvansRegularizat() {
+        if (!Privat) return;
+        var avans = Marcaj + "-AV";
+        Comanda(os => {
+            var t = os.CreateObject<TipMaterial>(); t.Cod = avans; t.Denumire = avans;
+            t.ClasaId = os.GetObjectByKey<TipMaterial>(Tip(os, Venit)).ClasaId; t.ContImplicitId = Cont("419");
+            os.CommitChanges();
+        });
+        var inc = Trezorerie(true, 150); Opereaza(inc.Id);
+        var f = Vinde(new LinieFclScena(1, 200, "N21"), new LinieFclScena(1, -100, Tip: avans)); Opereaza(f.Id);
+        var creanta = Partida(f.Id, ContClient, Client)!.Value;
+        SoldPartida("SC-X-03", creanta, Ianuarie, 142);
+        SoldPartida("SC-X-03", Partida(f.Id, "419", Client)!.Value, Ianuarie, 100);
+        var original = Amprenta(f.Id);
+        Refuza("SC-X-03", () => Imperecheaza(inc.Id, f.Id, 143, Ianuarie), "PARTIDA_PROPRIE_INSUFICIENTA");
+        Verifica("SC-X-03", "peste restul creanței nu se creează împerechere", Amprenta(f.Id) == original
+            && CuSpatiu(os => !os.GetObjectsQuery<Imperechere>().Any(i => i.DocumentId == f.Id)));
+        Imperecheaza(inc.Id, f.Id, 142, Ianuarie);
+        TransferPartida("SC-X-03", inc.Id, f.Id, ContClient, Client, N.Sens.Credit, 142, Ianuarie);
+        SoldPartida("SC-X-03", creanta, Ianuarie, 0);
+        SoldPartida("SC-X-03", Partida(inc.Id, ContClient, Client)!.Value, Ianuarie, -8);
+    }
+
     protected override void Executa() {
+        AvansRegularizat();
         FacturiDeschise();
         var f = Vinde(new LinieFclScena(1, 100)); Opereaza(f.Id);
         var inc = Trezorerie(true, 40); Opereaza(inc.Id);

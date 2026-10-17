@@ -156,6 +156,19 @@ sealed class ScenariiDeschidere(Func<IObjectSpace> deschide, Action<string, bool
                 && r.Single(p => p.Valoare == -20).Unitate != Partida(ref1, Furnizor));
         }
         Rest("SC-DES-03", ref1, Furnizor, 40); Rest("SC-DES-03", ref2, Furnizor, 40); Rest("SC-DES-03", ref1, Client, 50);
+        // SC-X-11: partida fără document se stinge prin aceeași formă de cheie ca partida unei facturi noi.
+        var factura = Factura(Ianuarie, new LinieFctScena(1, 30, Stoc: false)); Opereaza(factura.Id);
+        var plataFacturii = Trezorerie(false, 30); Opereaza(plataFacturii.Id);
+        Imperecheaza(plataFacturii.Id, factura.Id, 30, Ianuarie);
+        Verifica("SC-X-11", "stingerea partidei inițiale și a celei cu document au aceeași formă: partidă pe furnizor, debit, contabil, fără contrapondere",
+            CuSpatiu(os => {
+                var forme = new[] { plata.Id, plataFacturii.Id }.Select(d => os.GetObjectsQuery<C.Postare>()
+                    .Where(p => p.DocumentId == d && p.Tranzactie.Fel == N.FelTranzactie.Transfer).ToList()
+                    .Select(p => (p.FelUnitate, p.Repartitor, p.Sens, p.Carte, p.Contrapondere, Plus: p.Valoare > 0)).OrderBy(f => f.Plus).ToList()).ToList();
+                return forme[0].Count == 2 && forme[0].SequenceEqual(forme[1])
+                    && forme[0].All(f => f.FelUnitate == N.FelUnitate.Partida && f.Repartitor == Furnizor && f.Sens == N.Sens.Debit);
+            }));
+        SoldPartida("SC-X-11", Partida(factura.Id, ContFurnizor)!.Value, Ianuarie, 0);
         PlataPePartidaInitiala(plata.Id, 1, 20);
         Refuza("SC-DES-09", () => Stinge(Partida(ref2, Furnizor), 1, dataPlata), C.Materializare.StingereDeschidereInvalida);
         ReturFaraPretDeIntrare();

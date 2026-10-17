@@ -5,7 +5,7 @@
 - Execuție: firul „rotund”, felia R0 (2026-10-17), branch `rotund-r0`; inventarul făcut de trei agenți doar-citire și verificat de main pe cod; owner-ul a tranșat retriajul și (d)–(f) la 2026-10-17
 - Arii: verificare, stoc, motor, imobilizari, partide, tva, perioade
 - Amendează: —
-- Închide: 091-r2, 76-r2, N-r7, TR-r7, TR-r10, TR-r11, 095-r1, X-r3, NG-r1, T-r5, 86-r11
+- Închide: 091-r2, 76-r2, N-r7, TR-r7, TR-r10, TR-r11, 095-r1, X-r3, NG-r1, T-r5, 86-r11, 091-r6
 - Docs: `docs/decizii/restante.md`; `docs/nucleu/scenarii/IMO.md`; testul `FifoTeste.OrdineaGuidEsteOrdineaUuidDinPostgres`; SC-CIT-117, SC-CIT-118 din `docs/nucleu/scenarii/CITIRI.md`; `docs/stare-curenta/stoc.md`, `raportare.md`
 
 ## Regula durabilă
@@ -28,6 +28,8 @@
 
 (h) **Rândul 8 al ciclului se probează la sursă.** Orice sold citit după un pas al unei scene (`SoldLot`, `SoldPartida`, `Sold` la BCS) e comparat cu cititorii de producție (`Loturi.Cumulate`, `Partide.Cumulate`, citire integrală și vizibilă) și cu fișa și balanța pe cheia unității la acea dată. Cititorii nu se probează separat, pe scene paralele, ci pe pașii ciclului fiecărui tip.
 
+(i) **Condiția (2) din 091 (g) e îndeplinită.** Ciclul obligatoriu în 8 rânduri e probat pe BCS, FCT, PLT, INC, BTR, FCL și DSC, pe profilurile unde tipul există, iar lanțurile transversale SC-X-01, 03, 08, 10 și 11 sunt realizate (SC-X-13 e după PoC, prin (g)). Stornoul se judecă pe sold (025d), nu pe dependență: SC-X-08 probează ambele ramuri. Dry-run-ul refuză la fel ca operarea pe toate refuzurile de operare din scene. Rămân condiția (7) și S-r4.
+
 ## Context
 
 Firul de performanță a importului s-a închis la 2026-10-16 (125), iar owner-ul a hotărât ca migrarea să rămână după „rotund” (091 f). Lista `activă` avea 31 de rânduri; o parte erau stări vechi (corecturi comise de atunci), regule de design trecute ca restanțe sau performanță pe care 091 (k) o trece explicit „după PoC”.
@@ -48,6 +50,7 @@ Restanțele `activă` rămase și feliile lor: R1 F26-r18, S-r8, NG-r2; R2 X-r3 
 ## Istoric
 
 - 2026-10-17: scrisă la felia R0 a firului „rotund”; propusă owner-ului.
+- 2026-10-17: (i) adăugată la feliile R6b–R6c; 091-r6 închisă. Owner: SC-X-08 pe sold, SC-X-03 fără RDC.
 - 2026-10-17: (h) adăugată la felia R6a: 667 de verificări pe pas (286 bugetar, 381 privat), verzi.
 - 2026-10-17: (g) adăugată la felia R5, după răspunsurile owner-ului pe DVI.
 - 2026-10-17: (d) și (e) implementate la felia R2. (e) precizată: transferurile intră în atomii balanței și în snapshot, deci și în balanța analitică și în soldul pe partener; o primă variantă care le citea din cub, fără snapshot, a picat scara PerfCub (X-D5, citirea depindea de istoric). Transferul nu schimbă rulajele sintetice, fiindcă e scris ca debite de semn opus pe același cont. Probat de SC-CIT-118.
