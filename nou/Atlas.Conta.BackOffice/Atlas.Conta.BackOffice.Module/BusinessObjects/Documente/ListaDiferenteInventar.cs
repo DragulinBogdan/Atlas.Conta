@@ -113,6 +113,7 @@ public class ListaDiferenteInventarDetaliu : DocumentDetaliu, ILinieCuAtributeLo
     // 099-r1: cauza minusului; fără ea minusul e neimputabil (126); imputatul numai pe imputabilă.
     [XafDisplayName("Cauza diferenței")]
     public virtual CauzaDiferentei? CauzaDiferentei { get; set; }
+    [VisibleInListView(false), VisibleInDetailView(false)]
     public virtual Guid? PartenerDiferentaId { get; set; }
     [XafDisplayName("Imputat"), EditorAlias(EditorAliases.LookupPropertyEditor)]
     public virtual Repartitor PartenerDiferenta { get; set; }

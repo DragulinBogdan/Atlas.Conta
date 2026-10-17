@@ -26,6 +26,8 @@
 
 (g) **Declarația vamală rămâne evidență fiscală.** Datoria din vamă e sold de cont: DVI creditează contul implicit al predatorului (446 pe vamă, fără partide); partida apare numai pe un comisionar vamal cu 401, unde contul urmărește partide, și se stinge prin notă sau plată pe FIFO (SC-DVI-17), fără împerechere pe DVI (DVI-D4). Capitalizarea taxei vamale pe lot (86-r1), refuzul anulării facturii legate de o DVI operată (86-r2) și lanțul SC-X-13 trec „după PoC” și ies din condiția (2) a lui „rotund”.
 
+(h) **Rândul 8 al ciclului se probează la sursă.** Orice sold citit după un pas al unei scene (`SoldLot`, `SoldPartida`, `Sold` la BCS) e comparat cu cititorii de producție (`Loturi.Cumulate`, `Partide.Cumulate`, citire integrală și vizibilă) și cu fișa și balanța pe cheia unității la acea dată. Cititorii nu se probează separat, pe scene paralele, ci pe pașii ciclului fiecărui tip.
+
 ## Context
 
 Firul de performanță a importului s-a închis la 2026-10-16 (125), iar owner-ul a hotărât ca migrarea să rămână după „rotund” (091 f). Lista `activă` avea 31 de rânduri; o parte erau stări vechi (corecturi comise de atunci), regule de design trecute ca restanțe sau performanță pe care 091 (k) o trece explicit „după PoC”.
@@ -46,5 +48,6 @@ Restanțele `activă` rămase și feliile lor: R1 F26-r18, S-r8, NG-r2; R2 X-r3 
 ## Istoric
 
 - 2026-10-17: scrisă la felia R0 a firului „rotund”; propusă owner-ului.
+- 2026-10-17: (h) adăugată la felia R6a: 667 de verificări pe pas (286 bugetar, 381 privat), verzi.
 - 2026-10-17: (g) adăugată la felia R5, după răspunsurile owner-ului pe DVI.
 - 2026-10-17: (d) și (e) implementate la felia R2. (e) precizată: transferurile intră în atomii balanței și în snapshot, deci și în balanța analitică și în soldul pe partener; o primă variantă care le citea din cub, fără snapshot, a picat scara PerfCub (X-D5, citirea depindea de istoric). Transferul nu schimbă rulajele sintetice, fiindcă e scris ca debite de semn opus pe același cont. Probat de SC-CIT-118.

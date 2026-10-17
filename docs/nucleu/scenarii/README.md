@@ -49,7 +49,10 @@ unde tipul există:
 7. stingere sau împerechere, unde tipul deschide partidă (transferul între
    partide, plafonul pe rest, desfacerea);
 8. citirile după fiecare pas: sold pe unitate, fișă de cont, balanță la
-   graniță, `Sold` reconstruit egal cu suma postărilor.
+   graniță, `Sold` reconstruit egal cu suma postărilor. Se probează în
+   utilitarele scenei (`SoldLot`, `SoldPartida`, `Sold` la BCS): fiecare sold
+   citit după un pas e comparat cu cititorii de producție și cu fișa și
+   balanța pe cheia unității (126 h).
 
 ## Cazurile-limită obligatorii (unde tipul le poate produce)
 

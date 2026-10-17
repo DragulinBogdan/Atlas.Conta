@@ -40,6 +40,7 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
                     .Select(l => l.ID).ToArray();
                 UnicitateFiscala.FaraFapte(os, check, privat, t.DocumentId!.Value, t.Fel, linii);
             }
+            AcoperireInvarianti.Verifica(os, Verifica);
         }
         finally { Curata(); }
     }
@@ -175,6 +176,14 @@ sealed class ScenariiBcs(Func<IObjectSpace> deschide, Action<string, bool> check
         var q = randuri.Sum(p => p.Cantitate);
         var v = randuri.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare);
         Verifica(id, $"sold cub la {data}: {cantitate}/{valoare} (obținut {q}/{v})", q == cantitate && v == valoare);
+        var produs = randuri.Select(p => p.Produs).FirstOrDefault(p => p != null);
+        Verifica(id, $"cititorii de producție la {data}: soldul pe lot, fișa și balanța pe cheia lui (126, R6a)",
+            new[] { C.Citiri.CitireCumul.Integrala, C.Citiri.CitireCumul.Vizibila }
+                .Select(c => C.Citiri.Loturi.Cumulate(os, c, data).Where(s => s.LotId == lot && s.GestiuneId == magazie && s.ContId == credit).ToList())
+                .All(r => r.Sum(s => s.Cantitate) == cantitate && r.Sum(s => s.Valoare) == valoare)
+            && (produs is not Guid material || ScenaDocumente.PeCheie(os, data, credit, magazie, material,
+                C.Citiri.Loturi.Cumulate(os, C.Citiri.CitireCumul.Integrala, data)
+                    .Where(s => s.ContId == credit && s.GestiuneId == magazie && s.ProdusId == material).Sum(s => s.Valoare))));
     }
 
     void FaraEfecte(string id, Guid docId) {
