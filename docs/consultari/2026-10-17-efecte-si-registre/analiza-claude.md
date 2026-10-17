@@ -4,6 +4,7 @@ Tip: analiza
 Data: 2026-10-17
 Stare: răspuns la `sinteza-si-intrebari.md`; a dus la decizia 131 (gard acum, primitiva la primul consumator; proba amânată ca 131-r1)
 Autor: Claude (sesiunea de după „rotund”, 130)
+Alimentează: decizia 131 și felia primului consumator al faptului datat (131-r1)
 Răspuns la: sinteza Codex din 2026-10-17; reia consultarea `docs/consultations/2026-10-05-cub-vs-registre/` pe modelul rotund
 
 ## 1. Teza owner-ului, verificată pe cod
