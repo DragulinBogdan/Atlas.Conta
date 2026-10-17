@@ -31,6 +31,7 @@ public static class CoduriRefuz {
     public const string ContStocLipsa = "CONT_STOC_LIPSA";
     public const string CantitateNepozitiva = "CANTITATE_NEPOZITIVA";
     public const string ValoareNepozitiva = "VALOARE_NEPOZITIVA";
+    public const string LotValoareNegativa = "LOT_VALOARE_NEGATIVA";
     public const string ViramentMixt = "VIRAMENT_MIXT";
     public const string RegulaContareLipsa = "REGULA_CONTARE_LIPSA";
     public const string NumarLipsa = "NUMAR_LIPSA";

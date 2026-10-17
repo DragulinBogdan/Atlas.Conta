@@ -231,8 +231,11 @@ public class PunereInFunctiune : Document, IDocumentCuEfecteProprii {
     internal static string MotivFapteUlterioare(IObjectSpace os, Guid id, DateOnly data,
             IEnumerable<Guid> fise) {
         var ids = fise.ToList();
+        var luna = Luna(data);
+        // F26-r18: rândul lunar se calculează pe evenimentele lunilor anterioare, ca la operare.
         var ulterioare = Cub.Citiri.Imobilizari.Randuri(os, ids, DateOnly.MaxValue)
-            .Where(r => r.DocumentId != id && r.Rand.Data >= data)
+            .Where(r => r.DocumentId != id && r.Rand.Data >= data
+                && (r.Rand.Fel != FelMiscareImobilizare.Amortizare || Luna(r.Rand.Data) > luna))
             .Select(r => new { r.Rand.Storno, r.Rand.DetaliuId, r.Rand.Fel, r.Rand.Data }).ToList();
         var stornate = ulterioare.Where(r => r.Storno).Select(r => r.DetaliuId).ToHashSet();
         var viu = ulterioare.FirstOrDefault(r => !r.Storno && !stornate.Contains(r.DetaliuId));

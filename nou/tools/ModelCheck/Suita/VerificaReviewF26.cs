@@ -470,7 +470,7 @@ static class VerificaReviewF26 {
                 refuz == null && noteCub.Count > 0 && noteCub.All(p => p.Valoare != 0m));
         }
 
-        // ── IMO-R9: anularea unei modernizări din luna unei AMO deja operate (nu depinde de ea) ──
+        // ── IMO-R9: anularea unei modernizări din luna unei AMO deja operate (nu depinde de ea, F26-r18) ──
         using (var os = s.Provider.CreateObjectSpace()) {
             CurataDocumente(os);
             var j = Fisa(os, "R9");
@@ -491,11 +491,9 @@ static class VerificaReviewF26 {
                         osAnulare.GetObjectByKey<PunereInFunctiune>(modernizare.ID)));
             Console.WriteLine($"     MĂSURAT (IMO-R9/{eticheta}): modernizare pe 10.02 cu februarie operată → operare "
                 + $"„{Prima(refuzOperare)}”, anulare „{Prima(refuzAnulare)}”.");
-            s.Check($"IMO-R9 ({eticheta}) OBSERVAȚIE (nu defect de fond): modernizarea din luna unei amortizări deja "
-                + "operate se operează (luna evenimentului postează cota veche), dar anularea ei e refuzată de "
-                + "`VerificaFaraFapteUlterioare` pe `Data >=`, deși rândul lunar din 29.02 nu s-a calculat pe ea — "
-                + "criteriul de dependență al anulării (data) e mai strict decât cel al operării (luna)",
-                refuzOperare == null && refuzAnulare != null);
+            s.Check($"IMO-R9 ({eticheta}): modernizarea din luna unei amortizări deja operate se operează și se "
+                + "anulează — rândul lunar din 29.02 nu s-a calculat pe ea (F26-r18)",
+                refuzOperare == null && refuzAnulare == null);
         }
 
         // ── AMO-V0…V8 (F27-D4): recuperarea amortizării fișei puse în funcțiune întârziat ─

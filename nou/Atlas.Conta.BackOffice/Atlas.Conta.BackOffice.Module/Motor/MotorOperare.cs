@@ -51,6 +51,7 @@ public static class MotorOperare {
             .ToList();
 
         doc.PregatesteOperare(os);
+        FinalizeazaLoturile(os, doc);
         var claseTip = Fapte.ClaseTip(os, doc.Detalii.Select(d => d.TipMaterialId));
 
         var erori = new List<string>();
@@ -75,7 +76,6 @@ public static class MotorOperare {
         // 33d: prima scriere pe document vine după ultimul refuz citit fără scriere.
         AsignaNumar(os, doc, tipDoc);
         AplicaScadenta(os, doc, tipDoc);
-        FinalizeazaLoturile(os, doc);
         if (doc is IDocumentCuEfecteProprii propriu)
             propriu.LaOperare(os);
 
@@ -101,14 +101,20 @@ public static class MotorOperare {
         return conex ?? secundar;
     }
 
-    // 13, 26e: lotul născut de o linie își primește prețul de intrare și data la operare.
+    // 13, 26e: lotul născut de o linie își primește prețul de intrare și data înaintea refuzurilor,
+    // ca validarea și operarea să judece același contract (S-r8); lotul nu se naște negativ (126f).
     static void FinalizeazaLoturile(IObjectSpace os, Document doc) {
         var idsDetalii = Liniile(doc).Select(d => d.ID).ToList();
         foreach (var lot in os.GetObjectsQuery<Lot>()
                 .Where(l => l.LinieIntrareId != null && idsDetalii.Contains(l.LinieIntrareId.Value)).ToList()) {
             var linie = doc.Detalii.First(d => d.ID == lot.LinieIntrareId);
             if (linie.Cantitate <= 0)
-                throw new OperareException("O linie care creează lot trebuie să aibă cantitate pozitivă.");
+                throw new OperareException($"{Declaratii.CoduriRefuz.CantitateNepozitiva}: "
+                    + "O linie care creează lot trebuie să aibă cantitate pozitivă.");
+            if (linie.Valoare < 0)
+                throw new OperareException($"{Declaratii.CoduriRefuz.LotValoareNegativa}: Linia {linie.Pozitie} "
+                    + "ar naște un lot cu valoare negativă; returul sau reducerea se fac prin retur la furnizor "
+                    + "sau prin corecția valorică.");
             lot.PretUnitar = Scara.RotunjestePret(linie.Valoare / linie.Cantitate);
             lot.Data = doc.DataInregistrare;
             if (linie is ILinieCuAtributeLot atribute) {

@@ -1,6 +1,6 @@
 # Nomenclatoare și ANAF
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Societatea, partenerii, produsele și sincronizarea cu ANAF.
 
@@ -36,7 +36,10 @@ unitatea standard coexistă cu textul UM legacy. Normalizarea este explicită
 în proiecțiile fiscale. (73b, 73c) Unitatea produsului (standard și text) se
 poate completa oricând, dar nu se mai schimbă după ce produsul are postări
 în cub sau apare pe o linie operată: cantitățile istorice au sensul unității
-de la operare. Pentru altă unitate se creează alt produs. (S1-R5)
+de la operare. Pentru altă unitate se creează alt produs. (S1-R5) Tipul de
+material al unui produs cu stoc în gestiune nu se schimbă pe altă clasă sau
+alt cont implicit: contul lotului vine din tipul curent al produsului. Între
+tipuri cu aceeași clasă și același cont schimbarea rămâne liberă. (127c)
 
 ## Sincronizarea cu ANAF
 
@@ -64,5 +67,5 @@ iar refuzurile de domeniu 422. (72c, 72e)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (3; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 72, 73 (amendată de 74, 105), 122 (amendată de 123).
+Deciziile care numesc pagina în `Arii:` (4; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 72, 73 (amendată de 74, 105), 122 (amendată de 123), 127 (propusă).
 <!-- /gen:decizii -->

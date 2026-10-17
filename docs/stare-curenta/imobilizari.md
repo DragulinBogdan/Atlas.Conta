@@ -1,6 +1,6 @@
 # Imobilizări
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Fișa imobilizării, citirea ei din cub și poziția fără fișă, amortizarea lunară (formula, recuperarea, generarea și gardienii), stornoul și datele care parametrizează amortizarea.
 
@@ -124,7 +124,10 @@ cât există amortizare operată pentru luna ieșirii sau una ulterioară. (87e,
 Stornoul oricărui document de imobilizări se datează în luna documentului:
 rândul invers datat în altă lună ar lăsa situația fișelor falsă între cele
 două date. O fișă apare o singură dată pe o punere în funcțiune; duratele
-revizuite depășesc lunile deja amortizate. (87e, 87g)
+revizuite depășesc lunile deja amortizate. (87e, 87g) Anularea și stornarea
+unui eveniment PIF sunt refuzate de faptele ulterioare ale fișelor lui, dar
+rândul lunar AMO contează numai dintr-o lună ulterioară evenimentului, ca la
+operare: amortizarea lunii se calculează pe evenimentele lunilor anterioare. (127b)
 
 ## Datele amortizării
 
@@ -159,5 +162,5 @@ catalog: tipul material îl alege utilizatorul. (87d)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (6; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 87 (amendată de 97), 95, 97 (amendată de 98), 98, 102, 126 (propusă).
+Deciziile care numesc pagina în `Arii:` (7; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 87 (amendată de 97), 95, 97 (amendată de 98), 98, 102, 126 (propusă), 127 (propusă).
 <!-- /gen:decizii -->

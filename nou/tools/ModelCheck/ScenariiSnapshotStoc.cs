@@ -124,6 +124,24 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
                 && s.GestiuneId == Magazie && s.ContId == Cont(Stoc));
             return s.Cantitate == -6 && s.Valoare == -60;
         }));
+        Verifica("SC-CIT-116", "produsul cu stoc în gestiune nu trece pe tipul altei clase", CuSpatiu(os => {
+            var produs = os.GetObjectsQuery<Lot>().Single(l => l.ID == lot).ProdusId;
+            var curent = os.GetObjectByKey<Produs>(produs).TipMaterialId;
+            var clasa = os.GetObjectByKey<TipMaterial>(curent).ClasaId;
+            var alt = os.GetObjectsQuery<TipMaterial>().First(t => t.ClasaId != clasa).ID;
+            os.GetObjectByKey<Produs>(produs).TipMaterialId = alt;
+            try { GardianEditare.Verifica(os); return false; }
+            catch (OperareException e) { return e.Message.Contains("tipul de material nu se mai schimbă"); }
+        }));
+        Verifica("SC-CIT-116", "produsul fără stoc își schimbă tipul", CuSpatiu(os => {
+            var p = os.CreateObject<Produs>();
+            p.Cod = Marcaj + "-FARA-STOC"; p.Denumire = p.Cod; p.UM = "BUC"; p.TipMaterialId = Tip(os, Stoc);
+            os.CommitChanges();
+            var clasa = os.GetObjectByKey<TipMaterial>(p.TipMaterialId).ClasaId;
+            p.TipMaterialId = os.GetObjectsQuery<TipMaterial>().First(t => t.ClasaId != clasa).ID;
+            try { GardianEditare.Verifica(os); return true; }
+            catch (OperareException) { return false; }
+        }));
         Verifica("SC-CIT-115", "citirea pe loturi = citirea întreagă restrânsă, fără data ca acces", CuSpatiu(os => {
             Guid[] loturi = [lot, initial];
             bool Egal(IQueryable<C.Citiri.SoldLot> pe, IQueryable<C.Citiri.SoldLot> toate) {

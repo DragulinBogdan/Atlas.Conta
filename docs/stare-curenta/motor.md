@@ -1,6 +1,6 @@
 # Motorul de postare
 
-**Actualizat: 2026-10-16.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Contarea și dimensiunile, precizia numerică, nucleul pur, declarația fluxului per tip, laturile documentului, cubul persistat și scrierea serială.
 
@@ -395,8 +395,13 @@ rezerva 401 / 401.01.00). (112)
 
 - Valoarea negativă e admisă în `Operare`: e reprezentarea „în roșu” a liniei
   culese, retur sau discount pe același document. `SEMN_NEGATIV` rămâne doar pe
-  `Deschidere`. Un lot născut de o linie „în roșu” se evaluează negativ, ca în
-  motorul vechi (S-r7). (S-D14)
+  `Deschidere`. Lotul nu se naște însă negativ: linia care creează lot cu
+  valoare negativă e refuzată cu `LOT_VALOARE_NEGATIVA`; returul sau reducerea
+  se fac prin RLF sau prin corecția valorică. (S-D14, 126f)
+- Lotul născut de document își primește prețul și data în pregătirea comună
+  a validării și a operării, înaintea refuzurilor: dry-run-ul și operarea
+  judecă același contract, iar cantitatea nepozitivă e refuzată la amândouă
+  (`CANTITATE_NEPOZITIVA`). Validarea nu persistă nimic. (127a)
 - `PoliticaTva.TolerantaTaxa` e opțională: `null` înseamnă că taxa culeasă
   rămâne autoritară, fără validare — valoarea de seed a profilului privat. O
   valoare dată refuză `TVA_IN_AFARA_TOLERANTEI` peste `toleranță × liniile
@@ -711,5 +716,5 @@ scrie cubul, iar loturile ei se consumă ca oricare altele. (094, DES-B1…B4)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (33; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124, 126 (propusă).
+Deciziile care numesc pagina în `Arii:` (34; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124, 126 (propusă), 127 (propusă).
 <!-- /gen:decizii -->

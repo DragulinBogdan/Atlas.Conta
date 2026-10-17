@@ -283,6 +283,7 @@ public sealed partial class GardianEditare : IObjectSpaceCustomizer {
                 case Produs produs:
                     VerificaProdus(produs, erori);
                     VerificaUnitateProdus(os, produs, erori);
+                    VerificaTipProdus(os, produs, erori);
                     break;
                 // (h) Politica de mișcare SAF-T (felia 17, D17-D1): codul din
                 // nomenclator, motivul obligatoriu la excluderea deliberată,
@@ -835,6 +836,30 @@ public sealed partial class GardianEditare : IObjectSpaceCustomizer {
         if (folosit)
             erori.Add($"Produsul {produs.Denumire ?? produs.Cod} are mișcări operate — unitatea de măsură nu se mai "
                 + "schimbă; pentru altă unitate creați un produs nou.");
+    }
+
+    // NG-r2: contul lotului vine din tipul curent al produsului; cu stoc în gestiune, tipul nu trece pe altă clasă sau alt cont.
+    static void VerificaTipProdus(IObjectSpace os, Produs produs, ICollection<string> erori) {
+        if (EsteSters(os, produs) || os is not EFCoreObjectSpace efCore)
+            return;
+        var intrare = efCore.DbContext.Entry(produs);
+        if (intrare.State == EntityState.Added)
+            return;
+        var valoare = intrare.Property(nameof(Produs.TipMaterialId));
+        if (valoare.OriginalValue is not Guid vechi || produs.TipMaterialId is not Guid nou || vechi == nou)
+            return;
+        var conturi = os.GetObjectsQuery<TipMaterial>().Where(t => t.ID == vechi || t.ID == nou)
+            .Select(t => new { t.ClasaId, t.ContImplicitId }).ToList();
+        if (conturi.Distinct().Count() < 2)
+            return;
+        var id = produs.ID;
+        var cuStoc = (from s in Cub.Citiri.Loturi.Solduri(os)
+                      join g in os.GetObjectsQuery<Gestiune>() on s.GestiuneId equals g.ID
+                      where s.ProdusId == id && s.Cantitate != 0m
+                      select s.LotId).Any();
+        if (cuStoc)
+            erori.Add($"Produsul {produs.Denumire ?? produs.Cod} are stoc în gestiune — tipul de material nu se mai "
+                + "schimbă pe altă clasă sau alt cont; consumați sau transferați stocul întâi, ori creați un produs nou.");
     }
 
     // (h) Politica de mișcare SAF-T (felia 17, D17-D1). Trei reguli de FOND, pe
