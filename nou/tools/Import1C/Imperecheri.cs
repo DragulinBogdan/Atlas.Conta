@@ -160,7 +160,9 @@ static class Imperecheri1C {
                     continue;
                 }
                 if (suma <= 0) {
-                    Sare("sumă ne-pozitivă după agregare", suma);
+                    if (!(suma < 0 && sens == null && NeteazaPozitie(bucla, cheie.View, cheie.CheieStingator,
+                            cheie.TintaTip, cheie.TintaId, cheie.TipRef, suma)))
+                        Sare("sumă ne-pozitivă după agregare", suma);
                     continue;
                 }
                 if (bucla.Tinta(cheie.TintaTip, cheie.TintaId) == null
@@ -420,6 +422,34 @@ static class Imperecheri1C {
         OverflowException => false,
         _ => true,
     };
+
+    // 133 c: rândul negativ al unui stingător pe o poziție inițială e netarea 1C a unei poziții de sens opus
+    // în aceeași plată; Atlas n-o aplică, iar mișcarea neaplicată intră în contractul 5 (107h).
+    static bool NeteazaPozitie(BuclaImport bucla, string view, string cheieStingator, string tintaTip,
+            string tintaId, string tipRef, decimal suma) {
+        var stingator = bucla.Tinta(view, cheieStingator);
+        if (stingator == null || bucla.Tinta(tintaTip, tintaId) != null)
+            return false;
+        var candidate = PartideDeschidere(bucla, tipRef, tintaId);
+        if (candidate.Count == 0)
+            return false;
+        using var os = bucla.CreeazaObjectSpace();
+        var proprii = os.GetObjectsQuery<Postare>()
+            .Where(p => p.DocumentId == stingator && p.Carte == N.Carte.Contabil
+                && p.FelUnitate == N.FelUnitate.Partida && p.Repartitor != null
+                && p.Tranzactie.Fel == N.FelTranzactie.Operare)
+            .Select(p => new { p.Cont, Partener = p.Repartitor, Semnat = p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare })
+            .ToList();
+        var partida = candidate.FirstOrDefault(c => proprii.Any(p => p.Cont == c.Cont && p.Partener == c.Partener));
+        if (partida == default)
+            return false;
+        var sensMiscare = Math.Sign(proprii.Where(p => p.Cont == partida.Cont && p.Partener == partida.Partener).Sum(p => p.Semnat));
+        if (sensMiscare == 0)
+            return false;
+        Refuza(partida.Partida, sensMiscare * suma, -suma,
+            "stingătorul sursei netează o poziție de sens opus (rând negativ); Atlas n-o aplică (133 c)");
+        return true;
+    }
 
     static void Refuza(Guid partida, decimal semnat, decimal suma, string motiv) {
         Sare(semnat == 0m ? motiv + " — sens nedeterminat, fără explicație în contractul 5" : motiv, suma);

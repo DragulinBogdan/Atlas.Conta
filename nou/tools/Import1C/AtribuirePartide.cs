@@ -17,6 +17,7 @@ static class AtribuirePartide {
     public const string DocumentPropriu = "rândul sursei e pe poziție, Atlas îl ține pe partida documentului (107-r1)";
     public const string FifoNumire = "notă Atlas pe FIFO, sursa numește un document fără poziție (E4-r1)";
     public const string StingereNeaplicata = "stingere refuzată sau plafonată de trecerea 2 (107h)";
+    public const string FifoExcedent = "notă Atlas peste restul partidei numite, excedentul pe FIFO (N-D7)";
 
     public sealed record Parte(string Recorder, string View, decimal Sursa, decimal Atlas, string Categorie) {
         public decimal Delta => Atlas - Sursa;
@@ -73,18 +74,21 @@ static class AtribuirePartide {
             if (Math.Abs(a - s) < Eps)
                 continue;
             var view = vederi.GetValueOrDefault(r) ?? "?";
-            rezultat.Add(new Parte(r, view, s, a, Categorie(view, s, a, areRefuzSauPlafon)));
+            rezultat.Add(new Parte(r, view, s, a, Categorie(r, view, s, a, areRefuzSauPlafon)));
         }
         return new Rezultat(rezultat, Math.Abs(rezultat.Sum(p => p.Delta) - delta) < Eps);
     }
 
-    static string Categorie(string view, decimal sursa, decimal atlas, bool areRefuzSauPlafon) {
+    static string Categorie(string recorder, string view, decimal sursa, decimal atlas, bool areRefuzSauPlafon) {
+        var nota = Note.Contains(view);
+        if (nota && (Math.Abs(sursa) < Eps || NoteComune.PeFifo.Contains(recorder)))
+            return FifoNumire;
         if (Stingatori.Contains(view) && areRefuzSauPlafon)
             return StingereNeaplicata;
-        if (Math.Abs(atlas) < Eps && !Stingatori.Contains(view) && !Note.Contains(view))
+        if (Math.Abs(atlas) < Eps && !Stingatori.Contains(view) && !nota)
             return DocumentPropriu;
-        if (Math.Abs(sursa) < Eps && Note.Contains(view))
-            return FifoNumire;
+        if (nota && Math.Sign(atlas) == Math.Sign(sursa) && Math.Abs(atlas) < Math.Abs(sursa))
+            return FifoExcedent;
         return null;
     }
 }

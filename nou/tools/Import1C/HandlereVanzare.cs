@@ -211,13 +211,13 @@ static class HandlerVanzare {
         // Imperecherea ei cu factura rămâne pasului 5 (§12.2).
         plan.SumaCard = randuri.Where(r => EsteIncasareCard(cat, r)).Sum(r => r.Suma);
 
-        ConstruiestePunte(cat, plan, h.Id, randuri);
+        ConstruiestePunte(cat, plan, h.Id, randuri, Imobilizari1C.FacturaCuIesire(ctx.Bucla, h.Id));
         return plan;
     }
 
     // Clasificarea rândurilor facturii de ieșire (regula feliei — Vanzare1C.cs).
     static void ConstruiestePunte(Catalog cat, Plan plan, string docId,
-            IReadOnlyList<FlaxRandNota> randuri) {
+            IReadOnlyList<FlaxRandNota> randuri, bool cuIesire) {
         // Ce postează CHIAR planul: creanța (liniile de venit + pasul TVA) și
         // încasarea pe card. Fără ele, rândurile care se declarau acoperite prin
         // ele trec pe punte (aserțiunea F1c din `Clasificare1C.Declara`).
@@ -226,6 +226,8 @@ static class HandlerVanzare {
             acoperitori.Add("venit");
         if (plan.SumaCard > 0)
             acoperitori.Add("card");
+        if (cuIesire)
+            acoperitori.Add("cas");
 
         Clasificare1C.Declara(plan.Punte, cat, View, docId, randuri, acoperitori,
             (rand, debit, credit) => {
@@ -258,7 +260,10 @@ static class HandlerVanzare {
             // Regularizarea TVA-ului neexigibil al avizului facturat.
             if (debit == "4428" && credit == "4427")
                 return Rand.Punte("FCL: regularizarea TVA neexigibilă a avizului (4428 = 4427)");
-            // Cesiuni/casări de imobilizări strecurate pe factură.
+            if (cuIesire && Imobilizari1C.EsteRandIesire(debit, credit)) {
+                plan.Punte.ActualAtlas(debit, credit, rand.Suma);
+                return Rand.Acoperit("cas", "FCL: rând de imobilizări pe factura de ieșire");
+            }
             if (debit.StartsWith('2') || credit.StartsWith('2'))
                 return Rand.Punte("FCL: rând de imobilizări pe factura de ieșire");
             return null;

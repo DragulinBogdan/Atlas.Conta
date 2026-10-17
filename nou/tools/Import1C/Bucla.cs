@@ -78,6 +78,7 @@ static class Handlere {
     public static readonly IReadOnlyList<HandlerTip> Toate = [
         // 1. INTRĂRILE — nasc loturi: factura (cu NIR-ul conex), avizul de intrare
         //    (plus de inventar), returul de la client (marfa revine în gestiune).
+        .. Imobilizari1C.HandlereIntrare,
         HandlerFactura.Handler,
         HandlerAvizIntrare.Handler,
         HandlerReturClient.Handler,
@@ -93,6 +94,7 @@ static class Handlere {
         HandlerDiferente.HandlerPlus,
         HandlerDiferente.HandlerMinus,
         HandlerVanzare.Handler,
+        Imobilizari1C.HandlerIesire,
         HandlerAmanunt.Handler,
         HandlerAvizIesire.Handler,
         HandlerReturFurnizor.Handler,
@@ -124,6 +126,7 @@ static class Handlere {
         MotorTrezorerie.Raporteaza();
         HandlerCompensare.Raporteaza();
         HandlereNoteSimple.Raporteaza();
+        Imobilizari1C.Raporteaza();
         StocDinNota.Raporteaza();
         Evaluare.Raporteaza();
         NoteComune.Raporteaza();
@@ -497,6 +500,7 @@ sealed class BuclaImport {
             contract = new(0, 0, 0, 0m, 0m, 0m);
         }
         else {
+            Amortizare(ctx);
             InchidereTva(ctx);
             // `MidpointLuna` e deja acumulat de `Opereaza` (documente + copii + ITV).
             cronometruContract.Restart();
@@ -618,6 +622,22 @@ sealed class BuclaImport {
     }
 
     int itvSarite;
+
+    // E4-D3: amortizarea lunii o generează motorul, înaintea închiderii de TVA; diferența față de
+    // rândurile 1C lăsate de închidere se înregistrează în aceeași unitate.
+    public void PersistaDivergente() => Divergente.PersistaRamase(provider);
+
+    void Amortizare(ContextLuna ctx) {
+        if (esecuri > 0) {
+            avert($"Luna {ctx.Luna:00}/{ctx.An}: {esecuri} eșecuri de import — amortizarea NU se generează.");
+            return;
+        }
+        ImportaDocument(Imobilizari1C.ViewAmortizare, $"{ctx.An:0000}-{ctx.Luna:00}",
+            os => Imobilizari1C.Genereaza(os, this, ctx),
+            regenerabilLaStorno: true,
+            motivFaraDraft: "luna n-are fișe de amortizat sau amortizarea e deja vie");
+        Divergente.PersistaRamase(provider);
+    }
 
     // PASUL 6: contractul design §8 per lună — sold per cont OMFP, 4423/4424,
     // stoc per produs × gestiune; diferențele justificate se poartă înainte

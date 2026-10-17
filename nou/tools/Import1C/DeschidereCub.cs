@@ -128,7 +128,8 @@ static partial class Deschidere {
     public static RezultatControale Controale(IReadOnlyDictionary<string, decimal> net,
             IReadOnlyList<PartidaInitiala> partide, IReadOnlyList<LotInitial> loturi,
             IReadOnlyDictionary<Guid, string> simbolPeId, IReadOnlySet<string> urmarite,
-            IReadOnlySet<string> conturiStoc, Action<string> avert, Action<string, bool> check) {
+            IReadOnlySet<string> conturiStoc, IReadOnlyDictionary<string, decimal> ajustari,
+            Action<string> avert, Action<string, bool> check) {
         var controale = new List<Control>();
         var declarate = new Dictionary<string, decimal>(StringComparer.Ordinal);
         var debitTert = partide.Where(p => p.Sens == N.Sens.Debit)
@@ -138,7 +139,7 @@ static partial class Deschidere {
         var stoc = loturi.GroupBy(l => simbolPeId[l.Cont])
             .ToDictionary(g => g.Key, g => g.Sum(l => l.Valoare), StringComparer.Ordinal);
         var stocFaraLot = 0;
-        foreach (var simbol in net.Keys.Union(debitTert.Keys).Union(creditTert.Keys).Union(stoc.Keys)
+        foreach (var simbol in net.Keys.Union(debitTert.Keys).Union(creditTert.Keys).Union(stoc.Keys).Union(ajustari.Keys)
                      .OrderBy(s => s, StringComparer.Ordinal)) {
             var sold = net.GetValueOrDefault(simbol);
             if (urmarite.Contains(simbol)) {
@@ -161,6 +162,12 @@ static partial class Deschidere {
                         + $"Balanța {sold:N2}; Δ {delta:N2} declarat „deschidere fără detaliu de lot” (M1-D6).");
                 }
                 continue;
+            }
+            if (ajustari.TryGetValue(simbol, out var ajustare)) {
+                declarate[simbol] = ajustare;
+                avert($"Cont {simbol}: controlul deschiderii = Balanța {sold:N2} + Δ {ajustare:N2} declarat "
+                    + "„sold fără subconto MF opus naturii contului” (E4-D3).");
+                sold += ajustare;
             }
             if (sold != 0m)
                 controale.Add(new Control(simbol, sold > 0 ? N.Sens.Debit : N.Sens.Credit, Math.Abs(sold)));
