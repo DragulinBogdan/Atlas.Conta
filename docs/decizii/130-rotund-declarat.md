@@ -19,6 +19,8 @@
 
 (d) **Lanțul de migrații crește din migrația de bază.** O schimbare de schemă de după „rotund” adaugă o migrație incrementală peste `20261017101337_InitialCreate` (120 a). Lanțul nu se mai recomprimă: prima bază care trebuie păstrată vine din migrare, iar de atunci lanțul e istoric (120 d).
 
+(e) **„Rotund” e o ancoră intermediară, nu un îngheț.** Modelul rămâne greenfield și va mai avea iterații. Rigoarea etapelor de după se măsoară cu munca pe care o salvează: o regulă care cere coregrafie sau ține istoric ce va fi anulat de decizii ulterioare se relaxează, nu se respectă din inerție. (c) și (d) rămân până când se dovedesc astfel (130-r2).
+
 ## Context
 
 Firul „rotund” a pornit la 2026-10-17 din inventarul 126: 31 de restanțe `activă` și condițiile (2) și (7) neîndeplinite. Feliile R1–R7 au închis restanțele (127, 128, 129 și 126 d–g), au probat ciclul și lanțurile transversale (126 h, i) și au recomprimat migrațiile (126 j). Owner-ul a hotărât ca migrarea să vină după „rotund” (091 f).
@@ -27,12 +29,15 @@ Firul „rotund” a pornit la 2026-10-17 din inventarul 126: 31 de restanțe `a
 
 - Declararea are decizie proprie, nu o literă în 126: 126 e drumul (inventarul, retriajul, semantica cititorilor), iar declararea schimbă regula de lucru de după, adică (b)–(d).
 - (c), nu scoaterea stării `activă`: registrul păstrează vocabularul (118), iar o etapă tot are nevoie de restanțe care o blochează.
+- (e), owner, 2026-10-17: (c) și (d) sunt puternice pentru un model încă greenfield; rămân, dar se relaxează dacă introduc prea multă coregrafie sau păstrează un istoric care doar îngreunează evoluția.
 - Probele în browser rămase (coloana `Consum`, culegerea cauzei pe LDI) nu țin de condițiile lui „rotund”; sunt numite în 130-r1.
 
 ## Ce rămâne deschis
 
 - 130-r1: proba pe calea reală, în browser, a coloanei `Consum` din raportul de stoc (126 d) și a culegerii Cauză/Imputat pe o linie LDI reală (129 a). Baza hostului Privat are numai seed.
+- 130-r2: rejudecarea lui (c) și (d) când o felie arată că adaugă coregrafie (restanțe declarate pe etapă fără folos) sau istoric de migrații care doar îngreunează schimbarea (e).
 
 ## Istoric
 
 - 2026-10-17: scrisă la cererea owner-ului, după aprobarea deciziilor 125, 127 și 128; propusă owner-ului.
+- 2026-10-17: (e) adăugată la observația owner-ului: „rotund” e ancoră intermediară; (c) și (d) rămân, cu condiția de relaxare (130-r2).
