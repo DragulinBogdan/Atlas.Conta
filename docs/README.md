@@ -118,7 +118,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-astra.md)
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-fable.md)
 
-### `docs/decizii/` (128)
+### `docs/decizii/` (129)
 
 - [1 — Nucleu generic + moștenire, nu tabele complet separate](decizii/001-nucleu-generic-mostenire.md)
 - [2 — Testul de apartenență a unui câmp](decizii/002-testul-apartenentei-campului.md)
@@ -245,6 +245,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [123 — D300 și D394 se verifică încrucișat pe aceleași fapte: maparea D394 e completă și coerentă cu decontul, iar difere…](decizii/123-d300-d394-verificare-incrucisata.md)
 - [124 — Rezultatul se închide lunar printr-un document generat, exercițiul închis e starea lui decembrie, iar balanța are…](decizii/124-exercitiul-se-inchide-pe-decembrie.md)
 - [125 — Citirea de sold pe o listă de loturi se face pe lot, nu pe fereastra de dată](decizii/125-citirea-pe-loturi-se-face-pe-lot.md)
+- [126 — Drumul spre „rotund”: ce rămâne din 091 (g), restanțele închise sau retrase din lista activă și semantica cititori…](decizii/126-drumul-spre-rotund.md)
 - [Jurnalul de decizii — index (un fișier per decizie)](decizii/README.md)
 - [Istoricul de execuție al planului de lucru (snapshot 2026-08-24)](decizii/istoric-plan-de-lucru.md)
 - [Restanțele și amânările cu nume](decizii/restante.md)

@@ -21,7 +21,7 @@
 > din cod.
 
 <!-- gen:index -->
-### Active (90)
+### Active (91)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -115,6 +115,7 @@
 | 123 | [D300 și D394 se verifică încrucișat pe aceleași fapte: maparea D394 e completă și coerentă cu decontul, iar diferențele…](123-d300-d394-verificare-incrucisata.md) | 2026-10-16 | activă |
 | 124 | [Rezultatul se închide lunar printr-un document generat, exercițiul închis e starea lui decembrie, iar balanța are graniț…](124-exercitiul-se-inchide-pe-decembrie.md) | 2026-10-16 | activă |
 | 125 | [Citirea de sold pe o listă de loturi se face pe lot, nu pe fereastra de dată](125-citirea-pe-loturi-se-face-pe-lot.md) | 2026-10-16 | propusă |
+| 126 | [Drumul spre „rotund”: ce rămâne din 091 (g), restanțele închise sau retrase din lista activă și semantica cititorilor de…](126-drumul-spre-rotund.md) | 2026-10-17 | propusă |
 
 ### Amendate parțial (35)
 

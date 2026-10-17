@@ -3,7 +3,7 @@
 2026-09-24. Implementat și verificat pe ambele profiluri, conform 095 și
 `tr-d7c-imobilizari-contract.md`, IMO-B2 A aprobată prin 097.
 SC-IMO-01…33 sunt probate prin `ScenariiImo`, pe comenzile reale,
-în ani proprii începând cu 2019. Corecturile review-ului de sincronizare (098) sunt în reverificare.
+în ani proprii începând cu 2019. Corecturile review-ului de sincronizare (098b/c) sunt comise (a82a2416) și reverificate la 2026-10-17 (126).
 Recensământ Flax: zero documente PIF/AMO/CAS.
 
 Conturile simbolice I/A/E/C sunt contul activului, amortizării,
@@ -84,4 +84,3 @@ supraviețui sursei: auditul complet rămâne
 TR-D9. API Imo și AMO/CAS citesc fișa din cub; rapoartele contabile generale,
 snapshot-urile și eliminarea scrierii duale nu sunt declarate migrate aici.
 Raportul implementării inițiale: `run-nucleu/tr-d7c/imo/raport.md`.
-Corecturile curente sunt predate pentru review și reverificare înainte de commit.
