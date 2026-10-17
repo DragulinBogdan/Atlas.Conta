@@ -105,5 +105,5 @@ calculului. Panoul `/politici/explica` afișează răspunsul fără niciun calcu
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (18; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 4, 20, 51, 52, 69, 71 (amendată de 72), 81, 83 (amendată de 84, 86, 104), 84, 87 (amendată de 97), 102, 104 (amendată de 106), 112, 113, 123, 124, 128, 129 (propusă).
+Deciziile care numesc pagina în `Arii:` (18; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 4, 20, 51, 52, 69, 71 (amendată de 72), 81, 83 (amendată de 84, 86, 104), 84, 87 (amendată de 97), 102, 104 (amendată de 106), 112, 113, 123, 124, 128, 129.
 <!-- /gen:decizii -->

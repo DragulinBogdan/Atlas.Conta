@@ -1,8 +1,8 @@
 # 126 — Drumul spre „rotund”: ce rămâne din 091 (g), restanțele închise sau retrase din lista activă și semantica cititorilor de stoc
 
 - Data: 2026-10-17
-- Stare: propusă
-- Execuție: firul „rotund”, felia R0 (2026-10-17), branch `rotund-r0`; inventarul făcut de trei agenți doar-citire și verificat de main pe cod; owner-ul a tranșat retriajul și (d)–(f) la 2026-10-17
+- Stare: activă
+- Execuție: firul „rotund”, felia R0 (2026-10-17), branch `rotund-r0`; inventarul făcut de trei agenți doar-citire și verificat de main pe cod; owner-ul a tranșat retriajul și (d)–(f) la 2026-10-17; owner-ul a aprobat decizia la 2026-10-17
 - Arii: verificare, stoc, motor, imobilizari, partide, tva, perioade
 - Amendează: —
 - Închide: 091-r2, 76-r2, N-r7, TR-r7, TR-r10, TR-r11, 095-r1, X-r3, NG-r1, T-r5, 86-r11, 091-r6, S-r4
@@ -58,3 +58,4 @@ Nimic. Restanțele `activă` de la inventar s-au închis în feliile R1–R7 (12
 - 2026-10-17: (h) adăugată la felia R6a: 667 de verificări pe pas (286 bugetar, 381 privat), verzi.
 - 2026-10-17: (g) adăugată la felia R5, după răspunsurile owner-ului pe DVI.
 - 2026-10-17: (d) și (e) implementate la felia R2. (e) precizată: transferurile intră în atomii balanței și în snapshot, deci și în balanța analitică și în soldul pe partener; o primă variantă care le citea din cub, fără snapshot, a picat scara PerfCub (X-D5, citirea depindea de istoric). Transferul nu schimbă rulajele sintetice, fiindcă e scris ca debite de semn opus pe același cont. Probat de SC-CIT-118.
+- 2026-10-17: aprobată de owner; trece în `activă`.

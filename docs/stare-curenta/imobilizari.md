@@ -162,5 +162,5 @@ catalog: tipul material îl alege utilizatorul. (87d)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (7; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 87 (amendată de 97), 95, 97 (amendată de 98), 98, 102, 126 (propusă), 127.
+Deciziile care numesc pagina în `Arii:` (7; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 87 (amendată de 97), 95, 97 (amendată de 98), 98, 102, 126, 127.
 <!-- /gen:decizii -->
