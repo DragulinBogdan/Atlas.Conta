@@ -36,7 +36,7 @@ Perechea (activ, amortizare) din 1C care diferă de politica tipului primește u
 
 (f) **PIF-ul 1C din an devine PIF Atlas** la data 1C. Valoarea = Σ debitelor 2xx cu subconto MF până la PIF. Suportul îl dă puntea facturii de achiziție.
 
-(g) **Vânzarea unui MF cu fișă devine CAS** (cauza Vânzare), prin regenerarea L3. Rândurile 1C 28x / 658x = 2xx ale facturii sunt acoperite de CAS. Diferența e divergența „ieșirea fișei”.
+(g) [amendat de 134] **Vânzarea unui MF cu fișă devine CAS** (cauza Vânzare), prin regenerarea L3. Rândurile 1C 28x / 658x = 2xx ale facturii sunt acoperite de CAS. Diferența e divergența „ieșirea fișei”.
 
 (h) **Contractul 5 numește încă două fapte ale notei**:
 - partea unei note cu cel puțin o latură numită de sursă și lăsată pe FIFO (E4-r1, și când sursa are mișcare pe partidă);

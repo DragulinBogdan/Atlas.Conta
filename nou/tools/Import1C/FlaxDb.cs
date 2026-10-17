@@ -464,26 +464,40 @@ partial class FlaxDb(string connectionString) : IDisposable {
 
     static bool RefGoala(string tipRef) => tipRef == null || tipRef.All(c => c == '0');
 
-    // Mișcările unei poziții de terț în fereastră: documentul numit în subconto (null = slotul gol) pe partener.
-    public List<(string Recorder, int Correspond, string ContDebit, string ContCredit, decimal Suma)> MiscariPePozitie(
-            string docHex, string partenerHex, DateTime de, DateTime pana) =>
-        Query(@"select convert(varchar(34), d.Recorder_Id, 2), d.Correspond,
+    // Mișcările pozițiilor de terț în fereastră, pe (document numit în subconto, partener); documentul gol = slotul gol.
+    // Sursa n-are indecși: o singură trecere pe lot, nu una pe poziție.
+    public ILookup<(string Doc, string Partener), (string Recorder, int Correspond, string ContDebit, string ContCredit, decimal Suma)>
+            MiscariPePozitii(IReadOnlyCollection<(string DocHex, string PartenerHex)> pozitii, DateTime de, DateTime pana) {
+        if (pozitii.Count == 0)
+            return Array.Empty<((string, string), (string, int, string, string, decimal))>().ToLookup(x => x.Item1, x => x.Item2);
+        var gol = Hex(new byte[16]);
+        var valori = string.Join(",", pozitii.Select(p => (Doc: Hex(DinHex(p.DocHex ?? gol)), Partener: Hex(DinHex(p.PartenerHex))))
+            .Distinct().Select(p => $"(0x{p.Doc}, 0x{p.Partener})"));
+        return Query($@"select convert(varchar(34), k.Doc, 2), convert(varchar(34), k.Partener, 2),
+                       convert(varchar(34), d.Recorder_Id, 2), d.Correspond,
                        ltrim(rtrim(n.ContDebit)), ltrim(rtrim(n.ContCredit)), n.Suma
-                from flax.DefalcareNote d
+                from (values {valori}) k(Doc, Partener)
+                join flax.DefalcareNote d on d.KindRef = 'Documente' and d.Value_Id = k.Doc
                 join flax.NoteContabile n on n.DocReferinta_Id = d.Recorder_Id and n.[LineNo] = d.[LineNo]
-                where d.KindRef = 'Documente' and d.Value_Id = @doc
-                  and n.Period >= @de and n.Period < @pana
+                where n.Period >= @de and n.Period < @pana
                   and exists (select 1 from flax.DefalcareNote p
                               where p.Recorder_Id = d.Recorder_Id and p.[LineNo] = d.[LineNo]
-                                and p.Correspond = d.Correspond and p.Value_Id = @partener)",
-            r => (Text(r, 0), Int(r, 1), Text(r, 2), Text(r, 3), Dec(r, 4)),
-            ("@doc", docHex == null ? new byte[16] : DinHex(docHex)), ("@partener", DinHex(partenerHex)),
-            ("@de", de), ("@pana", pana));
+                                and p.Correspond = d.Correspond and p.Value_Id = k.Partener)",
+                r => (Cheie: (Doc: Text(r, 0) == gol ? null : Text(r, 0), Partener: Text(r, 1)),
+                    Miscare: (Text(r, 2), Int(r, 3), Text(r, 4), Text(r, 5), Dec(r, 6))),
+                ("@de", de), ("@pana", pana))
+            .ToLookup(x => x.Cheie, x => x.Miscare);
+    }
 
-    public string VedereDocument(string recorderHex) {
+    public Dictionary<string, string> VederiDocumente(IReadOnlyCollection<string> recorderiHex) {
+        if (recorderiHex.Count == 0)
+            return new(StringComparer.Ordinal);
         var cazuri = string.Join(" ", TipuriCuColoanaVii().Select(t => $"when DocReferinta_{t}_ID is not null then '{t}'"));
-        return Query($"select top 1 case {cazuri} end from flax.NoteContabile where DocReferinta_Id = @id",
-            r => Text(r, 0), ("@id", DinHex(recorderHex))).FirstOrDefault();
+        var valori = string.Join(",", recorderiHex.Select(r => $"(0x{Hex(DinHex(r))})"));
+        return Query($@"select convert(varchar(34), k.Id, 2), max(case {cazuri} end)
+                from (values {valori}) k(Id) join flax.NoteContabile on DocReferinta_Id = k.Id group by k.Id",
+                r => (Id: Text(r, 0), View: Text(r, 1)))
+            .ToDictionary(x => x.Id, x => x.View, StringComparer.Ordinal);
     }
 
     public string PartenerDocument(string tipNume, string hexId) {

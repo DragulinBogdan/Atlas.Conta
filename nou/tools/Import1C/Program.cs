@@ -1018,6 +1018,28 @@ if (inchideLunile) {
         + (deschise.Count == 0 ? "." : $": {string.Join(", ", deschise.Select(p => $"{p.Luna:00}/{p.An}"))}."));
     Check($"--inchide-lunile: {inchideri.Count} perioade închise din {panaLa} luni importate",
         inchideri.Count == panaLa);
+    if (panaLa == 12 && inchideri.Count == 12)
+        InchideExercitiulImport(anImport);
+}
+
+// 134 b
+void InchideExercitiulImport(int an) {
+    using var os = provider.CreateObjectSpace();
+    var constatari = PerioadaService.VerificaExercitiul(os, an);
+    foreach (var c in constatari)
+        Console.WriteLine($"  exercițiul {an}: {c.Severitate} {c.Cheie} — {c.Text}");
+    var blocante = constatari.Where(c => c.Severitate == SeveritateConstatare.Blocant).ToList();
+    if (blocante.Count > 0) {
+        Check($"Exercițiul {an} închis pe baza de import ({blocante.Count} constatări blocante)", false);
+        return;
+    }
+    try {
+        PerioadaService.InchideExercitiul(os, an, [.. constatari.Select(c => c.Cheie).Distinct()], null, "Import1C");
+        Check($"Exercițiul {an} închis pe baza de import ({constatari.Count} constatări acceptate)", true);
+    }
+    catch (OperareException ex) {
+        Check($"Exercițiul {an} închis pe baza de import — {ex.Message.Split('\n')[0]}", false);
+    }
 }
 
 using (var os = provider.CreateObjectSpace()) {

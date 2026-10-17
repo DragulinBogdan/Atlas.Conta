@@ -109,10 +109,16 @@ static class Imperecheri1C {
 
     // Sursa cu sens cunoscut se agregă semnat: suma e modulul netului, sensul e semnul lui, iar netul zero dă
     // sumă zero (sărită). Sensul necunoscut (null) rămâne necunoscut și suma se adună ca până acum.
+    // 134 e
     internal static List<((string View, string CheieStingator, string TintaTip, string TintaId, string TipRef) Key,
             decimal Suma, int? Sens)> Agrega(IEnumerable<StingereSursa> sursa) =>
         sursa.Where(s => s.Tinta != null)
             .GroupBy(s => (s.View, s.CheieStingator, TintaTip: s.Tinta.Tip, TintaId: s.Tinta.Id, TipRef: s.Tinta.TipRef))
+            .OrderBy(g => g.Min(x => x.Data))
+            .ThenBy(g => g.Key.View, StringComparer.Ordinal)
+            .ThenBy(g => g.Key.CheieStingator, StringComparer.Ordinal)
+            .ThenBy(g => g.Key.TintaId, StringComparer.Ordinal)
+            .ThenBy(g => g.Key.TintaTip, StringComparer.Ordinal)
             .Select(g => {
                 if (g.Any(x => x.Sens == null))
                     return (g.Key, g.Sum(x => x.Suma), (int?)null);

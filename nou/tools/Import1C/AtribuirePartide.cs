@@ -18,6 +18,7 @@ static class AtribuirePartide {
     public const string FifoNumire = "notă Atlas pe FIFO, sursa numește un document fără poziție (E4-r1)";
     public const string StingereNeaplicata = "stingere refuzată sau plafonată de trecerea 2 (107h)";
     public const string FifoExcedent = "notă Atlas peste restul partidei numite, excedentul pe FIFO (N-D7)";
+    public const string NotaPeProprie = "notă care mărește partida numită în sensul ei, Atlas o ține pe partida notei (115)";
 
     public sealed record Parte(string Recorder, string View, decimal Sursa, decimal Atlas, string Categorie) {
         public decimal Delta => Atlas - Sursa;
@@ -27,62 +28,86 @@ static class AtribuirePartide {
         public bool Explicata => Inchisa && Parti.All(p => p.Categorie != null);
     }
 
-    public static Rezultat Atribuie(IObjectSpace os, BuclaImport bucla, Guid partida, string cheie,
-            decimal delta, DateOnly de, DateOnly pana, bool areRefuzSauPlafon) {
-        var parti = cheie.Split('|');
-        var (simbol, partenerHex, referinta) = (parti[0], parti[1], parti[2]);
-        var docHex = referinta == Deschidere.CheieFaraDocument ? null : referinta.Split('/')[1];
-        var sursa = new Dictionary<string, decimal>(StringComparer.Ordinal);
-        foreach (var m in bucla.Flax.MiscariPePozitie(docHex, partenerHex, de.ToDateTime(TimeOnly.MinValue),
-                     pana.AddDays(1).ToDateTime(TimeOnly.MinValue))) {
-            var cont = m.Correspond == Subconto.Debit ? m.ContDebit : m.ContCredit;
-            if (bucla.Catalog.Mapeaza(cont) != simbol)
-                continue;
-            var semnat = m.Correspond == Subconto.Debit ? m.Suma : -m.Suma;
-            sursa[m.Recorder] = sursa.GetValueOrDefault(m.Recorder) + semnat;
-        }
+    public sealed record Cerere(Guid Partida, string Cheie, decimal Delta, bool AreRefuzSauPlafon, int SemnInitial);
 
-        var miscari = os.GetObjectsQuery<Postare>()
-            .Where(p => p.Unitate == partida && p.Carte == N.Carte.Contabil
+    public static List<Rezultat> Atribuie(IObjectSpace os, BuclaImport bucla, IReadOnlyList<Cerere> cereri,
+            DateOnly de, DateOnly pana) {
+        var pozitii = cereri.Select(c => Pozitie(c.Cheie)).ToList();
+        var miscariSursa = bucla.Flax.MiscariPePozitii(pozitii.Select(p => (p.Doc, p.Partener)).Distinct().ToList(),
+            de.ToDateTime(TimeOnly.MinValue), pana.AddDays(1).ToDateTime(TimeOnly.MinValue));
+
+        var partide = cereri.Select(c => c.Partida).Distinct().ToList();
+        var miscariAtlas = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Unitate != null && partide.Contains(p.Unitate.Value) && p.Carte == N.Carte.Contabil
                 && p.Tranzactie.Fel != N.FelTranzactie.Deschidere && p.Data <= pana)
-            .Select(p => new { p.DocumentId, Semnat = p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare })
-            .ToList();
-        var documente = miscari.Select(m => m.DocumentId).OfType<Guid>().Distinct().ToList();
+            .Select(p => new { Partida = p.Unitate.Value, p.DocumentId, Semnat = p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare })
+            .ToList()
+            .ToLookup(m => m.Partida);
+        var documente = miscariAtlas.SelectMany(g => g).Select(m => m.DocumentId).OfType<Guid>().Distinct().ToList();
         var legaturi = os.GetObjectsQuery<MigrareLegatura>()
             .Where(l => documente.Contains(l.TintaId))
             .Select(l => new { l.TintaId, l.Tabela, l.CheieLegacy })
             .ToList()
             .GroupBy(l => l.TintaId)
-            .ToDictionary(g => g.Key, g => g.First());
-        var atlas = new Dictionary<string, decimal>(StringComparer.Ordinal);
-        var vederi = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var m in miscari) {
-            var recorder = "?";
-            if (m.DocumentId is Guid id && legaturi.TryGetValue(id, out var l)) {
-                recorder = l.CheieLegacy.Split('#', '@')[0];
-                vederi[recorder] = l.Tabela.StartsWith("1C:") ? l.Tabela[3..] : l.Tabela;
-            }
-            atlas[recorder] = atlas.GetValueOrDefault(recorder) + m.Semnat;
-        }
-        foreach (var r in sursa.Keys.Where(r => !vederi.ContainsKey(r)))
-            vederi[r] = bucla.Flax.VedereDocument(r);
+            .ToDictionary(g => g.Key, g => g.MinBy(l => l.CheieLegacy, StringComparer.Ordinal)!);
 
-        var rezultat = new List<Parte>();
-        foreach (var r in sursa.Keys.Union(atlas.Keys)) {
-            var s = sursa.GetValueOrDefault(r);
-            var a = atlas.GetValueOrDefault(r);
-            if (Math.Abs(a - s) < Eps)
-                continue;
-            var view = vederi.GetValueOrDefault(r) ?? "?";
-            rezultat.Add(new Parte(r, view, s, a, Categorie(r, view, s, a, areRefuzSauPlafon)));
+        var vederi = new Dictionary<string, string>(StringComparer.Ordinal);
+        var sumeSursa = new List<Dictionary<string, decimal>>();
+        var sumeAtlas = new List<Dictionary<string, decimal>>();
+        for (var k = 0; k < cereri.Count; k++) {
+            var sursa = new Dictionary<string, decimal>(StringComparer.Ordinal);
+            foreach (var m in miscariSursa[(pozitii[k].Doc, pozitii[k].Partener)]) {
+                var cont = m.Correspond == Subconto.Debit ? m.ContDebit : m.ContCredit;
+                if (bucla.Catalog.Mapeaza(cont) != pozitii[k].Simbol)
+                    continue;
+                sursa[m.Recorder] = sursa.GetValueOrDefault(m.Recorder) + (m.Correspond == Subconto.Debit ? m.Suma : -m.Suma);
+            }
+            var atlas = new Dictionary<string, decimal>(StringComparer.Ordinal);
+            foreach (var m in miscariAtlas[cereri[k].Partida]) {
+                var recorder = "?";
+                if (m.DocumentId is Guid id && legaturi.TryGetValue(id, out var l)) {
+                    recorder = l.CheieLegacy.Split('#', '@')[0];
+                    vederi[recorder] = l.Tabela.StartsWith("1C:") ? l.Tabela[3..] : l.Tabela;
+                }
+                atlas[recorder] = atlas.GetValueOrDefault(recorder) + m.Semnat;
+            }
+            sumeSursa.Add(sursa);
+            sumeAtlas.Add(atlas);
         }
-        return new Rezultat(rezultat, Math.Abs(rezultat.Sum(p => p.Delta) - delta) < Eps);
+        var necunoscute = sumeSursa.SelectMany(s => s.Keys).Where(r => !vederi.ContainsKey(r)).Distinct().ToList();
+        foreach (var (r, v) in bucla.Flax.VederiDocumente(necunoscute))
+            vederi[r] = v;
+
+        var rezultate = new List<Rezultat>(cereri.Count);
+        for (var k = 0; k < cereri.Count; k++) {
+            var (sursa, atlas, c) = (sumeSursa[k], sumeAtlas[k], cereri[k]);
+            var parti = new List<Parte>();
+            foreach (var r in sursa.Keys.Union(atlas.Keys).Order(StringComparer.Ordinal)) {
+                var s = sursa.GetValueOrDefault(r);
+                var a = atlas.GetValueOrDefault(r);
+                if (Math.Abs(a - s) < Eps)
+                    continue;
+                var view = vederi.GetValueOrDefault(r) ?? "?";
+                parti.Add(new Parte(r, view, s, a, Categorie(r, view, s, a, c.AreRefuzSauPlafon, c.SemnInitial)));
+            }
+            rezultate.Add(new Rezultat(parti, Math.Abs(parti.Sum(p => p.Delta) - c.Delta) < Eps));
+        }
+        return rezultate;
     }
 
-    static string Categorie(string recorder, string view, decimal sursa, decimal atlas, bool areRefuzSauPlafon) {
+    static (string Simbol, string Partener, string Doc) Pozitie(string cheie) {
+        var parti = cheie.Split('|');
+        var doc = parti[2] == Deschidere.CheieFaraDocument ? null : parti[2].Split('/')[1].ToUpperInvariant();
+        return (parti[0], parti[1].ToUpperInvariant(), doc);
+    }
+
+    static string Categorie(string recorder, string view, decimal sursa, decimal atlas, bool areRefuzSauPlafon,
+            int semnInitial) {
         var nota = Note.Contains(view);
         if (nota && (Math.Abs(sursa) < Eps || NoteComune.PeFifo.Contains(recorder)))
             return FifoNumire;
+        if (nota && Math.Abs(atlas) < Eps && Math.Sign(sursa) == semnInitial)
+            return NotaPeProprie;
         if (Stingatori.Contains(view) && areRefuzSauPlafon)
             return StingereNeaplicata;
         if (Math.Abs(atlas) < Eps && !Stingatori.Contains(view) && !nota)

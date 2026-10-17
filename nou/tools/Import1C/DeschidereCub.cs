@@ -212,11 +212,14 @@ static partial class Deschidere {
             IReadOnlyList<Control> controale, IReadOnlyList<LotInitial> loturi,
             IReadOnlyList<PartidaInitiala> partide, IReadOnlyList<PartidaSursa> partideSursa,
             IReadOnlyDictionary<string, Guid> plan, Action<string> avert, Action<string, bool> check) {
-        var solduri = controale.Select(c => new SoldInitial(plan[c.Simbol], c.Sens, c.Valoare)).ToList();
         partide = [.. partide.Select(p => p.Deschisa > data ? p with { Deschisa = null } : p)];
         Guid tranzactie;
         var scrisa = false;
         using (var os = provider.CreateObjectSpace()) {
+            var sediu = os.FirstOrDefault<UnitateInterna>(r => r.Cod == "SEDIU")?.ID;
+            var solduri = controale.Select(c => new SoldInitial(plan[c.Simbol], c.Sens, c.Valoare) {
+                Repartitor = Imobilizari1C.PeSediuLaDeschidere(c.Simbol) ? sediu : null,
+            }).ToList();
             var existenta = os.GetObjectsQuery<Tranzactie>()
                 .Where(t => t.Fel == N.FelTranzactie.Deschidere).Select(t => t.ID).ToList();
             if (existenta.Count > 0) {

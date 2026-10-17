@@ -221,12 +221,10 @@ static class ReconciliereLuna {
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
             .Select(p => new { p.Unitate, Partener = p.Repartitor }).ToList();
         var generice = initiale.Where(p => p.Partener == stare.PartenerGeneric).Select(p => p.Unitate.Value).ToHashSet();
-        var unitatiInitiale = os.GetObjectsQuery<Postare>()
-            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
-            .Select(p => p.Unitate);
+        var unitatiInitiale = initiale.Select(p => p.Unitate.Value).Distinct().ToList();
         var restCub = os.GetObjectsQuery<Postare>()
             .Where(p => p.FelUnitate == N.FelUnitate.Partida && p.Carte == N.Carte.Contabil
-                && p.Data <= ctx.Ultima && unitatiInitiale.Contains(p.Unitate))
+                && p.Data <= ctx.Ultima && p.Unitate != null && unitatiInitiale.Contains(p.Unitate.Value))
             .GroupBy(p => p.Unitate)
             .Select(g => new { Unitate = g.Key, Sold = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
             .ToList()
@@ -248,7 +246,7 @@ static class ReconciliereLuna {
 
         var directe = os.GetObjectsQuery<Postare>()
             .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Operare && p.Carte == N.Carte.Contabil
-                && p.Data <= ctx.Ultima && unitatiInitiale.Contains(p.Unitate))
+                && p.Data <= ctx.Ultima && p.Unitate != null && unitatiInitiale.Contains(p.Unitate.Value))
             .GroupBy(p => p.Unitate)
             .Select(g => new { Unitate = g.Key, Sold = g.Sum(p => p.Sens == N.Sens.Debit ? p.Valoare : -p.Valoare) })
             .ToList()
@@ -295,14 +293,31 @@ static class ReconciliereLuna {
         }
         var deLa = new DateOnly(ctx.An, 1, 1);
         var atribuite = new List<(string Cheie, AtribuirePartide.Rezultat Rezultat)>();
-        foreach (var x in picate.ToList()) {
-            var partida = legaturi[x.Cheie];
-            var rezultat = AtribuirePartide.Atribuie(os, ctx.Bucla, partida, x.Cheie, x.Cub - x.Sursa, deLa, ctx.Ultima,
-                x.Refuzat != 0m || x.Plafonat != 0m);
-            atribuite.Add((x.Cheie, rezultat));
-            if (rezultat.Explicata)
-                picate.Remove(x);
+        AtribuirePartide.Cerere Cerere(string cheie, decimal delta, bool areRefuz) {
+            var partida = legaturi[cheie];
+            return new(partida, cheie, delta, areRefuz, Math.Sign(deschidere.GetValueOrDefault(partida)));
         }
+        var cereriPicate = picate.Select(x => Cerere(x.Cheie, x.Cub - x.Sursa,
+            Imperecheri1C.RefuzatPePartida.ContainsKey(legaturi[x.Cheie]) || Imperecheri1C.PlafonatPePartida.ContainsKey(legaturi[x.Cheie])));
+        var cereriNeatinse = neatinse.Select(x => Cerere(x.Cheie, x.Cub - x.Sursa, false)); // 134 h
+        var cereri = cereriPicate.Concat(cereriNeatinse).ToList();
+        var rezultate = AtribuirePartide.Atribuie(os, ctx.Bucla, cereri, deLa, ctx.Ultima);
+        var nrPicate = picate.Count;
+        var explicateDinPicate = new HashSet<string>(StringComparer.Ordinal);
+        var explicateDinNeatinse = new HashSet<string>(StringComparer.Ordinal);
+        for (var k = 0; k < cereri.Count; k++) {
+            if (k < nrPicate) {
+                atribuite.Add((cereri[k].Cheie, rezultate[k]));
+                if (rezultate[k].Explicata)
+                    explicateDinPicate.Add(cereri[k].Cheie);
+            } else if (rezultate[k].Explicata) {
+                atribuite.Add((cereri[k].Cheie, rezultate[k]));
+                explicateDinNeatinse.Add(cereri[k].Cheie);
+            }
+        }
+        picate.RemoveAll(x => explicateDinPicate.Contains(x.Cheie));
+        neatinse.RemoveAll(x => explicateDinNeatinse.Contains(x.Cheie));
+        atribuite.Sort((x, y) => string.CompareOrdinal(x.Cheie, y.Cheie));
         var peDocument = atribuite.Where(a => a.Rezultat.Explicata).ToList();
         stare.Jurnalizeaza($"\n[5] Partide inițiale la {ctx.Ultima:yyyy-MM-dd} — {legaturi.Count} partide, "
             + $"{stinseIntegral} stinse integral în ambele părți, {explicate} explicate de refuzuri, "
@@ -316,7 +331,7 @@ static class ReconciliereLuna {
                     + (rez.Inchisa ? "" : " (atribuirea nu închide Δ)"));
         foreach (var x in declarate)
             stare.Jurnalizeaza($"  decl partidă {x.Cheie}: cub {x.Cub:N2}, sursă {x.Sursa:N2} — partener nedefinit în sursă (M1-D5)");
-        foreach (var x in neatinse.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)))
+        foreach (var x in neatinse.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)).ThenBy(x => x.Cheie, StringComparer.Ordinal))
             stare.Jurnalizeaza($"  neat partidă {x.Cheie}: cub {x.Cub:N2}, sursă {x.Sursa:N2} — neatinsă de trecerea 2");
         var neatinsePeCont = neatinse.GroupBy(x => x.Cheie.Split('|')[0])
             .Select(g => $"{g.Key} × {g.Count()} (Σ Δ {g.Sum(x => x.Cub - x.Sursa):N2})");
