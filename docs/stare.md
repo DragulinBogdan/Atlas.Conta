@@ -6,23 +6,23 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 
 | Ce | Cât |
 |---|---|
-| Decizii | 128: 89 active, 35 amendate parțial, 0 depășite, 4 propuse |
-| Restanțe | 403: 277 deschise, 126 închise |
+| Decizii | 129: 89 active, 35 amendate parțial, 0 depășite, 5 propuse |
+| Restanțe | 403: 276 deschise, 127 închise |
 | Pagini de stare curentă | 19 |
 | Contracte de felie (`Tip: contract`) | 5, deschise 0 |
 | Cataloage vii (`Tip: catalog`) | 6 |
-| Fișiere Markdown în `docs/` | 345 |
-| Citări de decizii din cod (`// N`) | 76 |
+| Fișiere Markdown în `docs/` | 346 |
+| Citări de decizii din cod (`// N`) | 81 |
 
 ## Decizii în vigoare pe arie
 
-- **documente** (53): 2, 3 (amendată de 89), 13, 14, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 28, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 38 (amendată de 81, 84), 40, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 54, 55, 56 (amendată de 77, 81), 58, 63, 64 (amendată de 84), 65, 76, 79 (amendată de 80), 80, 81, 82, 86, 87 (amendată de 97), 89, 93, 95, 97 (amendată de 98), 98, 99, 104 (amendată de 106), 106, 108 (amendată de 110), 109, 114 (amendată de 116), 115, 116 (amendată de 117), 117, 124
+- **documente** (54): 2, 3 (amendată de 89), 13, 14, 16 (amendată de 89), 17, 20, 22, 23, 25, 26 (amendată de 112), 27, 28, 30, 31 (amendată de 76, 88), 32, 33, 36 (amendată de 71), 37, 38 (amendată de 81, 84), 40, 42 (amendată de 104, 106), 46 (amendată de 113), 48 (amendată de 76), 54, 55, 56 (amendată de 77, 81), 58, 63, 64 (amendată de 84), 65, 76, 79 (amendată de 80), 80, 81, 82, 86, 87 (amendată de 97), 89, 93, 95, 97 (amendată de 98), 98, 99, 104 (amendată de 106), 106, 108 (amendată de 110), 109, 114 (amendată de 116), 115, 116 (amendată de 117), 117, 124, 129 (propusă)
 - **motor** (35): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124, 126 (propusă), 127 (propusă), 128 (propusă)
-- **stoc** (20): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124, 125 (propusă), 126 (propusă), 127 (propusă), 128 (propusă)
+- **stoc** (21): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124, 125 (propusă), 126 (propusă), 127 (propusă), 128 (propusă), 129 (propusă)
 - **partide** (16): 1, 31 (amendată de 76, 88), 41, 46 (amendată de 113), 49, 57, 64 (amendată de 84), 76, 82, 86, 95, 96 (amendată de 100, 102), 100 (amendată de 102), 101 (amendată de 102), 102, 126 (propusă)
 - **imobilizari** (7): 87 (amendată de 97), 95, 97 (amendată de 98), 98, 102, 126 (propusă), 127 (propusă)
 - **perioade** (9): 1, 35, 66, 74 (amendată de 105), 76, 77, 104 (amendată de 106), 124, 126 (propusă)
-- **politici** (17): 4, 20, 51, 52, 69, 71 (amendată de 72), 81, 83 (amendată de 84, 86, 104), 84, 87 (amendată de 97), 102, 104 (amendată de 106), 112, 113, 123, 124, 128 (propusă)
+- **politici** (18): 4, 20, 51, 52, 69, 71 (amendată de 72), 81, 83 (amendată de 84, 86, 104), 84, 87 (amendată de 97), 102, 104 (amendată de 106), 112, 113, 123, 124, 128 (propusă), 129 (propusă)
 - **tva** (18): 25, 36 (amendată de 71), 46 (amendată de 113), 56 (amendată de 77, 81), 69, 70, 71 (amendată de 72), 79 (amendată de 80), 80, 81, 84, 86, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 102, 103, 122 (amendată de 123), 123, 126 (propusă)
 - **saft** (5): 34, 73 (amendată de 74, 105), 74 (amendată de 105), 103, 122 (amendată de 123)
 - **raportare** (7): 42 (amendată de 104, 106), 66, 67, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 104 (amendată de 106), 117, 124
@@ -46,29 +46,24 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 8 |
-| după PoC | 230 |
+| activă | 6 |
+| după PoC | 231 |
 | migrare | 25 |
 | depășită de 091 | 2 |
 | docs | 8 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (8, prag 45)
+### Lista `activă` (6, prag 45)
 
-**stoc** (4)
+**stoc** (3)
 
 - `86-r1` taxele vamale și accizele în costul de achiziție (ajustare de cost pe lot)
 - `86-r2` anularea/stornarea unei FCT legate la o DVI operată nu se refuză
 - `86-r11` DVI ca document stins: restul polimorf în ImperechereService.Total + ramura în DocumenteCuRest
-- `099-r1` LDI adoptă cauza diferenței: minus imputabil pe partener, perisabilitate, neimputabilă; plus (099)
 
 **partide** (1)
 
 - `T-r5` DVI deschide partidă pe contrapartida cu RolTert (401 probat…
-
-**politici** (1)
-
-- `T-r6` Custodie pe bugetar: explicit neacoperită la LDI…
 
 **dezvoltare** (1)
 
@@ -84,7 +79,7 @@ Niciun contract deschis declarat cu `Tip: contract`.
 
 ## Decizii invocate din cod
 
-Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33 (1), 40 (1), 42 (2), 43 (1), 46 (2), 48 (2), 49 (1), 53 (1), 55 (1), 57 (4), 77 (1), 79 (4), 82 (2), 83 (2), 85 (1), 86 (1), 87 (2), 89 (3), 90 (4), 91 (2), 92 (1), 97 (1), 98 (2), 99 (2), 101 (1), 102 (1), 103 (2), 104 (7), 106 (1), 107 (7), 109 (1), 112 (1), 115 (5), 119 (1), 125 (1).
+Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33 (1), 40 (1), 42 (2), 43 (1), 46 (2), 48 (2), 49 (1), 53 (1), 55 (1), 57 (4), 77 (1), 79 (4), 82 (2), 83 (2), 85 (1), 86 (1), 87 (2), 89 (3), 90 (4), 91 (2), 92 (1), 97 (1), 98 (2), 99 (4), 101 (1), 102 (1), 103 (2), 104 (7), 106 (1), 107 (7), 109 (1), 112 (1), 115 (5), 119 (1), 125 (1), 126 (3).
 
 ## Paginile stării curente
 
@@ -97,7 +92,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [ecrane](stare-curenta/ecrane.md) | 2026-10-16 |
 | [imobilizari](stare-curenta/imobilizari.md) | 2026-10-17 |
 | [import](stare-curenta/import.md) | 2026-10-16 |
-| [limite-curente](stare-curenta/limite-curente.md) | 2026-10-16 |
+| [limite-curente](stare-curenta/limite-curente.md) | 2026-10-17 |
 | [motor](stare-curenta/motor.md) | 2026-10-17 |
 | [nomenclatoare](stare-curenta/nomenclatoare.md) | 2026-10-17 |
 | [partide](stare-curenta/partide.md) | 2026-10-15 |

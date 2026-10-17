@@ -11722,6 +11722,10 @@ export interface components {
             Cantitate?: number;
             /** Format: double */
             PretEvaluare?: number | null;
+            CauzaDiferentei?: components["schemas"]["CauzaDiferentei"];
+            /** Format: uuid */
+            PartenerDiferentaId?: string | null;
+            PartenerDiferentaDenumire?: string | null;
             /** Format: double */
             Valoare?: number;
             /** Format: date */
@@ -11748,6 +11752,9 @@ export interface components {
             Cantitate?: number;
             /** Format: double */
             PretEvaluare?: number | null;
+            CauzaDiferentei?: components["schemas"]["CauzaDiferentei"];
+            /** Format: uuid */
+            PartenerDiferentaId?: string | null;
             /** Format: date */
             DataExpirare?: string | null;
             LotFabricatie?: string | null;

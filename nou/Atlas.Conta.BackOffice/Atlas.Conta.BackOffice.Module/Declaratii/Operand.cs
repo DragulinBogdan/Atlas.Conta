@@ -52,7 +52,8 @@ public sealed record CorectieValoricaFapt(N.ReperLot? Reper, IReadOnlyList<N.Fap
 
 public sealed record TransformareFapt(N.RolTransformare? Rol, decimal? PretProdus);
 
-public sealed record DiferentaInventarFapt(DirectieDiferenta Directie, decimal? PretEvaluare);
+public sealed record DiferentaInventarFapt(DirectieDiferenta Directie, decimal? PretEvaluare,
+    CauzaDiferentei? Cauza = null, Guid? Imputat = null);
 
 /// <summary>Latura care poartă cheia-sursă a liniei de închidere și coordonatele care trec pe destinație (E3-D3).</summary>
 public sealed record InchidereFapt(bool SursaPeDebit, DimensiuneFlags Pastrate);

@@ -64,6 +64,9 @@ public sealed class LdiLinieWriteDto {
     // Prețul cu care se naște lotul plusului. Pe MINUS se golește — evaluarea
     // minusului e a lotului descărcat.
     public decimal? PretEvaluare { get; set; }
+    // Cauza minusului (126); pe plus se golește. Imputatul numai pe imputabilă.
+    public BusinessObjects.CauzaDiferentei? CauzaDiferentei { get; set; }
+    public Guid? PartenerDiferentaId { get; set; }
     // Atributele lotului plusului, culese pe poziție (inventar 05); motorul le
     // copiază pe Lot la operare (`ILinieCuAtributeLot`). Pe MINUS se golesc.
     public DateOnly? DataExpirare { get; set; }
@@ -120,6 +123,9 @@ public sealed class LdiLinieReadDto {
     // Pe un LDI OPERAT iese SEMNATĂ — e fapta operării (28a), nu o culegere.
     public decimal Cantitate { get; set; }
     public decimal? PretEvaluare { get; set; }
+    public BusinessObjects.CauzaDiferentei? CauzaDiferentei { get; set; }
+    public Guid? PartenerDiferentaId { get; set; }
+    public string PartenerDiferentaDenumire { get; set; }
     // Rezultat, nu culegere: îl scrie `CalculeazaValori` la culegere și la operare (104c).
     public decimal Valoare { get; set; }
     public DateOnly? DataExpirare { get; set; }

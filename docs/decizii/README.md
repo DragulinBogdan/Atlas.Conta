@@ -21,7 +21,7 @@
 > din cod.
 
 <!-- gen:index -->
-### Active (93)
+### Active (94)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -118,6 +118,7 @@
 | 126 | [Drumul spre „rotund”: ce rămâne din 091 (g), restanțele închise sau retrase din lista activă și semantica cititorilor de…](126-drumul-spre-rotund.md) | 2026-10-17 | propusă |
 | 127 | [Validarea judecă lotul fixat, anularea PIF judecă AMO pe lună, produsul cu stoc nu-și schimbă clasa, lotul nu se naște n…](127-validarea-judeca-lotul-fixat.md) | 2026-10-17 | propusă |
 | 128 | [Golirea lotului prin retur la furnizor trece reziduul pe politica de diferențe](128-golirea-prin-retur-trece-reziduul-pe-politica.md) | 2026-10-17 | propusă |
+| 129 | [Minusul de inventar își culege cauza: cheltuiala rămâne pe tip, imputarea merge pe politica de diferențe](129-minusul-de-inventar-isi-culege-cauza.md) | 2026-10-17 | propusă |
 
 ### Amendate parțial (35)
 

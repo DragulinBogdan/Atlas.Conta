@@ -560,6 +560,16 @@ namespace Atlas.Conta.BackOffice.Module.BusinessObjects {
                 "\"ValabilDeLa\" IS NULL OR \"ValabilPanaLa\" IS NULL OR \"ValabilDeLa\" <= \"ValabilPanaLa\""));
             modelBuilder.Entity<DocumentDetaliu>().ToTable(t => t.HasCheckConstraint("CK_DocumentDetalii_TvaCules",
                 "NOT \"TvaCules\" OR \"ValoareTva\" <> 0"));
+            modelBuilder.Entity<NirDetaliu>().Property(d => d.CauzaDiferentei).HasColumnName("CauzaDiferentei");
+            modelBuilder.Entity<ListaDiferenteInventarDetaliu>().Property(d => d.CauzaDiferentei).HasColumnName("CauzaDiferentei");
+            modelBuilder.Entity<NirDetaliu>().Property(d => d.PartenerDiferentaId).HasColumnName("PartenerDiferentaId");
+            modelBuilder.Entity<ListaDiferenteInventarDetaliu>().Property(d => d.PartenerDiferentaId).HasColumnName("PartenerDiferentaId");
+            modelBuilder.Entity<NirDetaliu>().HasOne(d => d.PartenerDiferenta).WithMany()
+                .HasForeignKey(d => d.PartenerDiferentaId).OnDelete(DeleteBehavior.ClientNoAction)
+                .HasConstraintName("FK_DocumentDetalii_Repartitori_PartenerDiferentaId");
+            modelBuilder.Entity<ListaDiferenteInventarDetaliu>().HasOne(d => d.PartenerDiferenta).WithMany()
+                .HasForeignKey(d => d.PartenerDiferentaId).OnDelete(DeleteBehavior.ClientNoAction)
+                .HasConstraintName("FK_DocumentDetalii_Repartitori_PartenerDiferentaId");
             modelBuilder.Entity<FacturaIntrareDetaliu>().Property(d => d.LinieAvansId).HasColumnName("LinieAvansId");
             modelBuilder.Entity<FacturaIesireDetaliu>().Property(d => d.LinieAvansId).HasColumnName("LinieAvansId");
             modelBuilder.Entity<FacturaIntrareDetaliu>().HasOne(d => d.LinieAvans).WithMany()

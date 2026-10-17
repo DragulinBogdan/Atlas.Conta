@@ -124,6 +124,9 @@ public static class ListaDiferenteInventarApply {
                 detaliu.ProdusId = null;
             }
             detaliu.PretEvaluare = l.PretEvaluare;
+            detaliu.CauzaDiferentei = l.CauzaDiferentei;
+            detaliu.PartenerDiferenta = Nomenclator<Repartitor>(os, l.PartenerDiferentaId, "Imputatul");
+            if (l.PartenerDiferentaId == null) detaliu.PartenerDiferentaId = null;
             detaliu.DataExpirare = l.DataExpirare;
             detaliu.LotFabricatie = l.LotFabricatie;
 
@@ -205,6 +208,9 @@ public static class ListaDiferenteInventarApply {
                 LotPret = (decimal?)l.Lot.PretUnitar,
                 l.Cantitate,
                 PretEvaluare = (l as ListaDiferenteInventarDetaliu).PretEvaluare,
+                CauzaDiferentei = (l as ListaDiferenteInventarDetaliu).CauzaDiferentei,
+                PartenerDiferentaId = (l as ListaDiferenteInventarDetaliu).PartenerDiferentaId,
+                PartenerDiferentaDenumire = (l as ListaDiferenteInventarDetaliu).PartenerDiferenta.Denumire,
                 l.Valoare,
                 DataExpirare = (l as ListaDiferenteInventarDetaliu).DataExpirare,
                 LotFabricatie = (l as ListaDiferenteInventarDetaliu).LotFabricatie,
@@ -243,6 +249,8 @@ public static class ListaDiferenteInventarApply {
                 LotId = l.LotId,
                 LotEticheta = ApiProiectii.EtichetaLot(l.LotProdus, l.LotData, l.LotPret),
                 Cantitate = l.Cantitate, PretEvaluare = l.PretEvaluare, Valoare = l.Valoare,
+                CauzaDiferentei = l.CauzaDiferentei, PartenerDiferentaId = l.PartenerDiferentaId,
+                PartenerDiferentaDenumire = l.PartenerDiferentaDenumire,
                 DataExpirare = l.DataExpirare, LotFabricatie = l.LotFabricatie,
                 CodEconomicId = l.CodEconomicId, CodEconomicCod = l.CodEconomicCod,
                 AngajamentId = l.AngajamentId, AngajamentCod = l.AngajamentCod

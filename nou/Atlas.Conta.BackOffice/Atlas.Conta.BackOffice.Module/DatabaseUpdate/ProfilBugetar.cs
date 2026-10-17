@@ -31,6 +31,7 @@ internal static class ProfilBugetar {
             ("D", "602.02.00", "351.01.00"), ("L", "602.02.00", "351.01.00"),
             ("PS", "602.04.00", "351.01.00"), ("MED", "602.09.00", "351.01.00"),
             ("MS", "602.09.00", "351.01.00"), ("DEZ", "602.09.00", "351.01.00"));
+        SeedDiferente.LDI(os, "461.01.09", "428.01.02", "M", "OI", "OF", "MF", "D", "L", "PS", "MED", "MS", "DEZ");
         SeedPoliticiBonConsum(os);
         SeedPoliticiListaDiferente(os);
         SeedPoliticiFacturaIesire(os);

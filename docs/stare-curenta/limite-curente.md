@@ -1,6 +1,6 @@
 # Limite curente
 
-**Actualizat: 2026-10-16.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Ce nu face încă o funcționalitate livrată, în forma în care o vede
 utilizatorul, pe ariile catalogului. Ce nu e livrat deloc e un rând
@@ -62,8 +62,9 @@ repetă aici. Limitele mecanismelor, fără efect direct pentru utilizator, stau
   valoarea decisă. Ea apare pe linie după operare și în explicația
   tranzacției. (D9-D3, D9-D12)
 - Pe profilul bugetar, ieșirile spre Gratuit și Custodie nu au flux:
-  Custodie e refuzată la inventar. Folosința păstrează gestiunea reală.
-  (093, LDI-B3, TR-r7)
+  Custodie e refuzată la inventar (`INVENTAR_STOC_NEACOPERIT`), iar clasa MC
+  n-are niciun tip de material. Folosința păstrează gestiunea reală.
+  (093, LDI-B3, TR-r7, T-r6 după PoC)
 - Recepția unui NIR nu completează automat descărcarea de gestiune a
   facturilor de ieșire cu acoperire parțială; descărcarea suplimentară se
   generează din factura de ieșire. (37g, 38d)

@@ -4562,6 +4562,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                 {
                     b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentDetaliu");
 
+                    b.Property<int?>("CauzaDiferentei")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("integer")
+                        .HasColumnName("CauzaDiferentei");
+
                     b.Property<Guid?>("CodEconomicId")
                         .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("uuid")
@@ -4582,6 +4587,11 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnType("text")
                         .HasColumnName("LotFabricatie");
 
+                    b.Property<Guid?>("PartenerDiferentaId")
+                        .ValueGeneratedOnUpdateSometimes()
+                        .HasColumnType("uuid")
+                        .HasColumnName("PartenerDiferentaId");
+
                     b.Property<decimal?>("PretEvaluare")
                         .ValueGeneratedOnUpdateSometimes()
                         .HasPrecision(18, 6)
@@ -4594,6 +4604,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnName("ProdusId");
 
                     b.HasIndex("CodEconomicId");
+
+                    b.HasIndex("PartenerDiferentaId");
 
                     b.HasIndex("ProdusId");
 
@@ -4610,6 +4622,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasBaseType("Atlas.Conta.BackOffice.Module.BusinessObjects.DocumentDetaliu");
 
                     b.Property<int?>("CauzaDiferentei")
+                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("integer")
                         .HasColumnName("CauzaDiferentei");
 
@@ -4638,6 +4651,7 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasColumnName("LotFabricatie");
 
                     b.Property<Guid?>("PartenerDiferentaId")
+                        .ValueGeneratedOnUpdateSometimes()
                         .HasColumnType("uuid")
                         .HasColumnName("PartenerDiferentaId");
 
@@ -6506,12 +6520,20 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                         .HasForeignKey("CodEconomicId")
                         .OnDelete(DeleteBehavior.ClientNoAction);
 
+                    b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "PartenerDiferenta")
+                        .WithMany()
+                        .HasForeignKey("PartenerDiferentaId")
+                        .OnDelete(DeleteBehavior.ClientNoAction)
+                        .HasConstraintName("FK_DocumentDetalii_Repartitori_PartenerDiferentaId");
+
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Produs", "Produs")
                         .WithMany()
                         .HasForeignKey("ProdusId")
                         .OnDelete(DeleteBehavior.ClientNoAction);
 
                     b.Navigation("CodEconomic");
+
+                    b.Navigation("PartenerDiferenta");
 
                     b.Navigation("Produs");
                 });
@@ -6531,7 +6553,8 @@ namespace Atlas.Conta.BackOffice.Module.Migrations
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Repartitor", "PartenerDiferenta")
                         .WithMany()
                         .HasForeignKey("PartenerDiferentaId")
-                        .OnDelete(DeleteBehavior.ClientNoAction);
+                        .OnDelete(DeleteBehavior.ClientNoAction)
+                        .HasConstraintName("FK_DocumentDetalii_Repartitori_PartenerDiferentaId");
 
                     b.HasOne("Atlas.Conta.BackOffice.Module.BusinessObjects.Produs", "Produs")
                         .WithMany()

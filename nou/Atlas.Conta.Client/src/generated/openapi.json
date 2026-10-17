@@ -346693,6 +346693,18 @@
             "format": "double",
             "nullable": true
           },
+          "CauzaDiferentei": {
+            "$ref": "#/components/schemas/CauzaDiferentei"
+          },
+          "PartenerDiferentaId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "PartenerDiferentaDenumire": {
+            "type": "string",
+            "nullable": true
+          },
           "Valoare": {
             "type": "number",
             "format": "double"
@@ -346761,6 +346773,14 @@
           "PretEvaluare": {
             "type": "number",
             "format": "double",
+            "nullable": true
+          },
+          "CauzaDiferentei": {
+            "$ref": "#/components/schemas/CauzaDiferentei"
+          },
+          "PartenerDiferentaId": {
+            "type": "string",
+            "format": "uuid",
             "nullable": true
           },
           "DataExpirare": {
