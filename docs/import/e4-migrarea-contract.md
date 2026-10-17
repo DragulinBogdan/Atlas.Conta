@@ -147,7 +147,7 @@ același commit cu contractul.
 | TR-r2 | închisă prin 132: pe ianuarie, notele pe 371 fără lot sunt toate în categoriile punții | 1 |
 | 107-r7 | activă: ordinea cronologică a stingerilor (E4-D7) | 3 |
 | 116-r2 | activă numai dacă proba E4-D7 arată o diferență; altfel trece în „după PoC” | 3 |
-| F26-r13 | activă: fișele la deschidere (E4-D3); fără ele, ITV-ul lui martie e refuzat | 2 |
+| F26-r13 | închisă prin 133 (a), (b), (e)–(g): fișele la deschidere, AMO de motor, CAS pe fișă; ITV-ul lui martie generat | 2 |
 | 107-r8 | activă: rotunjirea la bani a notei-punte, cu divergența declarată; blochează iunie | 3 |
 | 107-r10 | închisă prin 132 (c), mutată la pasul 1: o partidă a contractului 5 pe ianuarie | 1 |
 | 107-r1 | activă: stingerile prin facturi intră în trecerea 2 sau rămân categorie declarată, cu sumă | 3 |
@@ -171,7 +171,7 @@ Restanțele noi ale etapei se numesc `E4-rN`.
 |---|---|---|---|
 | 0 | contractul, triajul, scopul E4, rândurile din catalog; owner pe E4-D1, E4-D6 și pe triaj | docskit verde | propus 2026-10-17 |
 | 1 | ianuarie 2025 verde: 110-r2, 107-r9, 107-r10, 109-r3, TR-r2 | `--recreeaza --pana-la 1`: contractele 1–5 fără diferență fără nume, INV-CUB | închis 2026-10-17 (132) |
-| 2 | fișele la deschidere (E4-D3), recensământul imobilizărilor | controlul pe 2xx/28xx; ianuarie–martie 2025 verde, cu ITV-ul lui martie | — |
+| 2 | fișele la deschidere (E4-D3), recensământul imobilizărilor | controlul pe 2xx/28xx; ianuarie–martie 2025 verde, cu ITV-ul lui martie | închis 2026-10-17 (133) |
 | 3 | anul 2025 12/12; IRZ pe decembrie, exercițiul închis, soldurile de la 01.01.2026 față de `BalantaNivel3`; E4-D7; FZ-r3 | rularea integrală detașată; raportul cu tabelul „Categorii”; două importuri ale lunilor 1–3 identice | — |
 | 4 | granița parametru (E4-D2); bază nouă la 01.01.2026 + ianuarie 2026; E4-D6; SAF-T L pe decembrie 2025 | deschiderea exactă la 2026-01; ianuarie 2026 cu contractele 1–5; DUK `ok` | — |
 | 5 | review advers, decizia etapei, triajul final, starea curentă, catalogul | docskit; ModelCheck pe ambele profiluri, dacă `Module` s-a schimbat | — |
@@ -190,6 +190,29 @@ Regulile sunt în decizia 132. Ianuarie 2025, bază recreată: „CONTRACT
 E4-r1 nu cere schimbare de motor la pasul 1, fiindcă contractul 5 o numește
 (regula de oprire 1 nu se declanșează). Rămâne „după PoC”: e o notă de 60
 de lei care creditează facturi din 2024 cu sold zero la graniță.
+
+## Tranșări la pasul 2 (2026-10-17)
+
+Regulile sunt în decizia 133. Ianuarie–martie 2025, bază recreată:
+„CONTRACT ÎNDEPLINIT”, 0 eșecuri, 20:26 în total (ianuarie 5:37,
+februarie 6:33, martie 7:35).
+
+| Ce | După pasul 2 |
+|---|---|
+| Recensământul la 01.01.2025 | 92 de fișe (Σ valoare 3.805.511,88, Σ amortizare 949.551,12, 25 amortizate integral); 26 de solduri fără fișă, cu motiv; 5 tipuri gemene pentru perechile 1C (activ, amortizare) |
+| Controlul pe 2xx/28x | Balanța = fișe + fără fișă + fără subconto MF, pe fiecare cont; pe 2814, 2.179,98 sold debitor fără subconto MF, Δ declarat la deschidere (133 b) |
+| Lunile | 4 PIF-uri în ianuarie, AMO în fiecare lună, CAS-ul din 10.03 cu divergența de ieșire 0,00; divergența de cotă Σ \|Δ\| 11,02 / 22,00 / 33,15, cumulată |
+| Contractul 2 | ITV generat în fiecare lună, inclusiv martie |
+| Contractul 5, februarie | 0 FAIL: 8 × 107-r1 (Σ −2.445,56), 2 × N-D7 (Σ 331,43), 3 × E4-r1 (Σ −5,68), 2 × 107h (Σ −667,13) |
+| Contractul 5, martie | 0 FAIL: 3 × 107h (Σ 502,69), 6 × E4-r1 (Σ −62,44) |
+| Canarii 131 (f) | 0 postări de zero în bază; fără coordonată nouă, fără scriere a motorului pe nomenclator |
+
+Februarie și martie n-au fost măsurate la pasul 0. Primele lor rulări au
+scos trei clase de diferențe, niciuna pe imobilizări: reziduul T-r2 pe
+6588/7588 (133 d), netarea 1C a unei poziții de sens opus în plată
+(133 c) și notele cu partida numită peste rest sau lăsată pe FIFO
+(133 h). Toate trei sunt numiri în conector. Regula de oprire 1 nu se
+declanșează.
 
 ## Regula de oprire
 

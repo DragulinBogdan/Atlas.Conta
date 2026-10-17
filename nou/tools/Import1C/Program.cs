@@ -613,16 +613,21 @@ foreach (var g in rezPartide.Partide.GroupBy(p => p.Simbol).OrderBy(g => g.Key, 
 
 var nete = Deschidere.Nete(solduri, extrabilantiere1C, planAtlas, sumatoriAtlas, Mapeaza, Avert, Check);
 
+Console.WriteLine($"\n--- Recensământul imobilizărilor la {dataCub:yyyy-MM-dd} (E4-D3) ---");
+var recensamantMf = Imobilizari1C.Recenzeaza(flax, Mapeaza, dataCub);
+Imobilizari1C.Raporteaza(recensamantMf, nete.Net, dataCub);
+var ajustariMf = Imobilizari1C.Ajustari(recensamantMf, nete.Net);
+
 Console.WriteLine($"\n--- Stocul de deschidere la {dataRanduri:yyyy-MM-dd} ---");
 Deschidere.RezultatControale controale = null;
 Deschidere.RezultatCub rezCub = null;
 var rezStoc = Deschidere.Stoc(provider, laCerere, stoc, Mapeaza, planAtlas, dataRanduri, Avert, Check, loturiCub => {
     controale = Deschidere.Controale(nete.Net, rezPartide.Intrare, loturiCub, simbolPeIdAtlas, urmarite,
-        conturiStocSimbol, Avert, Check);
+        conturiStocSimbol, ajustariMf, Avert, Check);
     Console.WriteLine($"\n--- Cubul: tranzacția Deschidere la {dataCub:yyyy-MM-dd} (M1-D2) ---");
     Console.WriteLine($"Controale: {controale.Controale.Count} (cont, latură); loturi în cub: {loturiCub.Count}; "
         + $"partide: {rezPartide.Intrare.Count}; conturi de stoc cu sold dar fără lot: {controale.ConturiStocFaraLot}; "
-        + $"Δ declarat pe stoc (M1-D6): {controale.DeclarateStoc.Values.Sum():N2} lei pe {controale.DeclarateStoc.Count} conturi.");
+        + $"Δ declarat (stoc M1-D6, imobilizări E4-D3): {controale.DeclarateStoc.Values.Sum():N2} lei pe {controale.DeclarateStoc.Count} conturi.");
     rezCub = Deschidere.Cub(provider, dataCub, controale.Controale, loturiCub, rezPartide.Intrare, rezPartide.Partide,
         planAtlas, Avert, Check);
     Console.WriteLine($"Tranzacția {rezCub.Tranzactie}: {(rezCub.Scrisa ? "SCRISĂ" : "existentă, verificată")}, "

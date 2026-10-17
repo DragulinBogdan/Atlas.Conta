@@ -21,7 +21,7 @@
 > din cod.
 
 <!-- gen:index -->
-### Active (97)
+### Active (98)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -122,6 +122,7 @@
 | 130 | [„Rotund” e declarat: PoC-ul se oprește, migrarea devine etapa următoare, iar restanțele se rejudecă pe modelul rotund](130-rotund-declarat.md) | 2026-10-17 | activă |
 | 131 | [Cubul adună; faptul datat e supapă cu nume, construită la primul consumator, nu registru de acumulare și nu postare de z…](131-cubul-aduna-faptul-datat-e-supapa.md) | 2026-10-17 | activă |
 | 132 | [Migrarea din 1C: conectorul numește ce numește sursa, iar diferența unei partide se atribuie pe document](132-migrarea-numeste-ce-numeste-sursa.md) | 2026-10-17 | propusă |
+| 133 | [Migrarea imobilizărilor: fișa se naște din soldul 1C la graniță, amortizarea o face motorul, ieșirea se face pe fișă](133-migrarea-imobilizarilor-fisa-din-sold.md) | 2026-10-17 | propusă |
 
 ### Amendate parțial (35)
 

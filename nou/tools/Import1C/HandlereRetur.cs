@@ -1,5 +1,7 @@
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
+using Atlas.Conta.BackOffice.Module.Cub;
 using DevExpress.ExpressApp;
+using N = Atlas.Conta.Nucleu;
 
 namespace Import1C;
 
@@ -108,13 +110,45 @@ static class HandlerReturFurnizor {
                     var cheie = Cheie(h.Id, depozit, depozite.Count);
                     if (Reluare1C.Blocheaza(bucla, View, punteVeche, cheie))
                         continue;
-                    bucla.ImportaDocument(View, cheie,
+                    var stare = bucla.ImportaDocument(View, cheie,
                         os => plan == null ? null
                             : Materializeaza(os, plan, plan.Grupuri.FirstOrDefault(g => g.DepozitHex == depozit)),
                         motivFaraDraft: Motive.FaraPlan(plan,
                             "grupul de retur al depozitului n-a rămas cu nicio linie"));
+                    if (stare == StareImport.Importat)
+                        DeclaraReziduu(bucla, cheie, h.Id);
                 }
             });
+    }
+
+    public const string CategorieReziduu = "RLF: reziduul lotului golit trece pe politica de diferențe, 1C nu-l postează (T-r2)";
+    public static int Reziduuri { get; private set; }
+
+    // 133 d: reziduul se vede abia după operare, deci se declară pe perechea postată de motor.
+    static void DeclaraReziduu(BuclaImport bucla, string cheie, string docId) {
+        if (bucla.Tinta(View, cheie) is not Guid id)
+            return;
+        var cat = bucla.Catalog;
+        using (var os = bucla.CreeazaObjectSpace()) {
+            var perechi = os.GetObjectsQuery<Postare>()
+                .Where(p => p.DocumentId == id && p.Carte == N.Carte.Contabil && p.Pereche != null)
+                .Select(p => new { p.Pereche, p.Cont, p.Sens, p.Valoare })
+                .ToList()
+                .GroupBy(p => p.Pereche);
+            foreach (var g in perechi) {
+                var debit = g.FirstOrDefault(p => p.Sens == N.Sens.Debit);
+                var credit = g.FirstOrDefault(p => p.Sens == N.Sens.Credit);
+                if (debit == null || credit == null)
+                    continue;
+                var (d, c) = (cat.Simbol(debit.Cont), cat.Simbol(credit.Cont));
+                if (!cat.ConturiReziduu.Contains(d) && !cat.ConturiReziduu.Contains(c))
+                    continue;
+                Reziduuri++;
+                bucla.Divergenta($"{View}/{docId}", CategorieReziduu, contDebit: d, contCredit: c,
+                    valoareNepostata: -debit.Valoare);
+            }
+        }
+        bucla.PersistaDivergente();
     }
 
     static string Cheie(string docId, string depozitHex, int total) =>
@@ -370,7 +404,8 @@ static class HandlerReturFurnizor {
         Console.WriteLine($"  RLF: {Linii} linii de retur pe lot, {LiniiNeacoperite} rânduri fără "
             + $"acoperire în stoc (stornarea transcrisă în punte), {LiniiFaraSectiune} fără secțiune "
             + $"corespondentă (rămân fără TVA), {DocumenteSparte} documente sparte pe gestiuni, "
-            + $"{RanduriNerezolvate} rânduri nerezolvate, {NepostateSarite} antete fără rânduri.");
+            + $"{RanduriNerezolvate} rânduri nerezolvate, {NepostateSarite} antete fără rânduri, "
+            + $"{Reziduuri} reziduuri de lot golit declarate (T-r2).");
 }
 
 // ======================= 6. ReturDeLaClient → RDC =======================

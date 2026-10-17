@@ -135,7 +135,7 @@ static class Reconciliere {
             .ToList();
         foreach (var x in toate.Where(x => Math.Abs(x.Db - x.Sursa - declarateStoc.GetValueOrDefault(x.Simbol)) < Eps))
             avert($"Deschidere: cont {x.Simbol} bază {x.Db:N2} = sursă 1C {x.Sursa:N2} + Δ declarat "
-                + $"{declarateStoc.GetValueOrDefault(x.Simbol):N2} (deschidere fără detaliu de lot, M1-D6).");
+                + $"{declarateStoc.GetValueOrDefault(x.Simbol):N2} (lot fără detaliu M1-D6 sau sold MF fără fișă E4-D3).");
         var diferente = toate
             .Where(x => Math.Abs(x.Db - x.Sursa - declarateStoc.GetValueOrDefault(x.Simbol)) >= Eps)
             .ToList();

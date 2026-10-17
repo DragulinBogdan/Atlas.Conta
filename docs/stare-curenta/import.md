@@ -118,9 +118,26 @@ Formula amortizării se reconciliază cu cifrele postate în 1C prin blocul
 `1C/mf/` (parametrii datați și rândurile lunare per activ): recalculul cu
 `AmortizareService.CotaLunara` se compară lună cu lună, potrivirile și
 diferențele se raportează cu activ, lună, așteptat și postat; blocul nu pică
-pe diferențe, doar pe fixture malformat. Import1C nu generează documente de
-imobilizări; după orice atingere a motorului de operare, raportul integral
-trebuie să rămână identic cu baseline-ul. (87c, 87k)
+pe diferențe, doar pe fixture malformat. După orice atingere a motorului de
+operare, raportul integral trebuie să rămână identic cu baseline-ul. (87c, 87k)
+
+### Imobilizările migrate
+
+Import1C face recensământul MF la graniță înaintea deschiderii cubului. Un MF
+cu parametri de amortizare și sold pe un singur cont de activ devine fișă în
+PIF-ul de deschidere: valoarea = soldul pe activ, amortizarea = soldul pe
+contul 28x principal, lunile rămase = restul în cote fixe 1C, rotunjit la
+întreg. Perechea 1C (activ, amortizare) care diferă de politica tipului
+primește un tip geamăn. Soldurile fără fișă se raportează pe motiv, iar
+controlul pe cont e Balanța = fișe + fără fișă + fără subconto MF. Soldul
+fără subconto MF de semn opus naturii contului e Δ declarat la deschidere.
+(133 a, b)
+
+În lunile importate, PIF-ul 1C devine PIF Atlas la data sursei, iar
+vânzarea unui MF cu fișă devine CAS. Amortizarea lunii o generează motorul
+(AMO), înaintea ITV-ului; rândurile 68x = 28x ale închiderii 1C pe MF cu
+fișă nu se transcriu. Diferențele față de 1C sunt divergențe numite: cota
+Atlas față de cota 1C și ieșirea fișei. (133 e–g)
 
 ### Deschiderea importată
 
@@ -146,8 +163,12 @@ partidele neatinse de trecerea 2 și cele ale partenerului generic se declară
 cu sumă. O partidă rămasă fără explicație se atribuie pe documentele sursei:
 mișcarea pe poziție din 1C față de mișcarea Atlas pe partidă, document cu
 document. Fiecare parte are o categorie (stingere refuzată sau plafonată,
-rând ținut pe partida documentului, notă pe FIFO cu document fără poziție),
-iar suma părților închide Δ; altfel partida pică (132 e). O eroare tehnică a unei stingeri pică luna și nu explică nimic.
+inclusiv netarea 1C a unei poziții de sens opus în plată; rând ținut pe
+partida documentului; notă cu latură numită lăsată pe FIFO; notă peste
+restul partidei numite, cu excedentul pe FIFO), iar suma părților închide
+Δ; altfel partida pică (132 e, 133 c, h). Reziduul golirii lotului la
+retur, pe contul politicii de diferențe, se declară divergență după
+operare (133 d). O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 `--probe-stingeri` injectează două erori pe prima stingere reală. Contractul
 și cifrele:
 `docs/import/m1-deschidere-terti-contract.md`. (107)
@@ -159,10 +180,10 @@ iar suma părților închide Δ; altfel partida pică (132 e). O eroare tehnică
   pe partide inițiale se scriu în cub; fără deschiderea în cub, Import1C nu
   rulează. Stingerile prin facturi rămân în afara trecerii 2 (107-r1), iar
   pozițiile în valută intră în lei, plafonate la rest (107-r4). (107, 107 j)
-- Reconcilierea Import1C e verde numai pe ianuarie 2025; lunile de după
+- Reconcilierea Import1C e verde pe ianuarie–martie 2025; lunile de după
   intră pe pașii etapei E4 (`docs/import/e4-migrarea-contract.md`).
   Sensibilitatea contractelor 1 și 3 n-are probă proprie, iar unealta n-are
-  un mod de reconciliere fără scriere. (D9-D11, 132)
+  un mod de reconciliere fără scriere. (D9-D11, 132, 133)
 - O linie de notă care numește un document fără poziție la graniță rămâne
   pe FIFO, iar contractul 5 o numește (E4-r1).
 - Reproductibilitatea importului e măsurată pe o singură lună, pe chei
@@ -174,5 +195,5 @@ iar suma părților închide Δ; altfel partida pică (132 e). O eroare tehnică
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (17; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117), 125, 130, 132 (propusă).
+Deciziile care numesc pagina în `Arii:` (18; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117), 125, 130, 132 (propusă), 133 (propusă).
 <!-- /gen:decizii -->

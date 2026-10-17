@@ -36,6 +36,8 @@ static class NoteComune {
     public static int PartideNumiteAbsente { get; private set; }
     // Laturile al căror document numit n-are partidă în Atlas (sold zero la graniță): rămân pe FIFO (E4-r1).
     public static int LaturiFaraPozitie { get; private set; }
+    // Notele cu cel puțin o latură numită de sursă și lăsată pe FIFO (E4-r1), pentru contractul 5.
+    public static readonly HashSet<string> PeFifo = new(StringComparer.Ordinal);
 
     // 115: documentul din subconto-ul „Documente" al laturii numește partida pe care rândul o stinge;
     // slotul prezent și gol numește poziția fără document (132 b).
@@ -58,6 +60,7 @@ static class NoteComune {
             if (initiala != default)
                 return initiala.Partida;
             LaturiFaraPozitie++;
+            PeFifo.Add(docId);
             return null;
         }
         var numite = linii.Select(l => l with {
@@ -79,6 +82,7 @@ static class NoteComune {
                 return id;
             }
             PartideNumiteAbsente++;
+            PeFifo.Add(docId);
             return null;
         }
         return numite.Select(l => l with {
@@ -369,6 +373,8 @@ static class HandlereNoteSimple {
                 }
                 List<NoteComune.Linie> linii = null;
                 if (!bucla.EsteCunoscut(sursa.View, h.Id)) {
+                    if (sursa.View == "InchidereLunaDeExercitiu")
+                        randuri = [.. Imobilizari1C.FaraAmortizareaFiselor(bucla, h.Id, randuri)];
                     try {
                         linii = NoteComune.NumestePartide(bucla, h.Id, DateOnly.FromDateTime(h.Data),
                             NoteComune.Transcrie(bucla.Catalog, sursa.View, h.Id, randuri, sursa.SareTva,

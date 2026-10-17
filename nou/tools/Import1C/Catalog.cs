@@ -125,6 +125,8 @@ sealed class Catalog {
             tipRefPeNume[t.Nume] = t.TypeRef;
 
         IncarcaContare(os);
+        ConturiReziduu = os.GetObjectsQuery<PoliticaDiferenta>().Where(p => p.TipDocument.Cod == "RLF")
+            .Select(p => p.Cont.Simbol).Distinct().ToList().ToHashSet(StringComparer.Ordinal);
 
         foreach (var (cheie, id) in Legaturi.Incarca(os, "Lot"))
             IndexeazaLot(cheie, id);
@@ -172,6 +174,10 @@ sealed class Catalog {
     // Contul de evidență al unui cont propriu (latura de trezorerie pe care o
     // postează motorul prin `SursaCont.Repartitor*`).
     public string SimbolContPropriu(Guid id) => simboluriContPropriu.GetValueOrDefault(id);
+
+    Dictionary<Guid, string> simbolPeId;
+    public string Simbol(Guid? id) =>
+        id is Guid g ? (simbolPeId ??= Plan.ToDictionary(x => x.Value, x => x.Key)).GetValueOrDefault(g) : null;
 
     // Contul pe care motorul îl pune pe latura de CREANȚĂ a facturii de ieșire /
     // încasării: `SursaCont.Repartitor*` citește `ContImplicit`-ul partenerului,
@@ -300,6 +306,9 @@ sealed class Catalog {
     // stocul la prețul lotului ATLAS, iar 1C la al lui — abaterea apare pe
     // perechea asta, și numai pe ea.
     readonly Dictionary<string, HashSet<string>> costuriPeContStoc = new(StringComparer.Ordinal);
+
+    // T-r2: conturile pe care motorul scoate reziduul lotului golit de retur.
+    public IReadOnlySet<string> ConturiReziduu { get; }
 
     public IReadOnlySet<string> CosturiPentruContStoc(string contStoc) =>
         contStoc != null && costuriPeContStoc.TryGetValue(contStoc, out var c) ? c : null;
