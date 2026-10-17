@@ -10737,6 +10737,8 @@ export interface components {
             Sursa?: string | null;
             /** Format: double */
             Corectie?: number;
+            /** Format: double */
+            Reziduu?: number;
         };
         ExplicatieLinieDto: {
             /** Format: uuid */

@@ -10,6 +10,9 @@ namespace Atlas.Conta.BackOffice.Module.Declaratii;
 /// </summary>
 public enum PoliticaProfil { Niciuna, Contare, Tva, InchidereTva, InchidereConturi }
 
+/// <summary>Declarantul citește politica de diferențe a tipului (126, T-r2); operandul o încarcă numai pentru el.</summary>
+public interface IDeclarantCuDiferente : IDeclarant { }
+
 public interface IDeclarant {
     /// <summary>Declarantul contează liniile prin <c>RegulaContare</c> (D9-A4).</summary>
     bool ConteazaPrinReguli => false;

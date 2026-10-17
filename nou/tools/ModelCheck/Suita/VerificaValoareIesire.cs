@@ -327,7 +327,6 @@ static class VerificaValoareIesire {
                 && refuzRetro.Count > 0);
         }
 
-        Guid? lotFiscalId = null;
         if (privat) {
             // ---------------- (f) DSC generat de FCL care golește lotul ----------------
             var client = os.CreateObject<Partener>();
@@ -367,7 +366,7 @@ static class VerificaValoareIesire {
             // ---------------- (g) RLF care golește lotul: ieșire FISCALĂ, nu de evaluare (review F5) ----------------
             // Suma returului e a notei de credit a furnizorului (`q × preț`), nu a
             // lotului: RLF declară `IDocumentCuIesireFiscala`, motorul sare regula
-            // de golire, reziduul de cenți rămâne pe lot (declarat în S), NU pe 401.
+            // de golire, reziduul de cenți trece pe politica de diferențe (T-r2), NU pe 401.
             var rlf = os.CreateObject<ReturFurnizor>();
             rlf.Data = new DateOnly(2026, 5, 9); rlf.Predator = g1; rlf.Primitor = furnizor;
             var linRlf = os.CreateObject<DocumentDetaliu>();
@@ -383,16 +382,15 @@ static class VerificaValoareIesire {
                 + $"lot {SoldCheieCub(lotG, g1).Cantitate:0.###}/{SoldCheieCub(lotG, g1).Valoare:N2}.");
             var cont401Cub = os.FirstOrDefault<Cont>(c => c.Simbol == "401");
             s.Check("D18-V2 (g) returul la furnizor care golește lotul rămâne la `preț × cantitate` = −10,01 (suma hârtiei "
-                + "furnizorului, `IDocumentCuIesireFiscala`), stornarea 3xx = 401 postează −10,01, iar lotul rămâne 0 / −0,01 — "
-                + "reziduul e al lotului (declarat), nu al lui 401",
+                + "furnizorului, `IDocumentCuIesireFiscala`), stornarea 3xx = 401 postează −10,01, iar lotul ajunge 0 / 0 — "
+                + "reziduul −0,01 trece pe politica de diferențe (T-r2), nu pe 401",
                 rlf.Declarant()?.SursaValoareDeclarata == Atlas.Conta.BackOffice.Module.Declaratii.SurseValoare.Linie
                 && linRlf.Valoare == -10.01m
-                && SoldCheieCub(lotG, g1) == (0m, -0.01m)
+                && SoldCheieCub(lotG, g1) == (0m, 0m)
                 && CubScena.Note(os, rlf.ID).Any(p => p.Credit && p.Valoare == -10.01m && p.Cont == cont401Cub.ID));
             s.Check("D18-V2 (g) TVA-ul returului e coerent cu baza lui: `ValoareTva` = −round(10,01 × cota) — baza TVA și "
                 + "valoarea liniei sunt aceeași cifră (F5 original: cu absorbția, baza rămânea 10,01 iar valoarea devenea 10,00)",
                 linRlf.ValoareTva == -tvaAsteptat && tvaAsteptat > 0m);
-            lotFiscalId = lotG.ID;
 
             // ---------------- (h) ASM: consumul preia restul; produsul CULES trebuie să-l egaleze ----------------
             var asm = os.CreateObject<Asamblare>();
@@ -431,17 +429,13 @@ static class VerificaValoareIesire {
         var loturiScena = os.GetObjectsQuery<Lot>().Where(l => l.Produs.Cod.StartsWith(Marcaj)).Select(l => l.ID).ToList();
         var cheiCub = CubScena.Chei(os, loturiScena);
         var reziduuriCub = cheiCub.Where(c => c.Cantitate == 0m && c.Valoare != 0m).Select(c => c.LotId).ToList();
-        // Reziduurile AȘTEPTATE, fiecare cu numele lui: retro (limita F1) și, pe
-        // privat, returul fiscal (F5). Orice altă cheie golită cu valoare = defect.
+        // Reziduul AȘTEPTAT, cu numele lui: retro (limita F1); returul fiscal (F5) nu mai lasă reziduu (T-r2).
         var reziduuriAsteptate = new List<Guid> { lotRetro.ID };
-        if (lotFiscalId is { } fiscalId)
-            reziduuriAsteptate.Add(fiscalId);
         Console.WriteLine($"     MĂSURAT (D18-V2 rezidu): {cheiCub.Count} chei pe scenă, {cheiCub.Count(c => c.Cantitate == 0m)} golite, "
-            + $"{reziduuriCub.Count} cu valoare fără cantitate (așteptate {reziduuriAsteptate.Count}: retro"
-            + (privat ? " + RLF fiscal" : "") + ").");
-        s.Check("D18-V2 `ReziduValoricFaraCantitate` pe cheile golite de documente ale scenei = EXACT cele două limite declarate "
-            + "(retro F1; pe privat și returul fiscal F5) — pe nicio altă cheie golită nu rămâne valoare (reziduul 74g nu se "
-            + "mai naște din evaluare)",
+            + $"{reziduuriCub.Count} cu valoare fără cantitate (așteptate {reziduuriAsteptate.Count}: retro).");
+        s.Check("D18-V2 `ReziduValoricFaraCantitate` pe cheile golite de documente ale scenei = EXACT limita declarată "
+            + "retro F1; returul fiscal F5 își trece reziduul pe politica de diferențe (T-r2) — pe nicio altă cheie golită nu "
+            + "rămâne valoare (reziduul 74g nu se mai naște din evaluare)",
             reziduuriCub.Count == reziduuriAsteptate.Count && reziduuriAsteptate.All(reziduuriCub.Contains)
             && cheiCub.Count(c => c.Cantitate == 0m) >= (privat ? 7 : 4));
 

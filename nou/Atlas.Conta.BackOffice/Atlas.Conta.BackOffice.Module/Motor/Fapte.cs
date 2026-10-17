@@ -118,8 +118,9 @@ internal static class Fapte {
             .. reguliContare.SelectMany(r => new[] { r.OverrideDebit?.RepartitorId,
                 r.OverrideCredit?.RepartitorId, r.Comun?.RepartitorId }).OfType<Guid>()]);
         var sursa = Sursa(os, doc);
-        var conturi = Conturi(os,
-            ConturiAtinse(linii, claseTip, repartitori, reguliContare, politicaTva, tipuriTva, sursa.Partide));
+        var politiciDiferenta = doc.Declarant() is Declaratii.IDeclarantCuDiferente ? PoliticiDiferenta(os, tipDoc.ID) : [];
+        var conturi = Conturi(os, [.. ConturiAtinse(linii, claseTip, repartitori, reguliContare, politicaTva, tipuriTva, sursa.Partide)
+            .Union(politiciDiferenta.Select(p => p.Cont))]);
 
         var solduriLoturi = SolduriLoturi(os, doc, idsLot);
         var corectate = linii.Where(d => d is ILinieCuCorectieValorica { CorectieValoareLot: true } && d.LotId != null)
@@ -159,8 +160,15 @@ internal static class Fapte {
                 PartideDisponibile = PartideDisponibile(os, doc, explicite, conturi, repartitori),
                 UnitatiSursa = UnitatiSursa(os, doc),
                 DisponibilPartideSursa = sursa.Disponibil,
+                PoliticiDiferenta = politiciDiferenta,
             }));
     }
+
+    static IReadOnlyList<Declaratii.PoliticaDiferentaFapt> PoliticiDiferenta(IObjectSpace os, Guid tipDocumentId) =>
+        os.GetObjectsQuery<PoliticaDiferenta>().Where(p => p.TipDocumentId == tipDocumentId)
+            .Select(p => new { p.ID, p.ClasaId, p.Cauza, p.ContId, p.ContPersonalId, p.OptimisticLockField }).ToList()
+            .Select(p => new Declaratii.PoliticaDiferentaFapt(p.ClasaId, p.Cauza, p.ContId, p.ContPersonalId)
+                { Id = p.ID, Versiune = p.OptimisticLockField }).ToList();
 
     static IReadOnlyList<N.UnitateSold> UnitatiSursa(IObjectSpace os, Document doc) =>
         !doc.Autogenerat || doc.DocumentSursaId is not Guid sursa ? [] :

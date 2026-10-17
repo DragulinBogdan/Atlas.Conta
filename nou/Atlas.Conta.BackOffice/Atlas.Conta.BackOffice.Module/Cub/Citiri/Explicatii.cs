@@ -144,9 +144,9 @@ public static class Explicatii {
             foreach (var declarata in explicatie.Decizii.OfType<N.ValoareDeclarata>()) {
                 var postata = faraCantitatePeLinie.Where(p => p.Linie == declarata.Linie && p.Unitate == declarata.Unitate.Id
                     && p.Cont == declarata.Unitate.Cont).Sum(p => p.Valoare);
-                if (postata != declarata.Corectie)
+                if (postata != declarata.Corectie + declarata.Reziduu)
                     throw new OperareException($"{Iesire}: tranzacția {purtator.ID}, linia {declarata.Linie}: cota corecțiilor de valoare "
-                        + $"({declarata.Corectie}) nu e postarea fără cantitate de pe lot ({postata}).");
+                        + $"({declarata.Corectie}) plus reziduul ({declarata.Reziduu}) nu sunt postarea fără cantitate de pe lot ({postata}).");
             }
 
             foreach (var (iesire, inainte) in explicatie.IesiriEvaluate())

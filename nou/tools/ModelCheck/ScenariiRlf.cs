@@ -2,6 +2,9 @@ using Atlas.Conta.BackOffice.Module.Api;
 using Atlas.Conta.BackOffice.Module.BusinessObjects;
 using Atlas.Conta.BackOffice.Module.DatabaseUpdate;
 using Atlas.Conta.BackOffice.Module.Declaratii;
+using Atlas.Conta.BackOffice.Module.Motor;
+using DevExpress.ExpressApp.EFCore;
+using Microsoft.EntityFrameworkCore;
 using DevExpress.ExpressApp;
 using N = Atlas.Conta.Nucleu;
 
@@ -27,6 +30,15 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
     }
 
     Guid P(Guid d) => Partida(d, "401")!.Value;
+    // T-r2: reziduul golirii, scos fără cantitate de pe lot spre politica de diferențe.
+    RandScena[] Reziduu(FacturaScena d, int i, string cont, decimal reziduu) {
+        var l = d.Linii[i];
+        var lot = new RandScena(Cont("371"), reziduu < 0 ? N.Sens.Debit : N.Sens.Credit, Math.Abs(reziduu), 0, Magazie,
+            l.Lot, l.Produs, Linie: l.Id, Spatiu: N.Spatiu.Stoc);
+        return [lot, new RandScena(Cont(cont), reziduu < 0 ? N.Sens.Credit : N.Sens.Debit, Math.Abs(reziduu), 0, Magazie,
+            Linie: l.Id)];
+    }
+
     RandScena[] Randuri(FacturaScena d, int i, decimal q, decimal v, decimal taxa = 0,
             string tva = null, int? perioada = null, bool inversa = false) {
         var l = d.Linii[i]; var tv = tva == null ? (Guid?)null : Tva(tva);
@@ -60,7 +72,7 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
             SoldLot("SC-RLF-14", lot.Lot!.Value, Magazie, Ianuarie, 10, 100);
             return;
         }
-        Simple(); Reziduu(); Compensare(); Refuzuri(); PestePerioada();
+        Simple(); Reziduu(); ReziduuMinus(); Compensare(); Refuzuri(); PestePerioada();
     }
 
     void Simple() {
@@ -93,6 +105,30 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
         SoldPartida("SC-RLF-10", P(ti.Id), Ianuarie, 20);
     }
 
+    void ReziduuMinus() {
+        FacturaScena Golire() {
+            var lot = Receptioneaza(new LinieFctScena(5, 10.002m, Tip: "371")).Linii[0];
+            Opereaza(Iesire(false, (lot, 2)).Id); Opereaza(Iesire(false, (lot, 1)).Id);
+            return Retur(new LinieRlfScena(lot, 2));
+        }
+        var r = Golire(); Opereaza(r.Id);
+        Postari("SC-RLF-15", r.Id, N.FelTranzactie.Operare, Ianuarie, [.. Randuri(r, 0, -2, -20m), .. Reziduu(r, 0, "6588", .01m)]);
+        SoldLot("SC-RLF-15", r.Linii[0].Lot!.Value, Magazie, Ianuarie, 0, 0);
+        var fara = Golire();
+        Verifica("SC-RLF-16", $"fără politica de diferențe a returului, golirea cu reziduu e refuzată cu {CoduriRefuz.ReziduuPoliticaLipsa}",
+            CuSpatiu(os => {
+                var db = ((EFCoreObjectSpace)os).DbContext;
+                using var tx = db.Database.BeginTransaction();
+                var tip = os.GetObjectsQuery<TipDocument>().Single(t => t.Cod == "RLF").ID;
+                db.Database.ExecuteSqlInterpolated($"DELETE FROM \"PoliticiDiferenta\" WHERE \"TipDocumentId\" = {tip}");
+                var refuzuri = MotorOperare.Valideaza(os, os.GetObjectByKey<ReturFurnizor>(fara.Id));
+                tx.Rollback();
+                return refuzuri.Any(e => e.Contains(CoduriRefuz.ReziduuPoliticaLipsa));
+            }));
+        Opereaza(fara.Id);
+        SoldLot("SC-RLF-16", fara.Linii[0].Lot!.Value, Magazie, Ianuarie, 0, 0);
+    }
+
     void Reziduu() {
         var lot = Receptioneaza(new LinieFctScena(3, .333333m, Tip: "371")).Linii[0];
         Opereaza(Iesire(false, (lot, 2)).Id);
@@ -103,17 +139,17 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
         var rez = Receptioneaza(new LinieFctScena(3, 10.006667m, Tip: "371")).Linii[0];
         Opereaza(Iesire(false, (rez, 1)).Id); Opereaza(Iesire(false, (rez, 1)).Id);
         var r = Retur(new LinieRlfScena(rez, 1)); Opereaza(r.Id);
-        Postari("SC-RLF-05", r.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(r, 0, -1, -10.01m));
+        Postari("SC-RLF-05", r.Id, N.FelTranzactie.Operare, Ianuarie, [.. Randuri(r, 0, -1, -10.01m), .. Reziduu(r, 0, "7588", -.01m)]);
         ValoriLinii("SC-RLF-05", "linia la prețul de intrare, nu la soldul rămas", r.Id, -10.01m);
-        SoldLot("SC-RLF-05", rez.Lot!.Value, Magazie, Ianuarie, 0, -.01m);
+        SoldLot("SC-RLF-05", rez.Lot!.Value, Magazie, Ianuarie, 0, 0);
         Anuleaza(r.Id); SoldLot("SC-RLF-05", rez.Lot.Value, Magazie, Ianuarie, 1, 10);
         Opereaza(r.Id);
-        Postari("SC-RLF-05", r.Id, N.FelTranzactie.Operare, Ianuarie, Randuri(r, 0, -1, -10.01m));
+        Postari("SC-RLF-05", r.Id, N.FelTranzactie.Operare, Ianuarie, [.. Randuri(r, 0, -1, -10.01m), .. Reziduu(r, 0, "7588", -.01m)]);
         ValoriLinii("SC-RLF-05", "aceeași cifră după anulare și reoperare", r.Id, -10.01m);
-        SoldLot("SC-RLF-05", rez.Lot.Value, Magazie, Ianuarie, 0, -.01m);
+        SoldLot("SC-RLF-05", rez.Lot.Value, Magazie, Ianuarie, 0, 0);
         var declarata = Explicatia(r.Id, N.FelTranzactie.Operare).Origini.Single().Explicatie.Linii().Single().Iesiri.Single();
-        Verifica("SC-CIT-98", "RLF la golire: ieșirea 1/10,01 e declarată de linie, fără sold citit; reziduul −0,01 rămâne pe lot",
-            declarata is { Cantitate: 1, Valoare: 10.01m, SoldInainte: null, Sursa: SurseValoare.Linie }
+        Verifica("SC-CIT-98", "RLF la golire: ieșirea 1/10,01 e declarată de linie, fără sold citit; reziduul −0,01 e declarat și trece pe 7588",
+            declarata is { Cantitate: 1, Valoare: 10.01m, SoldInainte: null, Sursa: SurseValoare.Linie, Reziduu: -.01m }
             && declarata.Unitate.Id == rez.Lot);
         SoldPartida("SC-RLF-05", P(r.Id), Ianuarie, 10.01m);
         var intact = Amprenta(r.Id);
@@ -125,9 +161,9 @@ sealed class ScenariiRlf(Func<IObjectSpace> deschide, Action<string, bool> check
         });
         Opereaza(rdc);
         ValoriLinii("SC-RLF-13", "costul returului la prețul de intrare", rdc, -10.01m);
-        SoldLot("SC-RLF-13", rez.Lot.Value, Magazie, Ianuarie, 1, 10);
+        SoldLot("SC-RLF-13", rez.Lot.Value, Magazie, Ianuarie, 1, 10.01m);
         var golire = Iesire(false, (rez, 1)).Id; Opereaza(golire);
-        ValoriLinii("SC-RLF-13", "golirea evaluată din sold", golire, 10);
+        ValoriLinii("SC-RLF-13", "golirea evaluată din sold", golire, 10.01m);
         SoldLot("SC-RLF-13", rez.Lot.Value, Magazie, Ianuarie, 0, 0);
         SoldPartida("SC-RLF-13", P(r.Id), Ianuarie, 10.01m);
         Verifica("SC-RLF-13", "nota fiscală inițială intactă", Amprenta(r.Id) == intact);

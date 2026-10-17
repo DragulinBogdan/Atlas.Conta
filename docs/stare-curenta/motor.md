@@ -207,6 +207,9 @@ Forma care înlocuiește hook-urile de motor ale frunzelor (contractul
   (validare, numerotare, scadență, conex, TVA) se citesc din bază, fără
   căutarea XAF în obiectele necomise: motorul operează în ObjectSpace
   propriu (58c), iar căutarea compila criteriul la fiecare politică lipsă. (125c)
+  Politica de diferențe a tipului intră în operand numai pentru declaranții
+  care o cer (`IDeclarantCuDiferente`, azi RLF), ca restul tipurilor să nu
+  plătească interogarea. (128)
 - **Declarantul** (`IDeclarant.Declara(Operand, Rotunjire, refuzuri) →
   Declaratie?`): pur, fără `IObjectSpace`, fără entități; frunza îl numește
   printr-o singură METODĂ polimorfă `Document.Declarant()` (`null` = tipul nu
@@ -716,5 +719,5 @@ scrie cubul, iar loturile ei se consumă ca oricare altele. (094, DES-B1…B4)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (34; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124, 126 (propusă), 127 (propusă).
+Deciziile care numesc pagina în `Arii:` (35; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124, 126 (propusă), 127 (propusă), 128 (propusă).
 <!-- /gen:decizii -->

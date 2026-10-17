@@ -195,9 +195,9 @@ Citirea securizată nu folosește snapshot-ul global. Proba pe ObjectSpace
 nesecurizat nu înlocuiește această verificare.
 
 SC-CIT-75 (privat): recepție 3 × 10,006667 = 30,02, două DSC de câte
-1/10,01 și RLF 1/10,01 lasă în gestiunea reală cantitate 0 și valoare −0,01.
-Snapshot-ul și raportul păstrează reziduul; costul unitar este 0 și FIFO
-nu îl oferă ca disponibil. Coordonatele virtuale ale DSC se păstrează,
+1/10,01 și RLF 1/10,01 golesc lotul; reziduul −0,01 trece pe 7588 (128),
+deci lotul 0/0 lipsește din snapshot și din raport, iar FIFO nu îl oferă ca
+disponibil. Coordonatele virtuale ale DSC se păstrează,
 fără a deveni gestiuni reale disponibile.
 
 ### Raport și snapshot de partide — specificație înaintea codului, 2026-09-25

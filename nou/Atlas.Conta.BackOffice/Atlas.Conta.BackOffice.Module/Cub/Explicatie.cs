@@ -10,7 +10,7 @@ namespace Atlas.Conta.BackOffice.Module.Cub;
 /// <summary>Ieșirea unei linii pe o unitate: evaluată din <paramref name="SoldInainte"/> sau declarată de <paramref name="Sursa"/>,
 /// cu cota corecțiilor de valoare scoasă lângă ea.</summary>
 public sealed record IesireExplicata(N.UnitateSold Unitate, decimal Cantitate, decimal Valoare, N.Sold? SoldInainte, string? Sursa,
-    decimal Corectie = 0m);
+    decimal Corectie = 0m, decimal Reziduu = 0m);
 
 /// <summary>Stingerea FIFO a unei linii pe o partidă, cu soldul citit al partidei.</summary>
 public sealed record StingereExplicata(N.UnitateSold Unitate, decimal Masura, N.Sold? SoldCitit);
@@ -74,7 +74,7 @@ public sealed record Explicatie(
             return new LinieExplicata(linie,
                 [.. ale.Select(d => d switch {
                     N.ValoareIesire i => new IesireExplicata(i.Unitate, i.Cantitate, i.Valoare, (N.Sold?)evaluate[i], null),
-                    N.ValoareDeclarata i => new IesireExplicata(i.Unitate, i.Cantitate, i.Valoare, null, i.Sursa, i.Corectie),
+                    N.ValoareDeclarata i => new IesireExplicata(i.Unitate, i.Cantitate, i.Valoare, null, i.Sursa, i.Corectie, i.Reziduu),
                     _ => null,
                 }).OfType<IesireExplicata>()],
                 [.. ale.OfType<N.AlocareFifo>().Select(a => new StingereExplicata(a.Unitate, a.Masura, SoldCitit(a.Unitate)))],
@@ -150,6 +150,7 @@ public sealed record Explicatie(
                 w.WriteNumber("valoare", d.Valoare);
                 w.WriteString("sursa", d.Sursa);
                 if (d.Corectie != 0m) w.WriteNumber("corectie", d.Corectie);
+                if (d.Reziduu != 0m) w.WriteNumber("reziduu", d.Reziduu);
                 break;
             case N.PartidaDeschisa d:
                 w.WriteString("linie", d.Linie);
@@ -188,7 +189,8 @@ public sealed record Explicatie(
             e.GetProperty("cantitate").GetDecimal(), e.GetProperty("valoare").GetDecimal()),
         nameof(N.ValoareDeclarata) => new N.ValoareDeclarata(e.GetProperty("linie").GetGuid(), Unitatea(e),
             e.GetProperty("cantitate").GetDecimal(), e.GetProperty("valoare").GetDecimal(), e.GetProperty("sursa").GetString()!,
-            e.TryGetProperty("corectie", out var corectie) ? corectie.GetDecimal() : 0m),
+            e.TryGetProperty("corectie", out var corectie) ? corectie.GetDecimal() : 0m,
+            e.TryGetProperty("reziduu", out var reziduu) ? reziduu.GetDecimal() : 0m),
         nameof(N.PartidaDeschisa) => new N.PartidaDeschisa(e.GetProperty("linie").GetGuid(), Unitatea(e)),
         nameof(N.ContRezolvat) => new N.ContRezolvat(e.GetProperty("linie").GetGuid(), e.GetProperty("cont").GetGuid(),
             e.GetProperty("sursa").GetString()!, e.TryGetProperty("regula", out var regula) ? regula.GetGuid() : null),
