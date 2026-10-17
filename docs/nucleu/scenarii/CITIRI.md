@@ -167,6 +167,10 @@ FIFO și raportul păstrează data deschiderii peste granița snapshot-ului.
 Citirea cu excluderea unui document recitește postările, fără a-l păstra
 ascuns în snapshot. Un snapshot absent permite citirea integrală din cub.
 
+SC-CIT-116 (127): produsul lotului recepției, cu stoc în magazie, nu trece pe
+un tip de material din altă clasă (gardianul refuză); un produs nou, fără
+stoc, trece. (NG-r2)
+
 SC-CIT-115 (125): peste snapshot-ul lui ianuarie, cumulul la februarie
 cerut pe loturile scenei (lotul recepției și lotul de deschidere) dă exact
 rândurile cumulului întreg restrâns la ele: fără excludere, cu excluderea

@@ -19,7 +19,29 @@ sealed class ScenariiFct(Func<IObjectSpace> deschide, Action<string, bool> check
         Dependenti();
         AnalizaReceptiei();
         RegulaReceptiei();
+        LotulNascut();
         PestePerioada();
+    }
+
+    void LotulNascut() {
+        var negativ = Factura(Ianuarie, new LinieFctScena(2, -5));
+        Verifica("SC-FCT-17", "dry-run refuză lotul născut negativ", CuSpatiu(os =>
+            ComenziDocument.Sistem(os).Valideaza(negativ.Id)).Any(r => r.Contains(CoduriRefuz.LotValoareNegativa)));
+        Refuza("SC-FCT-17", () => Opereaza(negativ.Id), CoduriRefuz.LotValoareNegativa);
+        FaraEfecte("SC-FCT-17", negativ.Id);
+        var f = Factura(Ianuarie, new LinieFctScena(4, 2.5m));
+        var lot = f.Linii[0].Lot!.Value;
+        Verifica("SC-FCT-18", "dry-run judecă lotul cu prețul și data operării, fără să le persiste", CuSpatiu(os => {
+            var doc = os.GetObjectByKey<FacturaIntrare>(f.Id);
+            var refuzuri = MotorOperare.Valideaza(os, doc);
+            var validat = os.GetObjectByKey<Lot>(lot);
+            using var alt = Deschide();
+            var persistat = alt.GetObjectByKey<Lot>(lot);
+            return refuzuri.Count == 0 && validat.PretUnitar == 2.5m && validat.Data == doc.DataInregistrare
+                && persistat.PretUnitar == 0m;
+        }));
+        Opereaza(f.Id);
+        Verifica("SC-FCT-18", "operarea fixează același preț", CuSpatiu(os => os.GetObjectByKey<Lot>(lot).PretUnitar == 2.5m));
     }
 
     // 112: operand scris de mână — politica de TVA și regula de servicii duc spre alte conturi decât recepția.
