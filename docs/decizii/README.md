@@ -21,7 +21,7 @@
 > din cod.
 
 <!-- gen:index -->
-### Active (95)
+### Active (96)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -120,6 +120,7 @@
 | 128 | [Golirea lotului prin retur la furnizor trece reziduul pe politica de diferențe](128-golirea-prin-retur-trece-reziduul-pe-politica.md) | 2026-10-17 | activă |
 | 129 | [Minusul de inventar își culege cauza: cheltuiala rămâne pe tip, imputarea merge pe politica de diferențe](129-minusul-de-inventar-isi-culege-cauza.md) | 2026-10-17 | activă |
 | 130 | [„Rotund” e declarat: PoC-ul se oprește, migrarea devine etapa următoare, iar restanțele se rejudecă pe modelul rotund](130-rotund-declarat.md) | 2026-10-17 | activă |
+| 131 | [Cubul adună; faptul datat e supapă cu nume, construită la primul consumator, nu registru de acumulare și nu postare de z…](131-cubul-aduna-faptul-datat-e-supapa.md) | 2026-10-17 | activă |
 
 ### Amendate parțial (35)
 

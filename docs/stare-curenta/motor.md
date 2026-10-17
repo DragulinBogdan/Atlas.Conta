@@ -699,6 +699,13 @@ scrie cubul, iar loturile ei se consumă ca oricare altele. (094, DES-B1…B4)
   mișcarea de stoc SAF-T, care poartă eticheta felului; o fișă a lotului sau
   a partidei se construiește peste `Loturi.Postari`, respectiv
   `Partide.Postari`, fără filtru pe fel.
+- Cubul primește numai ce se adună. Faptele neaditive („valoarea valabilă la
+  data d”) nu intră în cub nici ca postare cu măsuri zero, nici ca coordonată,
+  nici ca stare scrisă de motor pe nomenclator; destinația lor e faptul
+  datat, supapă cu nume construită la primul consumator. Cele trei forme
+  existente (postările zero ale revizuirii PIF, locul și starea fișei) sunt
+  tolerate ca moștenire și se mută atunci (131-r2). Registre de acumulare
+  separate nu se adaugă. (131)
 
 ## Locurile regulilor în cod
 
@@ -719,5 +726,5 @@ scrie cubul, iar loturile ei se consumă ca oricare altele. (094, DES-B1…B4)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (35; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124, 126, 127, 128.
+Deciziile care numesc pagina în `Arii:` (36; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 10, 15, 18, 25, 26 (amendată de 112), 28, 29, 32, 33, 42 (amendată de 104, 106), 49, 51, 52, 54, 64 (amendată de 84), 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 94, 98, 99, 104 (amendată de 106), 109, 111, 112, 114 (amendată de 116), 115, 124, 126, 127, 128, 131.
 <!-- /gen:decizii -->
