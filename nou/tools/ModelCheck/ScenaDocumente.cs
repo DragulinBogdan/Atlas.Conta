@@ -20,7 +20,7 @@ record RandScena(Guid Cont, N.Sens Sens, decimal Valoare, decimal Cantitate = 0,
     N.Carte Carte = N.Carte.Contabil, N.Contrapondere? Contrapondere = null, Guid? Loc = null);
 
 record LinieFctScena(decimal Cantitate, decimal Pret, string Tva = null, bool Stoc = true,
-    decimal TaxaCuleasa = 0, string Tip = null);
+    decimal TaxaCuleasa = 0, string Tip = null, Guid? Produs = null);
 record LinieScena(Guid Id, Guid? Lot, Guid? Produs);
 record FacturaScena(Guid Id, LinieScena[] Linii);
 record LinieNtcScena(string Debit, string Credit, decimal Valoare, Guid? RepartitorDebit = null, Guid? RepartitorCredit = null,
@@ -251,8 +251,12 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             if (spec.Tva != null) d.TipTva = os.GetObjectsQuery<TipTva>().Single(t => t.Cod == spec.Tva);
             Guid? lotId = null, produsId = null;
             if (spec.Stoc) {
-                var p = os.CreateObject<Produs>(); p.Cod = Marcaj + "-P" + ++numar;
-                p.Denumire = p.Cod; p.UM = "BUC"; p.TipMaterialId = d.TipMaterialId;
+                Produs p;
+                if (spec.Produs is Guid existent) p = os.GetObjectByKey<Produs>(existent);
+                else {
+                    p = os.CreateObject<Produs>(); p.Cod = Marcaj + "-P" + ++numar;
+                    p.Denumire = p.Cod; p.UM = "BUC"; p.TipMaterialId = d.TipMaterialId;
+                }
                 lotId = d.CreeazaLot(os, p, (Gestiune)doc.Primitor).ID; produsId = p.ID;
             }
             if (spec.TaxaCuleasa != 0m)
@@ -477,12 +481,36 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
         });
     }
 
+    // Documentul întârziat: postările poartă data înregistrării, nu data documentului (F27-D4).
+    protected void Intarziat(string id, Guid doc, DateOnly inregistrare) {
+        Comanda(os => { os.GetObjectByKey<Document>(doc).DataInregistrare = inregistrare; os.CommitChanges(); });
+        Opereaza(doc);
+        Verifica(id, $"document întârziat: toate postările la data înregistrării {inregistrare}", CuSpatiu(os => {
+            var date = os.GetObjectsQuery<C.Postare>().Where(p => p.DocumentId == doc).Select(p => p.Data).ToList();
+            return date.Count > 0 && date.All(d => d == inregistrare);
+        }));
+    }
+
+    // Re-intrarea pe produsul golit: FIFO oferă numai lotul nou (cazul-limită al ciclului).
+    protected void NumaiLotul(string id, Guid produs, Guid gestiune, string cont, DateOnly data, Guid lot) =>
+        Verifica(id, "re-intrarea pe produsul golit: FIFO oferă numai lotul nou", CuSpatiu(os =>
+            C.Citiri.Loturi.Disponibile(os, C.Citiri.CitireCumul.Integrala, data, produs, gestiune, Cont(cont))
+                .Select(s => s.LotId).ToList() is [var singur] && singur == lot));
+
     protected void FaraEfecte(string id, Guid doc) {
         using var os = Deschide();
         Verifica(id, "Draft și zero efecte persistate proprii",
             os.GetObjectsQuery<Document>().Single(d => d.ID == doc).Stare == StareDocument.Draft
             && !os.GetObjectsQuery<C.Tranzactie>().Any(p => p.DocumentId == doc)
             && !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == doc));
+    }
+
+    // Dry-run = operare (S-r8, 127a): validarea refuză cu același mesaj ca operarea.
+    protected void RefuzaOperarea(string id, Guid doc, string fragment) {
+        var validare = CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(doc));
+        Verifica(id, $"dry-run refuzat la fel ca operarea („{fragment}”: {string.Join(" | ", validare.Take(2))})",
+            validare.Any(e => e.Contains(fragment, StringComparison.OrdinalIgnoreCase)));
+        Refuza(id, () => Opereaza(doc), fragment);
     }
 
     protected void Refuza(string id, Action actiune, string fragment) {

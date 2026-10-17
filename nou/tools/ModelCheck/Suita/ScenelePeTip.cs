@@ -48,9 +48,8 @@ using N = Atlas.Conta.Nucleu;
 namespace Atlas.Conta.BackOffice.ModelCheck;
 
 // ============ 091: scenele catalogului, pe tipul pe care îl probează ============
-// Ordinea listei e ordinea suitei integrale. PLT/INC și FCT au scenă doar pe
-// privat (partidele și regimurile de TVA sunt ale profilului); DSC e inert la
-// bugetar, scena FCL ∪ DSC îl sare acolo.
+// Ordinea listei e ordinea suitei integrale. DSC e inert la bugetar, scena
+// FCL ∪ DSC îl sare acolo.
 static class ScenelePeTip {
     public static List<Scena> Ruleaza(Suita s, bool privat) {
         var scene = new List<Scena> {

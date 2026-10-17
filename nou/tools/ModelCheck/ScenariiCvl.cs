@@ -205,7 +205,7 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
 
         var zero = Partial();
         var peste = Draft(Zi(15), (zero, -1000.01m));
-        Refuza("SC-CVL-05", () => Opereaza(peste), CoduriRefuz.CvValoareInsuficienta);
+        RefuzaOperarea("SC-CVL-05", peste, CoduriRefuz.CvValoareInsuficienta);
         Este("SC-CVL-05", "refuzul nu lasă efecte", zero, 40m, 400m, 600m, 1000m);
         Corectie(zero, -1000m);
         Este("SC-CVL-05", "diminuare până la zero", zero, 40m, 0m, 0m, 0m);
@@ -255,7 +255,7 @@ sealed partial class ScenariiCvl(Func<IObjectSpace> deschide, Action<string, boo
         var bun = Lot();
         var epuizabil = Lot(10m, 15m);
         var mixt = Draft(Zi(15), (bun, 200m), (epuizabil, -150.01m));
-        Refuza("SC-CVL-07", () => Opereaza(mixt), CoduriRefuz.CvValoareInsuficienta);
+        RefuzaOperarea("SC-CVL-07", mixt, CoduriRefuz.CvValoareInsuficienta);
         FaraEfecte("SC-CVL-07", mixt);
         Este("SC-CVL-07", "o linie invalidă anulează toată comanda", bun, 100m, 1000m, 0m, 1000m);
     }

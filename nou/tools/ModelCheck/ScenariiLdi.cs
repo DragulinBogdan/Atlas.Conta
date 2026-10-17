@@ -93,7 +93,7 @@ sealed partial class ScenariiLdi(Func<IObjectSpace> deschide, Action<string, boo
         Postari("SC-LDI-05", minus.Id, N.FelTranzactie.Storno, Februarie, Inverse(Randuri(minus, 0, -4, 40)));
         Sold("SC-LDI-05", minusLot, 6, 60); Sold("SC-LDI-05", minusLot, 10, 100, Februarie);
         Corectie(corectie);
-        Refuza("SC-LDI-12", () => Opereaza(intarziat.Id), "închis"); FaraEfecte("SC-LDI-12", intarziat.Id);
+        RefuzaOperarea("SC-LDI-12", intarziat.Id, "închis"); FaraEfecte("SC-LDI-12", intarziat.Id);
         Comanda(os => { os.GetObjectByKey<Document>(intarziat.Id).DataInregistrare = Februarie; os.CommitChanges(); });
         Opereaza(intarziat.Id);
         Postari("SC-LDI-12", intarziat.Id, N.FelTranzactie.Operare, Februarie, Randuri(intarziat, 0, 1, 10));
@@ -207,7 +207,7 @@ sealed partial class ScenariiLdi(Func<IObjectSpace> deschide, Action<string, boo
         var propriu = Culege(new Linie(DirectieDiferenta.Plus, 1, 10), new(DirectieDiferenta.Minus, 1, Lot: lot));
         Comanda(os => { os.GetObjectByKey<DocumentDetaliu>(propriu.Linii[1].Id).LotId = propriu.Linii[0].Lot; os.CommitChanges(); });
         RefuzDeclaratie("SC-LDI-13/propriu", propriu.Id, CoduriRefuz.InventarStructuraInvalida);
-        Refuza("SC-LDI-13/propriu", () => Opereaza(propriu.Id), ""); FaraEfecte("SC-LDI-13/propriu", propriu.Id);
+        RefuzaOperarea("SC-LDI-13/propriu", propriu.Id, ""); FaraEfecte("SC-LDI-13/propriu", propriu.Id);
     }
 
     void Performanta() {

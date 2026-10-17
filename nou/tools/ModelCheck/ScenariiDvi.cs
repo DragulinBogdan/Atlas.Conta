@@ -61,7 +61,7 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
             Verifica("SC-DVI-12", "fără politică fiscală", CuSpatiu(os =>
                 !os.GetObjectsQuery<PoliticaTva>().Any(p => p.TipDocument.Cod == "DVI")));
             var d = Declaratie(new LinieDviScena(100, null));
-            Refuza("SC-DVI-12", () => Opereaza(d.Id), CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-DVI-12", d.Id);
+            RefuzaOperarea("SC-DVI-12", d.Id, CoduriRefuz.TipFaraDeclaratie); FaraEfecte("SC-DVI-12", d.Id);
             return;
         }
         Simple(); Variante(); Refuzuri(); FacturiLegate(); Dependenti(); TransferPur(); PestePerioada();
@@ -172,11 +172,11 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
             (Declaratie(new LinieDviScena(100, "IMP")), CoduriRefuz.TvaImportNepotrivit, "cotă"),
         }) {
             RefuzDeclaratie("SC-DVI-10", d.Id, cod);
-            Refuza("SC-DVI-10", () => Opereaza(d.Id), mesaj); FaraEfecte("SC-DVI-10", d.Id);
+            RefuzaOperarea("SC-DVI-10", d.Id, mesaj); FaraEfecte("SC-DVI-10", d.Id);
         }
         var mrn = Declaratie(new LinieDviScena(100));
         Comanda(os => { os.GetObjectByKey<Dvi>(mrn.Id).Numar = null; os.CommitChanges(); });
-        Refuza("SC-DVI-10", () => Opereaza(mrn.Id), "MRN"); FaraEfecte("SC-DVI-10", mrn.Id);
+        RefuzaOperarea("SC-DVI-10", mrn.Id, "MRN"); FaraEfecte("SC-DVI-10", mrn.Id);
     }
 
     void Leaga(Guid dvi, params Guid[] facturi) => Comanda(os => {
@@ -201,7 +201,7 @@ sealed class ScenariiDvi(Func<IObjectSpace> deschide, Action<string, bool> check
         SoldLot("SC-DVI-11", f2.Linii[0].Lot!.Value, Magazie, Ianuarie, 1, 40);
         var f = Factura(Ianuarie, new LinieFctScena(1, 10, "IMP", false)); Opereaza(f.Id);
         var refuz = Declaratie(new LinieDviScena(100)); Leaga(refuz.Id, f.Id); Anuleaza(f.Id);
-        Refuza("SC-DVI-10", () => Opereaza(refuz.Id), "nu Operat"); FaraEfecte("SC-DVI-10", refuz.Id);
+        RefuzaOperarea("SC-DVI-10", refuz.Id, "nu Operat"); FaraEfecte("SC-DVI-10", refuz.Id);
     }
 
     void Dependenti() {

@@ -44,7 +44,7 @@ sealed partial class ScenariiLdi {
         Sold("SC-LDI-18", lot, 2, 50); Sold("SC-LDI-18", lot, 0, 0, gest: Destinatie);
         var insuf = CulegeLa(Destinatie, Ianuarie, new Linie(DirectieDiferenta.Minus, 3, Lot: lot, Tip: TipFolosinta));
         RefuzDeclaratie("SC-LDI-18", insuf.Id, "STOC_INSUFICIENT");
-        Refuza("SC-LDI-18", () => Opereaza(insuf.Id), "STOC_INSUFICIENT"); FaraEfecte("SC-LDI-18", insuf.Id);
+        RefuzaOperarea("SC-LDI-18", insuf.Id, "STOC_INSUFICIENT"); FaraEfecte("SC-LDI-18", insuf.Id);
         var stamp = Amprenta(btr.Id);
         Refuza("SC-LDI-18", () => Storneaza(btr.Id, new(An, 1, 20)), "STOC_INSUFICIENT");
         Verifica("SC-LDI-18", "transferul cu ieșiri rămâne intact", stamp == Amprenta(btr.Id));

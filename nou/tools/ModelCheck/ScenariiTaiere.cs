@@ -38,9 +38,9 @@ sealed class ScenariiTaiere(Func<IObjectSpace> deschide, Action<string, bool> ch
             && !os.GetObjectsQuery<PoliticaNumerotare>().Any(p => p.TipDocument.Cod == "BPR")));
         Verifica("SC-X-25", $"BPR: dry-run refuzat cu {faraDeclaratie}",
             CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(raport)).Any(m => m.Contains(faraDeclaratie)));
-        Refuza("SC-X-25", () => Opereaza(raport), faraDeclaratie); FaraEfecte("SC-X-25", raport);
+        RefuzaOperarea("SC-X-25", raport, faraDeclaratie); FaraEfecte("SC-X-25", raport);
         Numeroteaza(raport, "BPR");
-        Refuza("SC-X-25", () => Opereaza(raport), faraDeclaratie); FaraEfecte("SC-X-25", raport);
+        RefuzaOperarea("SC-X-25", raport, faraDeclaratie); FaraEfecte("SC-X-25", raport);
         if (Privat) return;
 
         var lot = Receptioneaza(new LinieFctScena(10, 10)).Linii[0];
@@ -50,9 +50,9 @@ sealed class ScenariiTaiere(Func<IObjectSpace> deschide, Action<string, bool> ch
             && !os.GetObjectsQuery<RegulaContare>().Any(r => r.TipDocument.Cod == "DSC")));
         Verifica("SC-DSC-09", $"dry-run refuzat cu {faraDeclaratie}", CuSpatiu(os => ComenziDocument.Sistem(os).Valideaza(descarcare))
             .Any(m => m.Contains(faraDeclaratie)));
-        Refuza("SC-DSC-09", () => Opereaza(descarcare), faraDeclaratie); FaraEfecte("SC-DSC-09", descarcare);
+        RefuzaOperarea("SC-DSC-09", descarcare, faraDeclaratie); FaraEfecte("SC-DSC-09", descarcare);
         Numeroteaza(descarcare, "DSC");
-        Refuza("SC-DSC-09", () => Opereaza(descarcare), faraDeclaratie); FaraEfecte("SC-DSC-09", descarcare);
+        RefuzaOperarea("SC-DSC-09", descarcare, faraDeclaratie); FaraEfecte("SC-DSC-09", descarcare);
         SoldLot("SC-DSC-09", lot.Lot!.Value, Magazie, Ianuarie, 10, 100);
     }
 

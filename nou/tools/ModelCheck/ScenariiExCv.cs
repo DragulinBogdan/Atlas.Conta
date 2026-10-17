@@ -60,7 +60,7 @@ sealed class ScenariiExCv(Func<IObjectSpace> deschide, Action<string, bool> chec
             d.LotId = lot; d.Valoare = 200m; d.CodEconomicId = Economic;
             os.CommitChanges(); return doc.ID;
         });
-        Refuza("SC-EX-26", () => Opereaza(corectie), CoduriRefuz.CvAnInchis);
+        RefuzaOperarea("SC-EX-26", corectie, CoduriRefuz.CvAnInchis);
         Verifica("SC-EX-26", "corecția refuzată pe consumul din exercițiul închis nu scrie nimic",
             CuSpatiu(os => !os.GetObjectsQuery<C.Postare>().Any(p => p.DocumentId == corectie)));
 

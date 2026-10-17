@@ -67,8 +67,11 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         Multiple();
         var insuf = Iesire(true, (lot, 11));
         RefuzDeclaratie("SC-BTR-08", insuf.Id, "STOC_INSUFICIENT");
-        Refuza("SC-BTR-08", () => Opereaza(insuf.Id), "STOC_INSUFICIENT");
+        RefuzaOperarea("SC-BTR-08", insuf.Id, "STOC_INSUFICIENT");
         FaraEfecte("SC-BTR-08", insuf.Id);
+        var zero = Iesire(true, (lot, 0));
+        RefuzDeclaratie("SC-BTR-08", zero.Id, Atlas.Conta.BackOffice.Module.Declaratii.CoduriRefuz.CantitateNepozitiva);
+        RefuzaOperarea("SC-BTR-08", zero.Id, "cantitate"); FaraEfecte("SC-BTR-08", zero.Id);
         Dependenti();
         var p = Iesire(true, (Receptioneaza(new LinieFctScena(10, 10)).Linii[0], 4)); Opereaza(p.Id);
         var c = Iesire(true, (Receptioneaza(new LinieFctScena(10, 10)).Linii[0], 4)); Opereaza(c.Id);
@@ -160,6 +163,14 @@ sealed class ScenariiBtr(Func<IObjectSpace> deschide, Action<string, bool> check
         Postari("SC-BTR-07", r.Id, N.FelTranzactie.Transfer, Ianuarie,
             [.. Randuri(r, 0, 1, 0.33m), .. Randuri(r, 1, 2, 0.67m)]);
         Solduri("SC-BTR-07", mic, Ianuarie, 0, 0, 3, 1);
+        var nou = Receptioneaza(new LinieFctScena(2, 5, Produs: mic.Produs)).Linii[0];
+        var dupa = Iesire(true, (nou, 1)); Opereaza(dupa.Id);
+        Solduri("SC-BTR-07", mic, Ianuarie, 0, 0, 3, 1);
+        Solduri("SC-BTR-07", nou, Ianuarie, 1, 5, 1, 5);
+        NumaiLotul("SC-BTR-07", mic.Produs!.Value, Magazie, Stoc, Ianuarie, nou.Lot!.Value);
+        Intarziat("SC-BTR-09", Iesire(true, (nou, 1)).Id, new(An, 1, 25));
+        Solduri("SC-BTR-09", nou, new(An, 1, 20), 1, 5, 1, 5);
+        Solduri("SC-BTR-09", nou, new(An, 1, 25), 0, 0, 2, 10);
     }
 
     void Dependenti() {
