@@ -1,6 +1,6 @@
 # Dezvoltare
 
-**Actualizat: 2026-10-15.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Organizarea sursei, modelul și persistența, serverele și bazele de dezvoltare, migrațiile, codegen-ul și build-ul.
 
@@ -38,34 +38,37 @@ EF Core Migrations este mecanismul de evoluție a schemei. Actualizarea
 automată a schemei prin XAF este dezactivată. Module este comun celor două
 hosturi; schimbările incompatibile se livrează coordonat. (23a, 42f)
 
-Lanțul pornește din migrația de bază `20261010151835_InitialCreate`
-(C111-D7; 102e, D9-D6) și continuă incremental (120):
-`20261012114235_OriginiPartide` adaugă proiecția provenienței fără backfill
-(TR-D9b); `20261013073914_SensPePostare` redenumește coloana `Latura` a lui
-`Postare` și a view-ului `PostareVizual` în `Sens`;
-`20261013082803_SensTvaPeMapari` redenumește în `SensTva` coloanele de sens
-ale mapărilor D300, D394 și SAF-T (TR-D9b);
-`20261013214047_CorectieValoareLot` adaugă pe `DocumentDetalii` coloana
-nulabilă `CorectieValoareLot` (119). Migrația de bază este
-generată din model, plus SQL-ul brut pe care
-modelul nu-l declară: `Postare` partiționată pe `Spatiu` cu cheia
-`(Spatiu, ID)`, cele două partiții, FK-urile pe partiții — inclusiv cele trei
-spre `Repartitori`, prin `Repartitor`, `PartenerFiscal` și `Loc` —, cei 14
-indecși pe partiții și pe părinte (cu `IX_Postare_Fisa_Cont` și cu
-`IX_Postare_Tranzactie_Pereche`, pe `(TranzactieId, Pereche)`, care ține și
-loc de index pe tranzacție; probați de `STR-SCHEMA-4`), constrângerile `CK_Postare_*` (cu `CK_Postare_Contrapondere`
-și `CK_Postare_BlocFiscal`), funcția `cub_partida_id` și view-ul listei de
-evidență, `PostareVizual`. `Down` le șterge cu `DROP` explicit. `ToView` e
-exclus din snapshot, deci `has-pending-model-changes` rămâne curat.
-Snapshot-ul EF
-rămâne cu cheia `ID` (divergență declarată, probată de `STR-SCHEMA`).
-Migrațiile nu transformă date. Migrațiile de dinainte sunt
-istorie în git; bazele create pe un lanț vechi nu se actualizează, se
-recreează (102b); clonele de import și de perf de dinaintea migrației curente
-rămân pe schema veche și Import1C cere `--recreeaza`. Lanțul crește prin
-migrații până la „rotund”, unde se recomprimă într-o singură migrație de
-bază, cu proba că schema rezultată e identică; de la prima bază care trebuie
-păstrată nu se mai recomprimă. (120)
+Schema se creează dintr-o singură migrație de bază, `20261017101337_InitialCreate`,
+recomprimată la „rotund” (120 b): partea generată din model plus SQL-ul pe
+care modelul nu-l declară, chemat prin `Migrations/SqlBaza` din fișierele
+încorporate `Migrations/Sql/*.sql` (120 e): `Postare` partiționată pe `Spatiu`
+cu cheia `(Spatiu, ID)`, cele două partiții, FK-urile pe partiții — inclusiv
+cele trei spre `Repartitori`, prin `Repartitor`, `PartenerFiscal` și `Loc` —,
+cei 14 indecși pe partiții și pe părinte (cu `IX_Postare_Fisa_Cont` și cu
+`IX_Postare_Tranzactie_Pereche`, probați de `STR-SCHEMA-4`), constrângerile
+`CK_Postare_*`, funcția `cub_partida_id` și view-ul `PostareVizual`. Din
+migrația generată se scot tabela EF `Postare` și indecșii ei; `Down` cheamă
+`SqlBaza.Sterge`. `ToView` e exclus din snapshot, deci
+`has-pending-model-changes` rămâne curat. Snapshot-ul EF rămâne cu cheia `ID`
+(divergență declarată, probată de `STR-SCHEMA`, S-r4).
+
+Proba recomprimării (120 c) e `nou/tools/ModelCheck/scripts/compara-scheme.ps1`:
+compară pe catalog două baze (coloane fără ordine, constrângeri, indecși,
+view-uri, funcții, partiții, triggere, secvențe), normalizând numele
+constrângerilor NOT NULL de sistem și terminațiile de linie din funcții;
+valorile implicite lăsate de `AddColumn` în lanțul vechi și absente din
+schema nouă sunt urme ale lanțului și se listează separat. La recomprimare:
+lanțul vechi și migrația nouă au dat schema identică, cu 5 urme
+(`PerioadeFiscale.ExercitiuInchis`, `PoliticiMiscareSaft.Cauza`,
+`Societati.IntocmitDe`, `OptiuneConsultareD394`, `PeriodicitateTva`).
+`rebazeaza-istoric.ps1 -Baza <b> -Port <p>` trece o bază construită din
+lanțul vechi pe migrația de bază: rulează proba față de referința
+`Atlas.Conta.Schema.Nou` și, numai dacă schemele coincid, rescrie istoricul
+migrațiilor; altfel baza se recreează (102b). Bazele hosturilor și cele
+ModelCheck au fost rebazate așa; baza de import se recreează
+(`--recreeaza`). Migrațiile nu transformă date. Schimbările de schemă de
+acum înainte adaugă migrații incrementale; de la prima bază care trebuie
+păstrată lanțul nu se mai recomprimă. (120)
 
 Comanda `dotnet ef` primește mereu `--context BackOfficeEFCoreDbContext` și
 se rulează fără `--no-build`. (23a, 89g)

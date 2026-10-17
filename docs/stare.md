@@ -7,7 +7,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 129: 89 active, 35 amendate parțial, 0 depășite, 5 propuse |
-| Restanțe | 403: 273 deschise, 130 închise |
+| Restanțe | 403: 272 deschise, 131 închise |
 | Pagini de stare curentă | 19 |
 | Contracte de felie (`Tip: contract`) | 5, deschise 0 |
 | Cataloage vii (`Tip: catalog`) | 6 |
@@ -46,18 +46,13 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 1 |
 | după PoC | 233 |
 | migrare | 25 |
 | depășită de 091 | 2 |
 | docs | 8 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (1, prag 45)
-
-**dezvoltare** (1)
-
-- `S-r4` snapshot-ul EF declară cheia ID și FK_Postare_Tranzactie_TranzactieId pe părinte, baza are cheia (Sp…
+### Lista `activă` (0, prag 45)
 
 ## Felii deschise
 
@@ -73,9 +68,9 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 |---|---|
 | [README](stare-curenta/README.md) | 2026-10-15 |
 | [api](stare-curenta/api.md) | 2026-10-16 |
-| [dezvoltare](stare-curenta/dezvoltare.md) | 2026-10-15 |
+| [dezvoltare](stare-curenta/dezvoltare.md) | 2026-10-17 |
 | [documente](stare-curenta/documente.md) | 2026-10-16 |
-| [ecrane](stare-curenta/ecrane.md) | 2026-10-16 |
+| [ecrane](stare-curenta/ecrane.md) | 2026-10-17 |
 | [imobilizari](stare-curenta/imobilizari.md) | 2026-10-17 |
 | [import](stare-curenta/import.md) | 2026-10-16 |
 | [limite-curente](stare-curenta/limite-curente.md) | 2026-10-17 |
@@ -87,7 +82,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [raportare](stare-curenta/raportare.md) | 2026-10-17 |
 | [saft](stare-curenta/saft.md) | 2026-10-15 |
 | [stoc](stare-curenta/stoc.md) | 2026-10-17 |
-| [termeni](stare-curenta/termeni.md) | 2026-10-15 |
+| [termeni](stare-curenta/termeni.md) | 2026-10-17 |
 | [tva](stare-curenta/tva.md) | 2026-10-16 |
 | [verificare](stare-curenta/verificare.md) | 2026-10-17 |
 
