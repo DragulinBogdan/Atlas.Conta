@@ -1,8 +1,8 @@
 # 129 — Minusul de inventar își culege cauza: cheltuiala rămâne pe tip, imputarea merge pe politica de diferențe
 
 - Data: 2026-10-17
-- Stare: propusă
-- Execuție: firul „rotund”, felia R4 (2026-10-17), branch `rotund-r4`; răspunsurile owner-ului la 2026-10-17; ModelCheck integral verde pe ambele profiluri
+- Stare: activă
+- Execuție: firul „rotund”, felia R4 (2026-10-17), branch `rotund-r4`; răspunsurile owner-ului la 2026-10-17; ModelCheck integral verde pe ambele profiluri; owner-ul a aprobat decizia la 2026-10-17
 - Arii: stoc, politici, documente
 - Amendează: —
 - Închide: 099-r1
@@ -37,3 +37,4 @@
 
 - 2026-10-17: scrisă la felia R4 a firului „rotund”; propusă owner-ului.
 - 2026-10-17: owner-ul confirmă abaterea de la răspunsul inițial (cheltuiala pe tip, plusul pe regula de contare).
+- 2026-10-17: aprobată de owner; trece în `activă`.

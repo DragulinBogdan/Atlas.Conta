@@ -1,8 +1,8 @@
 # 130 — „Rotund” e declarat: PoC-ul se oprește, migrarea devine etapa următoare, iar restanțele se rejudecă pe modelul rotund
 
 - Data: 2026-10-17
-- Stare: propusă
-- Execuție: felia de declarare a firului „rotund” (2026-10-17), branch `rotund-declarare`, după feliile R0–R7 (PR #62–#71); owner-ul a cerut declararea la 2026-10-17
+- Stare: activă
+- Execuție: felia de declarare a firului „rotund” (2026-10-17), branch `rotund-declarare`, după feliile R0–R7 (PR #62–#71); owner-ul a cerut declararea la 2026-10-17; owner-ul a aprobat decizia la 2026-10-17
 - Arii: verificare, dezvoltare, import
 - Amendează: —
 - Docs: `docs/scop.md` §Etapa curentă; `docs/decizii/restante.md`; CLAUDE.md §Stare
@@ -41,3 +41,4 @@ Firul „rotund” a pornit la 2026-10-17 din inventarul 126: 31 de restanțe `a
 
 - 2026-10-17: scrisă la cererea owner-ului, după aprobarea deciziilor 125, 127 și 128; propusă owner-ului.
 - 2026-10-17: (e) adăugată la observația owner-ului: „rotund” e ancoră intermediară; (c) și (d) rămân, cu condiția de relaxare (130-r2).
+- 2026-10-17: aprobată de owner; trece în `activă`.
