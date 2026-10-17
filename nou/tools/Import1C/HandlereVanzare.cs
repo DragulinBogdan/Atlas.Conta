@@ -211,13 +211,13 @@ static class HandlerVanzare {
         // Imperecherea ei cu factura rămâne pasului 5 (§12.2).
         plan.SumaCard = randuri.Where(r => EsteIncasareCard(cat, r)).Sum(r => r.Suma);
 
-        ConstruiestePunte(cat, plan, h.Id, randuri, Imobilizari1C.FacturaCuIesire(ctx.Bucla, h.Id));
+        ConstruiestePunte(cat, plan, h.Id, randuri, Imobilizari1C.LiniiIesireFise(ctx.Bucla, h.Id, randuri));
         return plan;
     }
 
     // Clasificarea rândurilor facturii de ieșire (regula feliei — Vanzare1C.cs).
     static void ConstruiestePunte(Catalog cat, Plan plan, string docId,
-            IReadOnlyList<FlaxRandNota> randuri, bool cuIesire) {
+            IReadOnlyList<FlaxRandNota> randuri, HashSet<int> iesire) {
         // Ce postează CHIAR planul: creanța (liniile de venit + pasul TVA) și
         // încasarea pe card. Fără ele, rândurile care se declarau acoperite prin
         // ele trec pe punte (aserțiunea F1c din `Clasificare1C.Declara`).
@@ -226,7 +226,7 @@ static class HandlerVanzare {
             acoperitori.Add("venit");
         if (plan.SumaCard > 0)
             acoperitori.Add("card");
-        if (cuIesire)
+        if (iesire.Count > 0)
             acoperitori.Add("cas");
 
         Clasificare1C.Declara(plan.Punte, cat, View, docId, randuri, acoperitori,
@@ -260,7 +260,7 @@ static class HandlerVanzare {
             // Regularizarea TVA-ului neexigibil al avizului facturat.
             if (debit == "4428" && credit == "4427")
                 return Rand.Punte("FCL: regularizarea TVA neexigibilă a avizului (4428 = 4427)");
-            if (cuIesire && Imobilizari1C.EsteRandIesire(debit, credit)) {
+            if (iesire.Contains(rand.Linie)) {
                 plan.Punte.ActualAtlas(debit, credit, rand.Suma);
                 return Rand.Acoperit("cas", "FCL: rând de imobilizări pe factura de ieșire");
             }
@@ -487,7 +487,7 @@ static class HandlerAmanunt {
             var subconto = Subconto.IndexeazaTot(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
             foreach (var r in RanduriIncasare(bucla.Catalog, randuri))
                 if (subconto.Latura(r.Linie, Subconto.Credit).DeFel(Subconto.FelDocumente) is { } stins)
-                    yield return new StingereSursa(View, CheieIncasare(h.Id, r), stins, r.Suma);
+                    yield return new StingereSursa(View, CheieIncasare(h.Id, r), stins, r.Suma) { Data = h.Data };
         }
     }
 

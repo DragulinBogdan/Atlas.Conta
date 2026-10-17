@@ -70,7 +70,9 @@ sealed record AnalizaTrezorerie(List<GrupTrezorerie> Grupuri,
 // stinge (referința 1C a documentului). Trecerea 2 (Imperecheri.cs) o traduce în
 // `Imperechere`; trecerea 1 nu face nimic cu ea.
 // `Sens`: latura pe care sursa mișcă poziția-țintă (+1 debit, −1 credit); null = se citește din postările stingătorului.
-sealed record StingereSursa(string View, string CheieStingator, FlaxRef Tinta, decimal Suma, int? Sens = null);
+sealed record StingereSursa(string View, string CheieStingator, FlaxRef Tinta, decimal Suma, int? Sens = null) {
+    public DateTime Data { get; init; }
+}
 
 static class MotorTrezorerie {
     // Conturile pe care Atlas le poate reprezenta ca LATURĂ de document, adică
@@ -329,7 +331,7 @@ static class MotorTrezorerie {
         var subconto = Subconto.IndexeazaTot(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
         var analiza = Analizeaza(bucla.Catalog, h.Id, randuri, subconto, h.SimbolTrezorerie);
         return analiza.Grupuri.SelectMany(g => g.Stingeri
-            .Select(s => new StingereSursa(view, g.Cheie, s.Tinta, s.Suma)));
+            .Select(s => new StingereSursa(view, g.Cheie, s.Tinta, s.Suma) { Data = h.Data.ToDateTime(TimeOnly.MinValue) }));
     }
 
     public static void Raporteaza() {

@@ -1,6 +1,6 @@
 # Import și migrare
 
-**Actualizat: 2026-10-17.** [Index](README.md)
+**Actualizat: 2026-10-18.** [Index](README.md)
 
 Importul din 1C, opțiunile rulării, reconcilierea cu sursa și deschiderea importată.
 
@@ -42,7 +42,9 @@ pentru documente nerecunoscute. Transformările și transferurile sunt
 clasificate în ASM, BTR sau NTC după faptul economic. FCL importată postează
 venitul; DSC folosește loturile identificate de sursă. Puntea reclasificării
 de cont la transfer preia numai rândurile pe care ASM-ul nu le postează.
-(49a, 49d, 75b, 132 a)
+Linia notei-punte se rotunjește la scara de bani, iar ce taie rotunjirea e
+divergență numită; o linie rotunjită la zero se sare. (49a, 49d, 75b,
+132 a, 134 d)
 
 Proba supremă a motorului e catalogul de scenarii, nu importul
 (`docs/nucleu/scenarii/README.md`): așteptări scrise de mână, ciclul complet
@@ -57,9 +59,10 @@ pe instanța nativă (5446). Pe orice conexiune care nu spune altfel pornește
 pregătirea automată a comenzilor (`Max Auto Prepare=300`,
 `Auto Prepare Min Usages=2`). Cu ea, o citire cu parametri de care depinde
 selectivitatea poate trece pe planul generic; citirile pe loturi sunt scrise
-să nu depindă de asta (125). Pe ianuarie–martie 2025, pe 5446, importul
-costă ~18–21 ms pe document pe ianuarie–iunie 2025, pe 5446 (31:13 pe șase
-luni); creșterea rămasă e ~2% pe lună, plus contractul lunar (7 → 27 s).
+să nu depindă de asta (125). Pe anul 2025, pe 5446, cu `--inchide-lunile`,
+importul durează 1:23:10 pentru 187.033 de documente: o lună între 5:45 și
+7:41, contractul lunar 5–8 s. Sursa 1C n-are indecși pe `DefalcareNote` și
+`NoteContabile`, așa că reconcilierea o citește pe lot, nu pe poziție (134).
 Conexiunile importului nu se resetează la întoarcerea în pool
 (`No Reset On Close=true`, pe orice conexiune): importul nu lasă stare de
 sesiune (fără `SET`, advisory lock de sesiune sau tabele temporare), iar
@@ -72,16 +75,23 @@ rulează, fiindcă se compară cu sfârșitul de lună al sursei. Raportul spune
 luna e tăiată, iar verdictul e „contract lunar nerulat”, nu „îndeplinit”. Nu
 se combină cu `--inchide-lunile`.
 
-`--inchide-lunile` închide fiecare lună imediat după importul ei, prin
-`PerioadaService.Inchide` cu toate constatările curente acceptate (politica de
-închidere a bazei de import coboară blocantele de conținut, ca `ItvLipsa` și
-`RezNeinchis`, la avertisment — politică, nu ocolire). O lună închisă de 1C
-lasă sold pe cheile fine ale lui 6 și 7, fiindcă nota 1C de închidere închide
-pe cont: IRZ ar reclasifica între chei, cu netul pe cont egal cu divergența
-explicată a importului (`ModelCheck --irz <bază> <an> <lună>`). (E3-D3) E proba supremă a soldurilor materializate: raportul de reconciliere
-trebuie să rămână IDENTIC cu baseline-ul rulării fără închideri, adică importul
-citește peste snapshot-uri, nu peste registrul integral, și scrie aceleași
-cifre. (F27-D1, F27-D3)
+`--inchide-lunile` închide fiecare lună fără eșec imediat după importul
+ei, prin `PerioadaService.Inchide` cu constatările curente acceptate pe
+cheie (politica de închidere a bazei de import coboară blocantele de
+conținut la avertisment — politică, nu ocolire). Rezultatul lunii îl
+închide IRZ-ul motorului, generat după ITV; rândurile închiderii 1C dintre
+121 și 6x/7x nu se transcriu, iar diferența pe perechea de conturi, ținută
+într-o singură orientare, e divergența „închiderea rezultatului”. Când
+fereastra ajunge la decembrie și toate lunile anului sunt închise, importul
+închide și exercițiul prin `PerioadaService.InchideExercitiul`, cu
+constatările acceptate pe cheie; o constatare blocantă pică rularea.
+Soldurile de la 01.01 ale anului următor sunt cele de la 31.12 și se
+compară pe cont cu `Balanta` 1C (contractul 1 al lui decembrie), pe stoc cu
+`BalantaNivel3` (contractul 3), pe partide cu `BalantaNivel1` (contractul
+5). (134 a, b) E și proba soldurilor materializate: raportul de
+reconciliere trebuie să rămână identic cu cel al rulării fără închideri,
+adică importul citește peste snapshot-uri, nu peste registrul integral, și
+scrie aceleași cifre. (F27-D1, F27-D3)
 
 După un import, SQL-ul din `--dump-integritate-tph` se rulează pe baza de
 import: zero rânduri pe fiecare interogare. Interogările pe tipuri și legături
@@ -133,11 +143,16 @@ controlul pe cont e Balanța = fișe + fără fișă + fără subconto MF. Soldu
 fără subconto MF de semn opus naturii contului e Δ declarat la deschidere.
 (133 a, b)
 
+Pe conturile de imobilizări (20x, 21x, 28x), soldul de control al
+deschiderii stă pe SEDIU, repartitorul pe care postează notele; gardianul
+poziției fără fișă grupează pe repartitor. (134 c)
+
 În lunile importate, PIF-ul 1C devine PIF Atlas la data sursei, iar
-vânzarea unui MF cu fișă devine CAS. Amortizarea lunii o generează motorul
+vânzarea și casarea unui MF cu fișă devin CAS, cu cauza lor; CAS-ul acoperă
+rândurile cu subconto MF cu fișă, restul se transcriu. Amortizarea lunii o generează motorul
 (AMO), înaintea ITV-ului; rândurile 68x = 28x ale închiderii 1C pe MF cu
 fișă nu se transcriu. Diferențele față de 1C sunt divergențe numite: cota
-Atlas față de cota 1C și ieșirea fișei. (133 e–g)
+Atlas față de cota 1C și ieșirea fișei. (133 e–g, 134 g)
 
 ### Deschiderea importată
 
@@ -151,22 +166,25 @@ controale brute per (cont, latură), loturile ca detaliu al conturilor de stoc,
 terții ca partide inițiale `(cont, partener, document de decontare)` din
 `BalantaNivel3`, pozițiile fără partener pe partenerul generic de migrare
 `MIGRARE-NEDEFINIT`. Stingerile anului pe pozițiile de deschidere se scriu în
-cub pe partidă, în trecerea 2, plafonate la rest; data împerecherii este a
-faptului. Trecerea 2 enumeră și încasările pe facturi ale raportului de
+cub pe partidă, în trecerea 2, plafonate la rest, în ordinea datei
+stingătorului; data împerecherii este a faptului. (134 e) Trecerea 2 enumeră și încasările pe facturi ale raportului de
 vânzări cu amănuntul (copiii `#inc`). Împerecherea pe documente se
 plafonează la restul ambelor documente, cu excedentul raportat. (132 c, d) La reluare deschiderea nu se rescrie: fiecare partidă și fiecare
 lot al sursei se compară cu cubul, în ambele sensuri. Contractul 5 al
 reconcilierii compară restul fiecărei partide inițiale cu soldul poziției în
 sursă la luna următoare, corectat cu mișcarea neaplicată (refuzuri și
 plafonări semnate după sensul real, cumulate, rederivate din cub la reluare);
-partidele neatinse de trecerea 2 și cele ale partenerului generic se declară
-cu sumă. O partidă rămasă fără explicație se atribuie pe documentele sursei:
+partidele partenerului generic se declară cu sumă. O partidă rămasă fără
+explicație sau neatinsă de trecerea 2 se atribuie pe documentele sursei:
 mișcarea pe poziție din 1C față de mișcarea Atlas pe partidă, document cu
 document. Fiecare parte are o categorie (stingere refuzată sau plafonată,
 inclusiv netarea 1C a unei poziții de sens opus în plată; rând ținut pe
 partida documentului; notă cu latură numită lăsată pe FIFO; notă peste
-restul partidei numite, cu excedentul pe FIFO), iar suma părților închide
-Δ; altfel partida pică (132 e, 133 c, h). Reziduul golirii lotului la
+restul partidei numite, cu excedentul pe FIFO; notă care mărește partida
+numită în sensul ei, ținută pe partida notei), iar suma părților închide
+Δ; altfel partida pică. O neatinsă fără nume pe document rămâne declarată
+cu sumă. O partidă are refuz când trecerea 2 a refuzat cel puțin o
+stingere pe ea. (132 e, 133 c, h, 134 f, h) Reziduul golirii lotului la
 retur, pe contul politicii de diferențe, se declară divergență după
 operare (133 d). O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 `--probe-stingeri` injectează două erori pe prima stingere reală. Contractul
@@ -178,16 +196,21 @@ operare (133 d). O eroare tehnică a unei stingeri pică luna și nu explică ni
 - Conectorul 1C rulează prin motor numai pe deschidere și pe trecerea 2 a
   lunii: deschiderea trece prin comanda de deschidere, iar stingerile anului
   pe partide inițiale se scriu în cub; fără deschiderea în cub, Import1C nu
-  rulează. Stingerile prin facturi rămân în afara trecerii 2 (107-r1), iar
-  pozițiile în valută intră în lei, plafonate la rest (107-r4). (107, 107 j)
-- Reconcilierea Import1C e verde pe ianuarie–martie 2025; lunile de după
-  intră pe pașii etapei E4 (`docs/import/e4-migrarea-contract.md`).
+  rulează. Stingerile prin facturi rămân în afara trecerii 2; contractul 5
+  le atribuie pe document sau le declară cu sumă (134 h). Pozițiile în valută
+  intră în lei, plafonate la rest (107-r4). (107, 107 j)
+- Reconcilierea Import1C e verde pe anul 2025, cu lunile și exercițiul
+  închise; ianuarie 2026 și granița intră la pasul 4 al etapei E4
+  (`docs/import/e4-migrarea-contract.md`).
   Sensibilitatea contractelor 1 și 3 n-are probă proprie, iar unealta n-are
-  un mod de reconciliere fără scriere. (D9-D11, 132, 133)
+  un mod de reconciliere fără scriere. (D9-D11, 132–134)
 - O linie de notă care numește un document fără poziție la graniță rămâne
   pe FIFO, iar contractul 5 o numește (E4-r1).
-- Reproductibilitatea importului e măsurată pe o singură lună, pe chei
-  naturale. (116)
+- Reproductibilitatea importului e măsurată pe ianuarie–martie 2025, pe chei
+  naturale (116, 134 e).
+- Reevaluarea MF din 31.12.2025 intră ca notă pe poziția fără fișă: Atlas
+  n-are document de reevaluare pe fișă, iar fișa rămâne la valoarea
+  dinainte (134).
 - Reluarea parțială cu `--continua` poate afecta interpretarea reconcilierii;
   validarea completă cere o bază și un set de referință controlate, cu starea
   reluării cunoscută. (75-r3)
@@ -195,5 +218,5 @@ operare (133 d). O eroare tehnică a unei stingeri pică luna și nu explică ni
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (18; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117), 125, 130, 132 (propusă), 133 (propusă).
+Deciziile care numesc pagina în `Arii:` (19; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117), 125, 130, 132 (propusă), 133 (propusă), 134 (propusă).
 <!-- /gen:decizii -->

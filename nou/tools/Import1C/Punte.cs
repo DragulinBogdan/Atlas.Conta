@@ -184,6 +184,8 @@ static class Punti {
     // citim, un transfer în aceeași gestiune), puntea preia CHEIA SURSEI. Altfel
     // cheia sursei n-ar fi legată de nimic, iar rularea următoare ar replanifica
     // documentul la nesfârșit — și ar rescrie puntea de fiecare dată.
+    public const string CategorieRotunjire = "Punte NTC: valoarea sursei peste scara de bani, rotunjită pe linie (107-r8)";
+
     public static void Scrie(BuclaImport bucla, string view, string cheie, string numar1C,
             DateOnly data, Punte punte, ContorPunti contor, Action<string> avert) {
         // Divergența de EVALUARE se înregistrează ÎNTOTDEAUNA, inclusiv pe
@@ -221,12 +223,19 @@ static class Punti {
             nota.PredatorId = catalog.SediuId;
             nota.PrimitorId = catalog.SediuId;
             foreach (var (debit, credit, valoare) in randuri) {
+                // 134 d
+                var bani = Scara.RotunjesteBani(valoare);
+                if (bani != valoare)
+                    bucla.Divergenta(RegistruDivergente.Sursa(view, cheie), CategorieRotunjire,
+                        contDebit: debit, contCredit: credit, valoareNepostata: valoare - bani);
+                if (bani == 0m)
+                    continue;
                 var linie = os.CreateObject<NotaContabilaDetaliu>();
                 linie.Document = nota;
                 linie.TipMaterialId = catalog.TipTrezorerieId;
                 linie.ContDebitId = catalog.Plan[debit];
                 linie.ContCreditId = catalog.Plan[credit];
-                linie.Valoare = valoare;
+                linie.Valoare = bani;
                 linie.Descriere = $"Punte import 1C {numar1C}";
             }
             return nota;

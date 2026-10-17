@@ -127,6 +127,7 @@ static class Handlere {
         HandlerCompensare.Raporteaza();
         HandlereNoteSimple.Raporteaza();
         Imobilizari1C.Raporteaza();
+        Rezultat1C.Raporteaza();
         StocDinNota.Raporteaza();
         Evaluare.Raporteaza();
         NoteComune.Raporteaza();
@@ -502,6 +503,7 @@ sealed class BuclaImport {
         else {
             Amortizare(ctx);
             InchidereTva(ctx);
+            InchidereRezultat(ctx);
             // `MidpointLuna` e deja acumulat de `Opereaza` (documente + copii + ITV).
             cronometruContract.Restart();
             contract = ReconciliereLunara(ctx);
@@ -623,10 +625,9 @@ sealed class BuclaImport {
 
     int itvSarite;
 
-    // E4-D3: amortizarea lunii o generează motorul, înaintea închiderii de TVA; diferența față de
-    // rândurile 1C lăsate de închidere se înregistrează în aceeași unitate.
     public void PersistaDivergente() => Divergente.PersistaRamase(provider);
 
+    // 133 e
     void Amortizare(ContextLuna ctx) {
         if (esecuri > 0) {
             avert($"Luna {ctx.Luna:00}/{ctx.An}: {esecuri} eșecuri de import — amortizarea NU se generează.");
@@ -636,7 +637,20 @@ sealed class BuclaImport {
             os => Imobilizari1C.Genereaza(os, this, ctx),
             regenerabilLaStorno: true,
             motivFaraDraft: "luna n-are fișe de amortizat sau amortizarea e deja vie");
-        Divergente.PersistaRamase(provider);
+        PersistaDivergente();
+    }
+
+    // 134 a
+    void InchidereRezultat(ContextLuna ctx) {
+        if (esecuri > 0) {
+            avert($"Luna {ctx.Luna:00}/{ctx.An}: {esecuri} eșecuri de import — închiderea rezultatului NU se generează.");
+            return;
+        }
+        ImportaDocument(Rezultat1C.View, $"{ctx.An:0000}-{ctx.Luna:00}",
+            os => Rezultat1C.Genereaza(os, this, ctx),
+            regenerabilLaStorno: true,
+            motivFaraDraft: "luna n-are rezultat de închis sau închiderea e deja vie");
+        PersistaDivergente();
     }
 
     // PASUL 6: contractul design §8 per lună — sold per cont OMFP, 4423/4424,

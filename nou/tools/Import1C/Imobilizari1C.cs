@@ -9,7 +9,7 @@ record FlaxSoldMF(string Mf, bool Necorporal, string Cont, decimal Sold, string 
 record FlaxParametriMF(string Mf, int Termen, int TermenAmortizare, decimal ValoareCalcul, string ContAmortizare);
 record FlaxPunereMF(string Id, string Numar, DateTime Data, string Mf, string Cod, string Denumire,
     string ContActiv, string ContAmortizare, int Termen, decimal Valoare);
-record FlaxIesireMF(string Id, string Numar, DateTime Data, string Mf);
+record FlaxIesireMF(string Id, string Numar, DateTime Data, string Mf, CauzaIesire Cauza);
 
 partial class FlaxDb {
     public List<FlaxSoldMF> SolduriMF(DateTime period) =>
@@ -74,7 +74,16 @@ partial class FlaxDb {
                  join flax.VanzareMarfuriSiServiciiPrestate_Imobilizari s on s.ParentRef = h.KeyField
                  {FiltruLuna} and s.Nomenclator_ImobilizariCorporale_ID is not null
                  {OrdineAntete}",
-            r => new FlaxIesireMF(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3)),
+            r => new FlaxIesireMF(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3), CauzaIesire.Vanzare),
+            Fereastra(an, luna));
+
+    public List<FlaxIesireMF> CasariMFPeFisa(int an, int luna) =>
+        Query($@"select h.KeyField, h.Number, h.DateTime, l.ImobilizariCorporale_ID
+                 from flax.CasareMF h
+                 join flax.CasareMF_MF l on l.ParentRef = h.KeyField
+                 {FiltruLuna} and l.ImobilizariCorporale_ID is not null
+                 {OrdineAntete}",
+            r => new FlaxIesireMF(Hex(r, 0), Text(r, 1), Data(r, 2), Hex(r, 3), CauzaIesire.Casare),
             Fereastra(an, luna));
 }
 
@@ -98,7 +107,6 @@ static class Imobilizari1C {
     public sealed record Recensamant(IReadOnlyList<FisaPlan> Fise, IReadOnlyList<FaraFisa> FaraFisa);
 
     static Dictionary<string, Guid> fise;
-    static readonly Dictionary<string, List<string>> mfPeFactura = new(StringComparer.Ordinal);
 
     public static int FiseDeschise { get; private set; }
     public static int Puneri { get; private set; }
@@ -113,7 +121,7 @@ static class Imobilizari1C {
         new(ViewPunere, "Punerea în evidență a unei imobilizări (PIF)", ImportaPuneri),
     ];
 
-    public static HandlerTip HandlerIesire => new(ViewIesire, "Ieșirea unei imobilizări vândute (CAS)", ImportaIesiri);
+    public static HandlerTip HandlerIesire => new(ViewIesire, "Ieșirea unei imobilizări vândute sau casate (CAS)", ImportaIesiri);
 
     static Dictionary<string, Guid> Fise(BuclaImport bucla) {
         if (fise == null) {
@@ -178,6 +186,9 @@ static class Imobilizari1C {
 
     static bool EsteActiv(string simbol) => simbol.StartsWith("20") || simbol.StartsWith("21");
     static bool EsteAmortizare(string simbol) => simbol.StartsWith("28");
+
+    // 134 c
+    public static bool PeSediuLaDeschidere(string simbol) => EsteActiv(simbol) || EsteAmortizare(simbol);
 
     // Soldul fără subconto MF cu semnul opus naturii contului (debit pe 28x, credit pe 20x/21x) n-are
     // fișă care să-l poarte: deschiderea scrie pe cont fișele + soldurile fără fișă, iar diferența
@@ -369,20 +380,34 @@ static class Imobilizari1C {
             });
     }
 
-    // ======================= Ieșirea (vânzarea) =======================
+    // ======================= Ieșirea (vânzarea, casarea) =======================
 
-    public static bool FacturaCuIesire(BuclaImport bucla, string fcl) =>
-        mfPeFactura.TryGetValue(fcl, out var mf) && mf.Any(m => AreFisa(bucla, m));
+    // 133 g, 134 g
+    public static HashSet<int> LiniiIesireFise(BuclaImport bucla, string docId, IEnumerable<FlaxRandNota> randuri) {
+        var index = Subconto.Indexeaza(bucla.SubcontoLuna.GetValueOrDefault(docId) ?? []);
+        return randuri
+            .Where(r => EsteRandIesire(bucla.Catalog.Mapeaza(r.ContDebit), bucla.Catalog.Mapeaza(r.ContCredit))
+                && FeluriMF.Any(fel => AreFisa(bucla, index.Ia(r.Linie, Subconto.Credit, fel)?.Id)
+                    || AreFisa(bucla, index.Ia(r.Linie, Subconto.Debit, fel)?.Id)))
+            .Select(r => r.Linie).ToHashSet();
+    }
+
+    public static IReadOnlyList<FlaxRandNota> FaraIesireaFiselor(BuclaImport bucla, string docId,
+            IReadOnlyList<FlaxRandNota> randuri) {
+        var iesire = LiniiIesireFise(bucla, docId, randuri);
+        return randuri.Where(r => !iesire.Contains(r.Linie)).ToList();
+    }
 
     static void ImportaIesiri(ContextLuna ctx) {
         var bucla = ctx.Bucla;
-        foreach (var g in bucla.Flax.IesiriMF(ctx.An, ctx.Luna).GroupBy(i => i.Id)) {
+        var iesiri = bucla.Flax.IesiriMF(ctx.An, ctx.Luna).Concat(bucla.Flax.CasariMFPeFisa(ctx.An, ctx.Luna));
+        foreach (var g in iesiri.GroupBy(i => i.Id)) {
             var h = g.First();
-            mfPeFactura[h.Id] = g.Select(i => i.Mf).Distinct().ToList();
+            var toate = g.Select(i => i.Mf).Distinct().ToList();
             ctx.Planifica(h.Data, h.Numar, () => {
-                var mf = mfPeFactura[h.Id].Where(m => AreFisa(bucla, m)).ToList();
+                var mf = toate.Where(m => AreFisa(bucla, m)).ToList();
                 if (mf.Count == 0) {
-                    bucla.RefuzaCuMotiv(ViewIesire, "MF vândut fără fișă în Atlas (rândurile rămân pe puntea facturii)");
+                    bucla.RefuzaCuMotiv(ViewIesire, "MF ieșit fără fișă în Atlas (rândurile rămân pe documentul sursei)");
                     return;
                 }
                 if (bucla.ImportaDocument(ViewIesire, h.Id, os => Cas(os, bucla, h, mf)) == StareImport.Importat)
@@ -396,20 +421,21 @@ static class Imobilizari1C {
         cas.Data = DateOnly.FromDateTime(h.Data);
         cas.DataInregistrare = cas.Data;
         cas.Numar = h.Numar;
-        cas.Cauza = CauzaIesire.Vanzare;
+        cas.Cauza = h.Cauza;
         cas.PredatorId = bucla.Catalog.SediuId;
         cas.PrimitorId = bucla.Catalog.SediuId;
         NormalizariTip.RegenereazaCas(os, cas, mf.Select(m => fise[m]).ToList());
         var atlas = cas.Detalii.OfType<IesireImobilizareDetaliu>()
             .Select(l => (Debit: bucla.Catalog.Simbol(l.ContDebitId), Credit: bucla.Catalog.Simbol(l.ContCreditId), l.Valoare));
-        var sursa = (bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [])
-            .Select(r => (Debit: bucla.Catalog.Mapeaza(r.ContDebit), Credit: bucla.Catalog.Mapeaza(r.ContCredit), Valoare: r.Suma))
-            .Where(r => EsteRandIesire(r.Debit, r.Credit));
+        var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+        var iesire = LiniiIesireFise(bucla, h.Id, randuri);
+        var sursa = randuri.Where(r => iesire.Contains(r.Linie))
+            .Select(r => (Debit: bucla.Catalog.Mapeaza(r.ContDebit), Credit: bucla.Catalog.Mapeaza(r.ContCredit), Valoare: r.Suma));
         DivergentaIesire += Declara(bucla, RegistruDivergente.Sursa(ViewIesire, h.Id), CategorieIesire, sursa, atlas);
         return cas;
     }
 
-    public static bool EsteRandIesire(string debit, string credit) =>
+    static bool EsteRandIesire(string debit, string credit) =>
         debit != null && credit != null && (credit.StartsWith("20") || credit.StartsWith("21"))
         && (debit.StartsWith("28") || debit.StartsWith("658"));
 
@@ -452,15 +478,20 @@ static class Imobilizari1C {
         return amo;
     }
 
-    // ValoareNepostata = 1C − Atlas pe pereche (convenția registrului).
-    static decimal Declara(BuclaImport bucla, string sursa, string categorie,
+    // 134 a: ValoareNepostata = 1C − Atlas, pe perechea în orientare ordinală.
+    public static decimal Declara(BuclaImport bucla, string sursa, string categorie,
             IEnumerable<(string Debit, string Credit, decimal Valoare)> din1C,
             IEnumerable<(string Debit, string Credit, decimal Valoare)> dinAtlas) {
         var delta = new Dictionary<(string, string), decimal>();
+        void Adauga((string Debit, string Credit, decimal Valoare) r, int semn) {
+            var directa = string.CompareOrdinal(r.Debit, r.Credit) <= 0;
+            var cheie = directa ? (r.Debit, r.Credit) : (r.Credit, r.Debit);
+            delta[cheie] = delta.GetValueOrDefault(cheie) + semn * (directa ? r.Valoare : -r.Valoare);
+        }
         foreach (var r in din1C)
-            delta[(r.Debit, r.Credit)] = delta.GetValueOrDefault((r.Debit, r.Credit)) + r.Valoare;
+            Adauga(r, 1);
         foreach (var r in dinAtlas)
-            delta[(r.Debit, r.Credit)] = delta.GetValueOrDefault((r.Debit, r.Credit)) - r.Valoare;
+            Adauga(r, -1);
         var total = 0m;
         foreach (var ((debit, credit), v) in delta.Where(x => Math.Abs(x.Value) >= Eps)) {
             bucla.Divergenta(sursa, categorie, contDebit: debit, contCredit: credit, valoareNepostata: v);

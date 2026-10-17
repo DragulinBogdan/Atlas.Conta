@@ -290,7 +290,7 @@ static class HandlerCompensare {
                 var debit = subconto.Latura(r.Linie, Subconto.Debit).DeFel(Subconto.FelDocumente);
                 var credit = subconto.Latura(r.Linie, Subconto.Credit).DeFel(Subconto.FelDocumente);
                 foreach (var s in StingeriRand(h.Id, debit, credit, r.Suma))
-                    yield return s;
+                    yield return s with { Data = h.Data };
             }
         }
     }
@@ -374,7 +374,9 @@ static class HandlereNoteSimple {
                 List<NoteComune.Linie> linii = null;
                 if (!bucla.EsteCunoscut(sursa.View, h.Id)) {
                     if (sursa.View == "InchidereLunaDeExercitiu")
-                        randuri = [.. Imobilizari1C.FaraAmortizareaFiselor(bucla, h.Id, randuri)];
+                        randuri = [.. Rezultat1C.FaraRezultat(bucla, Imobilizari1C.FaraAmortizareaFiselor(bucla, h.Id, randuri))];
+                    else if (sursa.View == "CasareMF")
+                        randuri = [.. Imobilizari1C.FaraIesireaFiselor(bucla, h.Id, randuri)];
                     try {
                         linii = NoteComune.NumestePartide(bucla, h.Id, DateOnly.FromDateTime(h.Data),
                             NoteComune.Transcrie(bucla.Catalog, sursa.View, h.Id, randuri, sursa.SareTva,

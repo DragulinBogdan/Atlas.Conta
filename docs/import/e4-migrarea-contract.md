@@ -145,15 +145,15 @@ același commit cu contractul.
 | 107-r9 | închisă prin 132 (b), (e): slotul gol numește poziția fără document; restul se atribuie pe document | 1 |
 | 109-r3 | închisă prin 132 (d): plafonare la rest, cu excedentul raportat | 1 |
 | TR-r2 | închisă prin 132: pe ianuarie, notele pe 371 fără lot sunt toate în categoriile punții | 1 |
-| 107-r7 | activă: ordinea cronologică a stingerilor (E4-D7) | 3 |
-| 116-r2 | activă numai dacă proba E4-D7 arată o diferență; altfel trece în „după PoC” | 3 |
+| 107-r7 | închisă prin 134 (e): trecerea 2 aplică perechile în ordinea datei stingătorului | 3 |
+| 116-r2 | după PoC: proba E4-D7 n-a arătat diferență (134) | 3 |
 | F26-r13 | închisă prin 133 (a), (b), (e)–(g): fișele la deschidere, AMO de motor, CAS pe fișă; ITV-ul lui martie generat | 2 |
-| 107-r8 | activă: rotunjirea la bani a notei-punte, cu divergența declarată; blochează iunie | 3 |
+| 107-r8 | închisă prin 134 (d): puntea rotunjită la bani, cu divergența numită | 3 |
 | 107-r10 | închisă prin 132 (c), mutată la pasul 1: o partidă a contractului 5 pe ianuarie | 1 |
-| 107-r1 | activă: stingerile prin facturi intră în trecerea 2 sau rămân categorie declarată, cu sumă | 3 |
-| S-r5 | activă: plafonările de plată devin categorie a contractului 5 | 3 |
-| E3-r6 | activă: IRZ pe decembrie 2025 și exercițiul închis pe baza de import | 3 |
-| FZ-r3 | activă: lookup-ul per partidă măsurat pe volumul anului | 3 |
+| 107-r1 | închisă prin 134 (h): neatinsele se atribuie pe document, restul rămân declarate cu sumă | 3 |
+| S-r5 | închisă prin 134: categoria „plafonare” a contractului 5 (132 d) | 3 |
+| E3-r6 | închisă prin 134 (a), (b): IRZ lunar de motor, exercițiul 2025 închis pe baza de import | 3 |
+| FZ-r3 | închisă prin 134: ~22 ms pe 6.960 de partide (25.031 de rânduri), plan generic, index `(Unitate, Data)` | 3 |
 | 107-r5 | activă: E4-D6 | 4 |
 | 107-r2 | activă: rândurile de terț fără partener, judecate odată cu E4-D6 | 4 |
 | 73-r9, 74-r3, 74-r15, 86-r9 | active: SAF-T L pe decembrie 2025, validat DUK pe baza de import; datele sursei se raportează ca atenționări | 4 |
@@ -172,7 +172,7 @@ Restanțele noi ale etapei se numesc `E4-rN`.
 | 0 | contractul, triajul, scopul E4, rândurile din catalog; owner pe E4-D1, E4-D6 și pe triaj | docskit verde | propus 2026-10-17 |
 | 1 | ianuarie 2025 verde: 110-r2, 107-r9, 107-r10, 109-r3, TR-r2 | `--recreeaza --pana-la 1`: contractele 1–5 fără diferență fără nume, INV-CUB | închis 2026-10-17 (132) |
 | 2 | fișele la deschidere (E4-D3), recensământul imobilizărilor | controlul pe 2xx/28xx; ianuarie–martie 2025 verde, cu ITV-ul lui martie | închis 2026-10-17 (133) |
-| 3 | anul 2025 12/12; IRZ pe decembrie, exercițiul închis, soldurile de la 01.01.2026 față de `BalantaNivel3`; E4-D7; FZ-r3 | rularea integrală detașată; raportul cu tabelul „Categorii”; două importuri ale lunilor 1–3 identice | — |
+| 3 | anul 2025 12/12; IRZ pe decembrie, exercițiul închis, soldurile de la 01.01.2026 față de 1C (contractele 1, 3, 5); E4-D7; FZ-r3 | rularea integrală detașată; raportul cu tabelul „Categorii”; două importuri ale lunilor 1–3 identice | închis 2026-10-17 (134) |
 | 4 | granița parametru (E4-D2); bază nouă la 01.01.2026 + ianuarie 2026; E4-D6; SAF-T L pe decembrie 2025 | deschiderea exactă la 2026-01; ianuarie 2026 cu contractele 1–5; DUK `ok` | — |
 | 5 | review advers, decizia etapei, triajul final, starea curentă, catalogul | docskit; ModelCheck pe ambele profiluri, dacă `Module` s-a schimbat | — |
 
@@ -214,6 +214,37 @@ scos trei clase de diferențe, niciuna pe imobilizări: reziduul T-r2 pe
 (133 h). Toate trei sunt numiri în conector. Regula de oprire 1 nu se
 declanșează.
 
+## Tranșări la pasul 3 (2026-10-17)
+
+Regulile sunt în decizia 134. Anul 2025, bază recreată, cu
+`--inchide-lunile`: „CONTRACT ÎNDEPLINIT”, 0 eșecuri, 12 perioade închise
+fără constatări acceptate, exercițiul 2025 închis (0 constatări acceptate),
+INV-CUB verde, 1:23:10 în total (deschiderea 0:27, documentele 1:21:40).
+Jurnalul: `run-verificari/migrare-m0/reconciliere-20261017-232414.txt`.
+
+| Ce | După pasul 3 |
+|---|---|
+| Lunile | 187.033 de documente; luna între 5:45 (august) și 7:41 (septembrie), contractul lunar 5–8 s |
+| Contractul 1, decembrie | 119 simboluri, 0 conturi fără explicație; compară cu `Balanta` la 2026-01-01, adică soldurile de deschidere ale lui 2026 (134 b) |
+| Contractul 3, decembrie | 66.471 de chei, 0 nepotriviri nejustificate (407 justificate) |
+| Imobilizările | 92 de fișe la graniță, 13 PIF, 4 CAS (vânzări și casări, ieșire Σ \|Δ\| 0,00), 12 AMO (cotă Σ \|Δ\| 131,18) |
+| Rezultatul | 12 IRZ; 983 de rânduri 1C 6x/7x = 121 lăsate IRZ-ului; divergența pe perechi netate Σ \|Δ\| 10.353,67, adică diferențele deja numite pe 6x/7x |
+| Contractul 5, 2025-12-31 | 3.967 de partide, 0 FAIL: 3.004 stinse integral, 72 de refuz, 2 de plafonare, 3 pe partenerul generic (Σ cub 46.323,80), 139 pe document (146 × 107-r1, Σ −381.811,21; 8 × 107h; 3 × notă pe partida proprie, Σ −733,02; 15 × E4-r1, Σ −222,42), 18 neatinse fără nume (Σ cub −4.748,88) |
+| E4-D7 | ianuarie–martie, de două ori cu același binar: legături, partide și loturi identice pe chei naturale; 116-r2 trece în „după PoC” |
+| FZ-r3 | ~22 ms pentru 6.960 de partide (25.031 de rânduri), sub plan generic, pe indexul `(Unitate, Data)` |
+
+Prima rulare a anului a picat în iunie (107-r8), iar lunile următoare au
+picat în cascadă: o lună cu eșec nu-și generează AMO-ul, iar amortizarea cere
+cronologie strictă. A mai scos poziția fără fișă (134 c) și timeout-ul
+contractului 5 pe `Contains` nulabil. Atribuirea neatinselor (134 h) citea
+sursa pe poziție, iar `flax.DefalcareNote` n-are indecși, așa că contractul
+urca la 2 min pe lună. Acum o face pe lot. Toate sunt numiri sau reparații
+în conector, deci regula de oprire 1 nu se declanșează.
+
+SAF-T L pe decembrie 2025 (`--saft 2025 12`) se oprește pe
+`SAFT_MAPARE_LIPSA`: maparea `RO-16.02.2026/Facturi` lipsește pentru
+N19/TI19 (19%, achiziție, taxă). Intră la pasul 4, odată cu DUK.
+
 ## Regula de oprire
 
 Lucrul se oprește și revine la owner când:
@@ -235,8 +266,9 @@ Lucrul se oprește și revine la owner când:
 - Lunile 2025-01…12 și 2026-01 se importă fără eșec, iar contractele 1–5
   nu lasă nicio diferență fără nume.
 - Exercițiul 2025 e închis pe baza de import, iar soldurile ei de la
-  01.01.2026 se potrivesc pe cont cu `BalantaNivel3` 1C, cu diferențele
-  numite.
+  01.01.2026 se potrivesc cu 1C, cu diferențele numite: pe cont cu
+  `Balanta`, pe stoc cu `BalantaNivel3`, pe partide cu `BalantaNivel1`
+  (134 b).
 - SAF-T L pe decembrie 2025 trece DUK.
 - Niciun rând din registru nu mai are starea `migrare`.
 - Review-ul advers e închis, iar decizia etapei e scrisă.

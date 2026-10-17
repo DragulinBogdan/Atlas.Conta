@@ -317,5 +317,5 @@ cititor comun pe cub, conform [contractului complet](../nucleu/tr-d7c-imobilizar
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (18; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 31 (amendată de 76, 88), 41, 46 (amendată de 113), 49, 57, 64 (amendată de 84), 76, 82, 86, 95, 96 (amendată de 100, 102), 100 (amendată de 102), 101 (amendată de 102), 102, 126, 132 (propusă), 133 (propusă).
+Deciziile care numesc pagina în `Arii:` (19; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 31 (amendată de 76, 88), 41, 46 (amendată de 113), 49, 57, 64 (amendată de 84), 76, 82, 86, 95, 96 (amendată de 100, 102), 100 (amendată de 102), 101 (amendată de 102), 102, 126, 132 (propusă), 133 (propusă), 134 (propusă).
 <!-- /gen:decizii -->
