@@ -21,7 +21,7 @@
 > din cod.
 
 <!-- gen:index -->
-### Active (92)
+### Active (93)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -117,6 +117,7 @@
 | 125 | [Citirea de sold pe o listă de loturi se face pe lot, nu pe fereastra de dată](125-citirea-pe-loturi-se-face-pe-lot.md) | 2026-10-16 | propusă |
 | 126 | [Drumul spre „rotund”: ce rămâne din 091 (g), restanțele închise sau retrase din lista activă și semantica cititorilor de…](126-drumul-spre-rotund.md) | 2026-10-17 | propusă |
 | 127 | [Validarea judecă lotul fixat, anularea PIF judecă AMO pe lună, produsul cu stoc nu-și schimbă clasa, lotul nu se naște n…](127-validarea-judeca-lotul-fixat.md) | 2026-10-17 | propusă |
+| 128 | [Golirea lotului prin retur la furnizor trece reziduul pe politica de diferențe](128-golirea-prin-retur-trece-reziduul-pe-politica.md) | 2026-10-17 | propusă |
 
 ### Amendate parțial (35)
 

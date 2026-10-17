@@ -89,14 +89,12 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
         EvaluareDinSnapshot(initial);
         RefuzaScriereaSecurizata();
         if (reziduu is { } rez) Verifica("SC-CIT-75",
-            "reziduul 0/−0,01 rămâne în snapshot și raport, fără disponibil FIFO", CuSpatiu(os => {
-            var s = os.GetObjectsQuery<SoldPerioadaStoc>().Single(s => s.An == An && s.Luna == 1 && s.LotId == rez
-                && s.GestiuneId == Magazie);
-            var r = StocProiectii.SoldStoc(os, new(An, 1, 31), CitireCumul.Integrala).Single(s => s.LotId == rez && s.RepartitorId == Magazie);
-            return s.Cantitate == 0 && s.Valoare == -.01m && r.Cantitate == 0 && r.Valoare == -.01m
-                && r.LotPretUnitar == 0
-                && !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, s.ProdusId, Magazie, Cont("371")).Any()
-                && !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, s.ProdusId, Client, Cont("607"))
+            "golirea prin retur trece reziduul −0,01 pe 7588: lotul 0/0 lipsește din snapshot și raport, fără disponibil FIFO", CuSpatiu(os => {
+            var produs = os.GetObjectsQuery<Lot>().Single(l => l.ID == rez).ProdusId;
+            return !os.GetObjectsQuery<SoldPerioadaStoc>().Any(s => s.An == An && s.Luna == 1 && s.LotId == rez && s.GestiuneId == Magazie)
+                && !StocProiectii.SoldStoc(os, new(An, 1, 31), CitireCumul.Integrala).Any(s => s.LotId == rez && s.RepartitorId == Magazie)
+                && !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, produs, Magazie, Cont("371")).Any()
+                && !C.Citiri.Loturi.Disponibile(os, CitireCumul.Integrala, Februarie, produs, Client, Cont("607"))
                     .Any();
         }));
         var cheltuiala = Cont(Privat ? "602" : "602.01.00");

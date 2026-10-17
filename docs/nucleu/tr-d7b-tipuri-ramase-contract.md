@@ -365,7 +365,7 @@ reziduul spre 658/758 prin politică e a lui TR-D9, când `Lot.PretUnitar`
 dispare și unitatea se citește din cub — restanță nouă T-r2. Gate-ul (b)
 compară cantitatea (egală) și raportează per lot reziduul lăsat de RLF (pe
 Flax 19–56 goliri/lună, ±0,01). `N.Evaluare.Iesire` NU se atinge; declarantul
-RLF nu-l cheamă.
+RLF nu-l cheamă. [depășit de 128 la 2026-10-17: reziduul golirii trece pe politica de diferențe, lotul ajunge 0/0.]
 
 ### T-D7 — Deschiderea ca tranzacție `Deschidere`, scrisă de `Cub.Materializare`; pe terți, partidă per (Cont, Partener, document 1C) din `BalantaNivel3`; stingerile 2025 pe ele prin aceeași cheie (TR-r10, TR-r6 închise pe date)
 

@@ -41,6 +41,7 @@ internal static class ProfilPrivat {
         SeedDiferente.NIR(os, "473", "408", "461", "461",
             ("MP", "601", "321"), ("M", "602", "322"), ("OI", "603", "323"),
             ("MF", "607", "327"), ("AMB", "608", "328"));
+        SeedDiferente.Reziduu(os, "RLF", "6588", "7588", "MP", "M", "OI", "MF", "AMB");
         SeedPoliticiBonConsum(os);
         SeedPoliticiListaDiferente(os);
         SeedPoliticiFacturaIesire(os);

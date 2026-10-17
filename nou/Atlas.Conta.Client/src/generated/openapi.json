@@ -343893,6 +343893,10 @@
           "Corectie": {
             "type": "number",
             "format": "double"
+          },
+          "Reziduu": {
+            "type": "number",
+            "format": "double"
           }
         },
         "additionalProperties": false

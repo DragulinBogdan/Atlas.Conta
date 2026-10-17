@@ -28,6 +28,13 @@ Loturile și evaluarea FIFO, citirea stocului, recepția conexă și diferențel
   RDC, linia NIR-ului conex pe lot străin): `cantitate × Lot.PretUnitar`; nu
   absoarbe reziduul lotului. `Lot.PretUnitar` e prețul de intrare, scris o
   dată, la operarea liniei care naște lotul. (75a, 090 j, D9-D3)
+- Returul la furnizor care golește lotul în gestiune trece reziduul (valoarea
+  rămasă după hârtia furnizorului și cota corecțiilor) pe politica de
+  diferențe a returului: reziduul pozitiv e minus neimputabil, cel negativ e
+  plus; lotul ajunge 0/0. Explicația liniei îl poartă ca `Reziduu`, lângă
+  `Corectie`. Fără politică pentru clasă și cauză, returul e refuzat cu
+  `REZIDUU_POLITICA_LIPSA`. Seed privat: 6588 / 7588 pe clasele de stoc;
+  bugetarul n-are RLF. (128)
 - O operație retroactivă nu recalculează valorile unor ieșiri deja operate. (75a)
 - Loturile inițiale cu același produs, gestiune, cont și dată se departajează în FIFO
   pe identificatorul lotului, dat de cel care le creează. (116-r2)
@@ -216,5 +223,5 @@ Regula stă în `Nucleu/Motor/CorectieValorica.cs`; declarația în
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (19; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124, 125 (propusă), 126 (propusă), 127 (propusă).
+Deciziile care numesc pagina în `Arii:` (20; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 2, 13, 23, 25, 27, 37, 38 (amendată de 81, 84), 53, 56 (amendată de 77, 81), 62, 75, 98, 99, 102, 119, 124, 125 (propusă), 126 (propusă), 127 (propusă), 128 (propusă).
 <!-- /gen:decizii -->

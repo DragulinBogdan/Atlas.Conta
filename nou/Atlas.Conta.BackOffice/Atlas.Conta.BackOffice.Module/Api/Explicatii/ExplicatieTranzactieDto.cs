@@ -56,7 +56,7 @@ public sealed class ExplicatieContractDto {
                 LinieId = l.Linie,
                 Iesiri = [.. l.Iesiri.Select(i => new ExplicatieIesireDto {
                     Unitate = ExplicatieUnitateDto.Din(i.Unitate), Cantitate = i.Cantitate, Valoare = i.Valoare,
-                    SoldInainte = ExplicatieSoldDto.Din(i.SoldInainte), Sursa = i.Sursa, Corectie = i.Corectie,
+                    SoldInainte = ExplicatieSoldDto.Din(i.SoldInainte), Sursa = i.Sursa, Corectie = i.Corectie, Reziduu = i.Reziduu,
                 })],
                 Stingeri = [.. l.Stingeri.Select(s => new ExplicatieStingereDto {
                     Unitate = ExplicatieUnitateDto.Din(s.Unitate), Masura = s.Masura,
@@ -148,6 +148,8 @@ public sealed class ExplicatieIesireDto {
     public string? Sursa { get; set; }
     /// <summary>Cota corecțiilor de valoare ale lotului, scoasă fără cantitate lângă ieșire (CV-D10).</summary>
     public decimal Corectie { get; set; }
+    /// <summary>Valoarea rămasă pe lot la golirea lui, scoasă fără cantitate spre politica de diferențe (T-r2).</summary>
+    public decimal Reziduu { get; set; }
 }
 
 public sealed class ExplicatieStingereDto {

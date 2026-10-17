@@ -144,6 +144,8 @@ public sealed record Operand(
     public IReadOnlyDictionary<Guid, FisaFapt> Fise { get; init; } = new Dictionary<Guid, FisaFapt>();
     public IReadOnlyList<SuportFapt> Suporturi { get; init; } = [];
     public IReadOnlyList<DisponibilFapt> DisponibilNominalizare { get; init; } = [];
+    /// <summary>Politica de diferențe a tipului, numai pentru <see cref="IDeclarantCuDiferente"/>.</summary>
+    public IReadOnlyList<PoliticaDiferentaFapt> PoliticiDiferenta { get; init; } = [];
 
     /// <summary>Coordonata de sold a unui repartitor al operandului; lipsa lui e refuz (C111-D3).</summary>
     public N.Repartitor Repartitor(Guid id) =>

@@ -5,7 +5,7 @@ using N = Atlas.Conta.Nucleu;
 
 namespace Atlas.Conta.BackOffice.Module.Declaratii;
 
-public sealed class DeclarantReturFurnizor : IDeclarant {
+public sealed class DeclarantReturFurnizor : IDeclarantCuDiferente {
     public static readonly DeclarantReturFurnizor Instanta = new();
     public string SursaValoareDeclarata => SurseValoare.Linie;
     DeclarantReturFurnizor() { }
@@ -43,6 +43,8 @@ public sealed class DeclarantReturFurnizor : IDeclarant {
         var miscari = new List<N.Miscare>();
         var decizii = new List<N.Decizie>();
         var partide = new Dictionary<Guid, N.UnitateSold>();
+        var consumate = new List<N.VersiunePolitica?>();
+        var ramas = new Dictionary<CheieLotFapt, (decimal Cantitate, decimal Valoare)>();
         for (var i = 0; i < operand.Linii.Count; i++) {
             var l = operand.Linii[i]; var lot = l.Lot!; var contare = contari[i]!.Value;
             Contari.Decide(contare, l.Id, decizii);
@@ -57,14 +59,35 @@ public sealed class DeclarantReturFurnizor : IDeclarant {
             };
             var stoc = intern;
             if (fiscale[i] is { } tip) intern = Fiscal.CuFapt(operand, intern, tip, N.RolTva.Baza);
-            // T-D6: nota fiscală păstrează q × prețul lotului, inclusiv la golire.
-            // Nu se aplică Evaluare.Iesire; eventualul reziduu rămâne explicit.
+            // T-D6: nota fiscală păstrează q × prețul lotului; reziduul golirii trece pe politica de diferențe (T-r2).
             miscari.Add(new(tert, intern, l.Cantitate, 0m, l.Valoare, new(doc.Id, l.Id)));
             var corectie = lot.CotaCorectie(l.Cantitate);
             if (corectie != 0m)
                 miscari.Add(new(tert, stoc, 0m, 0m, corectie, new(doc.Id, l.Id)));
+            var cheie = new CheieLotFapt(lot.Id, contare.ContDebit, lot.ProdusId, doc.Predator.Id);
+            var (cantitate, valoare) = ramas.TryGetValue(cheie, out var inainte) ? inainte
+                : operand.SolduriLoturi.GetValueOrDefault(cheie) is { } sold ? (sold.Cantitate, sold.Debit - sold.Credit) : (0m, 0m);
+            (cantitate, valoare) = (cantitate + l.Cantitate, valoare + l.Valoare + corectie);
+            var reziduu = 0m;
+            if (l.Cantitate < 0m && cantitate == 0m && valoare != 0m) {
+                var cauza = valoare > 0m ? CauzaDiferentei.Neimputabila : CauzaDiferentei.Plus;
+                var politici = operand.PoliticiDiferenta.Where(p => p.Clasa == l.ClasaId && p.Cauza == cauza).ToList();
+                if (politici.Count != 1 || !operand.Conturi.ContainsKey(politici[0].Cont)) {
+                    refuzuri.Add(new(CoduriRefuz.ReziduuPoliticaLipsa,
+                        $"Golirea lotului lasă un reziduu de {valoare}; clasa și cauza „{cauza}” cer o singură politică de diferență.", l.Id));
+                    continue;
+                }
+                var politica = politici[0];
+                consumate.Add(PoliticiConsumate.Versiunea(politica));
+                var rezultat = new N.Capat { Cont = politica.Cont, Repartitor = doc.Predator.Coordonata, Analiza = stoc.Analiza };
+                miscari.Add(valoare > 0m ? new(stoc, rezultat, 0m, 0m, valoare, new(doc.Id, l.Id))
+                    : new(rezultat, stoc, 0m, 0m, -valoare, new(doc.Id, l.Id)));
+                decizii.Add(new N.ContRezolvat(l.Id, politica.Cont, $"Reziduu la golirea lotului: {cauza}"));
+                (reziduu, valoare) = (valoare, 0m);
+            }
+            ramas[cheie] = (cantitate, valoare);
             if (l.Cantitate < 0m)
-                decizii.Add(new N.ValoareDeclarata(l.Id, intern.Unitate!, -l.Cantitate, -l.Valoare, SurseValoare.Linie, -corectie));
+                decizii.Add(new N.ValoareDeclarata(l.Id, intern.Unitate!, -l.Cantitate, -l.Valoare, SurseValoare.Linie, -corectie, reziduu));
             Partide.Numeste(operand, intern.Cont, doc.Primitor.Id, l.Id, partide, decizii);
             Partide.Numeste(operand, tert.Cont, doc.Primitor.Id, l.Id, partide, decizii);
             var impozit = Fiscal.Impozitul(operand, l, fiscale[i], taxa, DirectieTva.Deductibil, refuzuri);
@@ -78,6 +101,6 @@ public sealed class DeclarantReturFurnizor : IDeclarant {
         return new(doc.Id, doc.DataInregistrare, [.. miscari.Select(m => m with {
             DeLa = Terti.Capat(operand, m.DeLa, doc.Primitor, partide),
             La = Terti.Capat(operand, m.La, doc.Primitor, partide),
-        })], decizii, PoliticiConsumate.Ipoteze(operand, decizii, PoliticiConsumate.Fiscala(operand, fiscale)));
+        })], decizii, PoliticiConsumate.Ipoteze(operand, decizii, [PoliticiConsumate.Fiscala(operand, fiscale), .. consumate]));
     }
 }
