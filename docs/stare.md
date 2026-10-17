@@ -7,7 +7,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 129: 89 active, 35 amendate parțial, 0 depășite, 5 propuse |
-| Restanțe | 403: 274 deschise, 129 închise |
+| Restanțe | 403: 273 deschise, 130 închise |
 | Pagini de stare curentă | 19 |
 | Contracte de felie (`Tip: contract`) | 5, deschise 0 |
 | Cataloage vii (`Tip: catalog`) | 6 |
@@ -46,22 +46,18 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 2 |
+| activă | 1 |
 | după PoC | 233 |
 | migrare | 25 |
 | depășită de 091 | 2 |
 | docs | 8 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (2, prag 45)
+### Lista `activă` (1, prag 45)
 
 **dezvoltare** (1)
 
 - `S-r4` snapshot-ul EF declară cheia ID și FK_Postare_Tranzactie_TranzactieId pe părinte, baza are cheia (Sp…
-
-**verificare** (1)
-
-- `091-r6` lanțurile transversale fără realizare care să probeze definiția din X.md: SC-X-01 (refuz pe NIR cone…
 
 ## Felii deschise
 

@@ -17,7 +17,7 @@ opuse, în tranzacție `Transfer`. Nu naște lot sau partidă.
 | SC-BTR-07 | Același lot3/1, două linii de transfer1 și2: valori0,33 și0,67; sursa0/0, ținta3/1. Re-intrare pe același produs (2 × 5) și transfer 1: lotul vechi 0/0, cel nou 1/5 în fiecare gestiune; FIFO în sursă oferă numai lotul nou. | acceptat | 235 documente cu lot repetat; ultima ieșire ia restul | `ScenariiBtr` / ID-ul rândului | verificat pe ambele profiluri |
 | SC-BTR-08 | Transfer11 din10: STOC_INSUFICIENT prin declarație; refuzul comenzii prin gardianul dual de stoc, fără efecte. Transferul cantității 0: `CANTITATE_NEPOZITIVA` prin declarație, dry-run și operare refuzate, fără efecte. | refuzat | 090j | `ScenariiBtr` / ID-ul rândului | verificat pe ambele profiluri |
 | SC-BTR-09 | Document întârziat: transfer 1 cu `Data` 05.01 și `DataInregistrare` 25.01: toate postările la 25.01; la 20.01 sursa 1/5 și destinația 1/5, la 25.01 sursa 0/0 și destinația 2/10. | acceptat | F27-D4, R6b | `ScenariiBtr` / ID | verificat pe ambele profiluri |
-| SC-X-08 | Intrare10/100→BTR4/40→BCS1/10 din țintă; storno BTR refuzat: sursa6/60 și ținta3/30, consum10 rămân. | refuzat; gardian registru până la TR-D8 | 025d | `ScenariiBtr` / ID-ul rândului | verificat pe ambele profiluri |
+| SC-X-08 | Intrare10/100→BTR4/40→BCS1/10 din țintă; storno BTR refuzat: sursa6/60 și ținta3/30, consum10 rămân. | refuzat pe sold; acceptat după al doilea transfer (SC-X-08) | 025d | `ScenariiBtr` / ID-ul rândului | verificat pe ambele profiluri |
 
 Recensământ Flax read-only 2026-09-23: 45.552 documente,85.027 linii,
 maxim67/document,13.014 multiline,235 cu lot repetat; zero linii negative,

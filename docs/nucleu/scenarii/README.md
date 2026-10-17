@@ -1,6 +1,6 @@
 # Catalogul de scenarii — proba supremă a motorului (decizia 091)
 
-**Actualizat: 2026-10-14.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
+**Actualizat: 2026-10-17.** Regula: `docs/decizii/091-scenarii-in-loc-de-import.md`,
 literele (a)–(e). Un fișier per tip de document (`<COD>.md`), cu rândurile
 de mai jos. Așteptarea se scrie de mână, din OMFP 1802 și din politica
 profilului, cu cifre; nu se derivă din registre, din oracol sau din Flax.
@@ -77,13 +77,13 @@ unde tipul există:
 
 | Cod | Tip | Pe cub din | Fișier | Stare catalog |
 |---|---|---|---|---|
-| BCS | bon de consum | felia 31 | [BCS.md](BCS.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
-| FCT | factură intrare | felia 31 | [FCT.md](FCT.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
-| PLT | plată | felia 31 | [PLT.md](PLT.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
-| INC | încasare | felia 31 | [INC.md](INC.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
-| BTR | notă de transfer | pas 1 | [BTR.md](BTR.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
-| FCL | factură ieșire | pas 2 | [FCL.md](FCL.md) | primul lot independent verificat pe ambele profiluri; ciclul complet încă deschis |
-| DSC | descărcare de gestiune | pas 2 (privat) | [DSC.md](DSC.md) | primul lot independent verificat pe privat; neaplicabil bugetar; ciclul complet încă deschis |
+| BCS | bon de consum | felia 31 | [BCS.md](BCS.md) | ciclul complet verificat pe ambele profiluri (126 h, i); limitele în fișierul tipului |
+| FCT | factură intrare | felia 31 | [FCT.md](FCT.md) | ciclul complet verificat pe ambele profiluri (126 h, i); limitele în fișierul tipului |
+| PLT | plată | felia 31 | [PLT.md](PLT.md) | ciclul complet verificat pe ambele profiluri (126 h, i); limitele în fișierul tipului |
+| INC | încasare | felia 31 | [INC.md](INC.md) | ciclul complet verificat pe ambele profiluri (126 h, i); limitele în fișierul tipului |
+| BTR | notă de transfer | pas 1 | [BTR.md](BTR.md) | ciclul complet verificat pe ambele profiluri (126 h, i); limitele în fișierul tipului |
+| FCL | factură ieșire | pas 2 | [FCL.md](FCL.md) | ciclul complet verificat pe ambele profiluri (126 h, i); limitele în fișierul tipului |
+| DSC | descărcare de gestiune | pas 2 (privat) | [DSC.md](DSC.md) | ciclul complet verificat pe privat (126 h, i); neaplicabil bugetar |
 | NTC | notă contabilă | pas 3 | [NTC.md](NTC.md) | declarant explicit, FIFO și identitate cu partener (092); cititorii comuni rămân TR-D8 |
 | ITV | închidere TVA | pas 3 (privat) | [ITV.md](ITV.md) | declarant comun NTC, corecție peste perioadă; profil inert bugetar; cititorii comuni rămân TR-D8 |
 | REGIM | regimul pe stare (transversal) | 106 | [REGIM.md](REGIM.md) | editabilitatea și comenzile disponibile, cu motiv, pe Draft/Operat/Stornat, împerechere, conex operat, perioadă închisă; ReadDto = regim |
