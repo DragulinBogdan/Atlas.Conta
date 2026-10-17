@@ -292,21 +292,8 @@ public abstract class Document : Editabila {
     // afirmație din comentarii. Hook pe FK-uri + IObjectSpace (25b).
     public virtual bool PoateFiStins(DevExpress.ExpressApp.IObjectSpace os) => true;
 
-    // A TREIA jumătate a rolului (F19-D16): CE FEL de sold poartă documentul pe
-    // contul contrapartidei, deci din ce jumătate a plafonului se stinge.
-    // `Datorie` = poartă un sold CREDITOR (îi datorăm) și se stinge DEBITÂND
-    // contrapartida — FCT, INC (avans primit), DEC, RDC. `Creanta` = sold
-    // DEBITOR (ni se datorează), se stinge CREDITÂND — FCL, PLT (avans dat), RLF.
-    //
-    // `null` = tipul NU declară. Default DELIBERAT, nu accidental: motorul nu
-    // ghicește niciodată o jumătate: dacă stingătorul oferă exact un sens față de
-    // contrapartida aleasă (toată trezoreria — o singură contrapartidă, un
-    // singur sens) comportamentul e IDENTIC cu cel de dinainte de F19-D16; dacă
-    // oferă două (nota de compensare 401 = 4111), alegerea e AMBIGUĂ și se
-    // refuză zgomotos în loc să cadă pe „prima" jumătate. Simetric, pe consum
-    // (`ImperechereService.AsignatFataDe`) un document nedeclarat se scade din
-    // AMBELE sensuri — conservator: nu deschide plafon.
-    // Hook pe FK-uri + IObjectSpace (25b), ca surorile lui.
+    // Soldul pe contul contrapartidei: `Datorie` se stinge debitând-o, `Creanta` creditând-o;
+    // `null` = nedeclarat, iar un stingător cu ambele sensuri față de ea e refuzat (F19-D16).
     public virtual SensStingere? SensDeStins(DevExpress.ExpressApp.IObjectSpace os) => null;
 
     // Documentul SECUNDAR (00 §7 — plata automată legacy, decizia 31): spre

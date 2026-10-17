@@ -9,6 +9,23 @@ public class FifoTeste {
     [Fact]
     public void PartideleRespectaAceeasiPrimitiva() => Nominalizari(FelUnitate.Partida, Scara.Bani);
 
+    // N-r7: departajarea pe Guid din nucleu coincide cu ORDER BY uuid din Postgres (ordinea octeților RFC).
+    [Fact]
+    public void OrdineaGuidEsteOrdineaUuidDinPostgres() {
+        var aleator = new Random(7);
+        var octeti = new byte[16];
+        var guiduri = Enumerable.Range(0, 5000).Select(i => {
+            if (i % 3 == 0) return Guid.CreateVersion7();
+            if (i % 3 == 1) return Guid.NewGuid();
+            aleator.NextBytes(octeti);
+            return new Guid(octeti);
+        }).ToList();
+        Assert.Equal(
+            guiduri.OrderBy(g => g.ToByteArray(bigEndian: true), Comparer<byte[]>.Create(
+                (a, b) => a.AsSpan().SequenceCompareTo(b))).ToList(),
+            guiduri.OrderBy(g => g).ToList());
+    }
+
     [Fact]
     public void PinulPesteDisponibilIaDoarDisponibilul() {
         var unul = Unitatea(1, new DateOnly(2026, 1, 1));

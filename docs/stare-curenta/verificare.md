@@ -846,5 +846,5 @@ aici (118-r2); `/docs-curatenie` și `docs-init` vin cu 118-r4. (118k)
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (33; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 7, 8, 14, 17, 23, 24, 28, 30, 43 (amendată de 104), 50, 56 (amendată de 77, 81), 66, 70, 73 (amendată de 74, 105), 80, 81, 84, 85, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 106, 118 (amendată de 121), 120, 121, 124.
+Deciziile care numesc pagina în `Arii:` (34; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 1, 2, 3 (amendată de 89), 4, 6, 7, 8, 14, 17, 23, 24, 28, 30, 43 (amendată de 104), 50, 56 (amendată de 77, 81), 66, 70, 73 (amendată de 74, 105), 80, 81, 84, 85, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 106, 118 (amendată de 121), 120, 121, 124, 126 (propusă).
 <!-- /gen:decizii -->

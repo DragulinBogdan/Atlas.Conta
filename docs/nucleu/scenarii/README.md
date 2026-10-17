@@ -97,7 +97,7 @@ unde tipul există:
 | DECL | declarațiile D300 și D394 în XML | E2 | [DECL.md](DECL.md) | D300: SC-DECL-01…06, D394: SC-DECL-07…11, rotunjirea pe bunuri, diferențele D394–D300 și fișierul confirmat: SC-DECL-12…15, verificate pe ambele profiluri (`--scenarii DECL`), cu XSD-urile oficiale și DUK J12.0.1 / J8.0.2 |
 | EX | închiderea exercițiului | E3 | [EX.md](EX.md) | pasul 1: închiderea lunară a conturilor de rezultat, `REZ-NEINCHIS` și seed-ul, SC-EX-00…07 și SC-EX-10 verificate pe ambele profiluri (`--scenarii EX`) |
 | DEC | decont | înainte de TR-D8 (095) | [DEC.md](DEC.md) | declarație contabilă/fiscală și partide pe angajat (096), verificări independente |
-| PIF/CAS/AMO | imobilizări | pe cub (095, 097) | [IMO.md](IMO.md) | SC-IMO-01…25 verzi pe ambele profiluri; fișa citită din cub; review advers restant |
+| PIF/CAS/AMO | imobilizări | pe cub (095, 097) | [IMO.md](IMO.md) | SC-IMO verzi pe ambele profiluri; fișa citită din cub; review advers 2026-09-24, corecturile 098b/c reverificate (126) |
 
 Rularea pe un tip: `ModelCheck --scenarii <TIP>[,<TIP>…] [privat]` (091-r1);
 scena unui rând se înregistrează cu tipul ei în `ScenelePeTip`
