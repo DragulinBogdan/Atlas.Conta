@@ -5,7 +5,6 @@
 - Execuție: felia de declarare a firului „rotund” (2026-10-17), branch `rotund-declarare`, după feliile R0–R7 (PR #62–#71); owner-ul a cerut declararea la 2026-10-17
 - Arii: verificare, dezvoltare, import
 - Amendează: —
-- Închide: —
 - Docs: `docs/scop.md` §Etapa curentă; `docs/decizii/restante.md`; CLAUDE.md §Stare
 
 ## Regula durabilă
