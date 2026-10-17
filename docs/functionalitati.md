@@ -1,7 +1,7 @@
 # Catalogul funcționalităților
 
 - Tip: catalog
-- Actualizat: 2026-10-16
+- Actualizat: 2026-10-17
 
 Ce promite produsul, în unitatea în care se măsoară scopul: o
 funcționalitate e ce ar numi utilizatorul, cu ținta pe care o servește,
@@ -97,7 +97,8 @@ catalogului poartă data adoptării (linia zero), nu data livrării. Rândurile
 | F-CFG-02 | Verific configurația profilului și văd cine a schimbat ce | T1, T3 | politici | | livrată 2026-10-14 | — |
 | F-CFG-03 | Export și import configurația unui profil | T1 | politici | | deschisă | — |
 | F-SEC-01 | Văd și operez doar ce îmi permite rolul, cu refuzuri uniforme pe toate ușile | T1 | api | | livrată 2026-10-14 | SC-CIT-87, SC-SAFT-36, SC-D9B-10 |
-| F-IMP-01 | Aduc documentele dintr-un sistem 1C prin motor, cu diferențele raportate | T4 | import | | deschisă | — |
+| F-IMP-01 | Aduc documentele dintr-un sistem 1C prin motor, cu diferențele raportate | T4 | import | E4 | deschisă | — |
+| F-IMP-02 | Deschid baza unui client din 1C la o graniță de lună: conturile, stocul pe lot, terții pe partidă și imobilizările cu amortizarea cumulată | T4 | import | E4 | deschisă | — |
 | F-VAL-01 | Țin partide și solduri în valută, cu diferența de curs la stingere | T1 | partide | | deschisă | — |
 | F-BNK-01 | Import extrasele bancare și sting din ele partidele | T1 | partide | | deschisă | — |
 | F-CMD-01 | Rezerv stoc pe comenzi de vânzare și distribui o factură din mai multe gestiuni | T1 | stoc | | deschisă | — |

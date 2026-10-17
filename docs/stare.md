@@ -9,9 +9,9 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Decizii | 131: 96 active, 35 amendate parțial, 0 depășite, 0 propuse |
 | Restanțe | 407: 276 deschise, 131 închise |
 | Pagini de stare curentă | 19 |
-| Contracte de felie (`Tip: contract`) | 5, deschise 0 |
+| Contracte de felie (`Tip: contract`) | 6, deschise 1 |
 | Cataloage vii (`Tip: catalog`) | 6 |
-| Fișiere Markdown în `docs/` | 350 |
+| Fișiere Markdown în `docs/` | 351 |
 | Citări de decizii din cod (`// N`) | 81 |
 
 ## Decizii în vigoare pe arie
@@ -46,17 +46,57 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| după PoC | 237 |
-| migrare | 25 |
+| activă | 22 |
+| după PoC | 240 |
 | depășită de 091 | 2 |
 | docs | 8 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (0, prag 45)
+### Lista `activă` (22, prag 45)
+
+**documente** (2)
+
+- `116-r2` loturile inițiale cu același produs, gestiune, cont și dată se departajează în FIFO pe identificator…
+- `109-r3` 46 de împerecheri pe documente refuzate „peste restul nestins al documentului” în ianuarie pe Flax…
+
+**motor** (1)
+
+- `TR-r12` Δ de sold 3xx (+585.404,66 pe Flax) între registrul de stoc și cel contabil de azi: tranșată prin co…
+
+**partide** (4)
+
+- `FZ-r3` lookup-ul per partidă (SAF-T Payments, fișa partidei): index (Unitate, Data) pe Contabil probat pe o…
+- `S-r5` pe Flax 709 împerecheri de plată se plafonează la restul partidei stinsului și una (SED00001497-4, 0…
+- `107-r1` stingerile prin facturi (avansul pe 419/409 consumat de factură, factura sosită pe 408, creditul de…
+- `107-r9` documentele care mișcă direct partida inițială la operare nu trec prin trecerea 2…
+
+**saft** (3)
+
+- `73-r9` ContFaraRol pe facturile de achiziție Flax (date)
+- `74-r3` InvoiceNo duplicat în L (date 1C)
+- `74-r15` FaraCodNc pe Flax
+
+**verificare** (2)
+
+- `091-r5` un caz apărut la migrare care contrazice catalogul devine scenariu nou plus decizie…
+- `110-r2` Nota-punte a reclasificării 371 → 3028 / 303 (SED#-P) dublează pe cont ce postează acum ASM-ul SED#-…
+
+**import** (10)
+
+- `86-r9` curățenia datelor Flax (reMarkable NO marcat TI19)
+- `F26-r13` migrarea fișelor din 1C (IntroducereSolduriInitialeMF → PIF de deschidere cu inițialele): conectorul…
+- `TR-r2` notele pe conturi de stoc fără lot (2.997 pe Flax, cinci corespondențe): conectorul decide per cores…
+- `091-r4` felia de migrare, cu decizie proprie, după „rotund”: conectorul 1C repornit pe modelul final, deschi…
+- `107-r2` rândurile de terț fără partener din anul importat rămân în punte…
+- `107-r5` partenerul generic de migrare la go-live: procedura de rezolvare prin NTC de reclasificare și exclud…
+- `107-r7` ordinea stingerilor din aceeași compensare e nedeterministă între rulări (ianuarie: 42 apoi 41 parti…
+- `107-r8` nota-punte a vânzării cu valoare pe 3 zecimale (iunie 2025, 122,408) refuzată de gardianul de scară…
+- `107-r10` încasările inline ale retailului (RaportDeVanzariCuAmanunt, copiii #inc) nu sunt enumerate de trecer…
+- `E3-r6` Proba IRZ pe un decembrie de import (ModelCheck --irz <bază> <an> 12): baza de import are numai ianu…
 
 ## Felii deschise
 
-Niciun contract deschis declarat cu `Tip: contract`.
+- [E4 — migrarea din 1C: deschiderea la o graniță de lună, lunile de după prin motor, diferențele cu nume](import/e4-migrarea-contract.md) — pași livrați 0 din 0; decizii: 018, 021, 034, 091, 107, 115, 116, 124, 130, 131
 
 ## Decizii invocate din cod
 
@@ -90,7 +130,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 
 | Catalog | Actualizat |
 |---|---|
-| [Catalogul funcționalităților](functionalitati.md) | 2026-10-16 |
+| [Catalogul funcționalităților](functionalitati.md) | 2026-10-17 |
 | [C111 — coordonatele postării (transversal)](nucleu/scenarii/C111.md) | 2026-10-11 |
 | [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-15 |
 | [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-14 |
