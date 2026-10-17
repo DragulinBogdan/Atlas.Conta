@@ -21,7 +21,7 @@
 > din cod.
 
 <!-- gen:index -->
-### Active (94)
+### Active (95)
 
 | # | Decizia | Data | Stare |
 |---|---|---|---|
@@ -114,11 +114,12 @@
 | 121 | [Ariile stării curente sunt 16, pe responsabilitățile catalogului de funcționalități](121-ariile-pe-familiile-catalogului.md) | 2026-10-15 | activă |
 | 123 | [D300 și D394 se verifică încrucișat pe aceleași fapte: maparea D394 e completă și coerentă cu decontul, iar diferențele…](123-d300-d394-verificare-incrucisata.md) | 2026-10-16 | activă |
 | 124 | [Rezultatul se închide lunar printr-un document generat, exercițiul închis e starea lui decembrie, iar balanța are graniț…](124-exercitiul-se-inchide-pe-decembrie.md) | 2026-10-16 | activă |
-| 125 | [Citirea de sold pe o listă de loturi se face pe lot, nu pe fereastra de dată](125-citirea-pe-loturi-se-face-pe-lot.md) | 2026-10-16 | propusă |
+| 125 | [Citirea de sold pe o listă de loturi se face pe lot, nu pe fereastra de dată](125-citirea-pe-loturi-se-face-pe-lot.md) | 2026-10-16 | activă |
 | 126 | [Drumul spre „rotund”: ce rămâne din 091 (g), restanțele închise sau retrase din lista activă și semantica cititorilor de…](126-drumul-spre-rotund.md) | 2026-10-17 | propusă |
-| 127 | [Validarea judecă lotul fixat, anularea PIF judecă AMO pe lună, produsul cu stoc nu-și schimbă clasa, lotul nu se naște n…](127-validarea-judeca-lotul-fixat.md) | 2026-10-17 | propusă |
-| 128 | [Golirea lotului prin retur la furnizor trece reziduul pe politica de diferențe](128-golirea-prin-retur-trece-reziduul-pe-politica.md) | 2026-10-17 | propusă |
+| 127 | [Validarea judecă lotul fixat, anularea PIF judecă AMO pe lună, produsul cu stoc nu-și schimbă clasa, lotul nu se naște n…](127-validarea-judeca-lotul-fixat.md) | 2026-10-17 | activă |
+| 128 | [Golirea lotului prin retur la furnizor trece reziduul pe politica de diferențe](128-golirea-prin-retur-trece-reziduul-pe-politica.md) | 2026-10-17 | activă |
 | 129 | [Minusul de inventar își culege cauza: cheltuiala rămâne pe tip, imputarea merge pe politica de diferențe](129-minusul-de-inventar-isi-culege-cauza.md) | 2026-10-17 | propusă |
+| 130 | [„Rotund” e declarat: PoC-ul se oprește, migrarea devine etapa următoare, iar restanțele se rejudecă pe modelul rotund](130-rotund-declarat.md) | 2026-10-17 | propusă |
 
 ### Amendate parțial (35)
 

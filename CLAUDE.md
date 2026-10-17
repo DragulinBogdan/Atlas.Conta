@@ -112,21 +112,16 @@ contrazise din neatenție.
 
 ## Stare
 
-Pe guvernanță, stratul de scop ([scop](docs/scop.md),
-[catalogul funcționalităților](docs/functionalitati.md); PR #44) și cele 16
-arii ale stării curente (decizia 121, PR #45) sunt în main din 2026-10-15.
-Rămân 121-r3 (sondajul owner-ului pe aria rândurilor din registru), 121-r4
-(mutarea între arii a pasajelor lăsate pe loc, la prima felie care atinge
-aria), 118-r1 la `/docs-curatenie` și `build` din 118-r2. E1
-([TR-D9b-CV](docs/nucleu/tr-d9b-corectii-valorice-contract.md), decizia
-119) e mersă în main la 2026-10-15. E2, depunerea fiscală
-([contractul](docs/api/e2-depunere-xml-contract.md), decizia 122 activă:
-D300 și D394 în XML, SAF-T pe luna cu corecție valorică), e mersă în
-main la 2026-10-15 (PR #50). E3, închiderea exercițiului
-([contractul](docs/nucleu/e3-inchiderea-exercitiului-contract.md), decizia
-124 activă), e închisă la 2026-10-16 (PR #54–#58); etapa următoare o
-fixează owner-ul. Unde suntem, cu cifre:
-[docs/stare.md](docs/stare.md); cronologia:
+„Rotund” e declarat la 2026-10-17 (decizia
+[130](docs/decizii/130-rotund-declarat.md)): cele șapte condiții din 091 (g)
+și 120 (b) sunt îndeplinite prin feliile R0–R7 (PR #62–#71, deciziile
+125–129), registrul nu mai are restanțe `activă`, iar lanțul de migrații e o
+singură migrație de bază. Etapele E1–E3 (corecția valorică 119, depunerea
+fiscală 122, închiderea exercițiului 124) sunt în main. Etapa următoare e
+migrarea (091 f, 130 b), cu contract propriu; orice altă cerință pornește din
+`docs/decizii/restante.md`, rejudecată pe modelul rotund (130 c). Pe
+guvernanță rămân 121-r3, 121-r4, 118-r1 și `build` din 118-r2. Unde suntem,
+cu cifre: [docs/stare.md](docs/stare.md); cronologia:
 `docs/decizii/istoric-plan-de-lucru.md`.
 
 ## Capcane de probare

@@ -1366,6 +1366,25 @@ cititorii) e implementat pe branch-ul `tr-d9b-cv-pas4`; urmează pasul 5
 cu cifre: [docs/stare.md](../stare.md); cronologia:
 `docs/decizii/istoric-plan-de-lucru.md`.
 
+## Starea din `CLAUDE.md` la 2026-10-16 (mutată prin 118 j)
+
+Pe guvernanță, stratul de scop ([scop](../scop.md),
+[catalogul funcționalităților](../functionalitati.md); PR #44) și cele 16
+arii ale stării curente (decizia 121, PR #45) sunt în main din 2026-10-15.
+Rămân 121-r3 (sondajul owner-ului pe aria rândurilor din registru), 121-r4
+(mutarea între arii a pasajelor lăsate pe loc, la prima felie care atinge
+aria), 118-r1 la `/docs-curatenie` și `build` din 118-r2. E1
+([TR-D9b-CV](../nucleu/tr-d9b-corectii-valorice-contract.md), decizia
+119) e mersă în main la 2026-10-15. E2, depunerea fiscală
+([contractul](../api/e2-depunere-xml-contract.md), decizia 122 activă:
+D300 și D394 în XML, SAF-T pe luna cu corecție valorică), e mersă în
+main la 2026-10-15 (PR #50). E3, închiderea exercițiului
+([contractul](../nucleu/e3-inchiderea-exercitiului-contract.md), decizia
+124 activă), e închisă la 2026-10-16 (PR #54–#58); etapa următoare o
+fixează owner-ul. Unde suntem, cu cifre:
+[docs/stare.md](../stare.md); cronologia:
+`docs/decizii/istoric-plan-de-lucru.md`.
+
 ## Textul scos din stare-curenta la 2026-10-15 (mutat prin 121-r1 și 121-r2)
 
 Pasajele scoase verbatim din paginile de stare curentă când au fost rescrise pe

@@ -118,7 +118,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-astra.md)
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-fable.md)
 
-### `docs/decizii/` (132)
+### `docs/decizii/` (133)
 
 - [1 — Nucleu generic + moștenire, nu tabele complet separate](decizii/001-nucleu-generic-mostenire.md)
 - [2 — Testul de apartenență a unui câmp](decizii/002-testul-apartenentei-campului.md)
@@ -249,6 +249,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [127 — Validarea judecă lotul fixat, anularea PIF judecă AMO pe lună, produsul cu stoc nu-și schimbă clasa, lotul nu se n…](decizii/127-validarea-judeca-lotul-fixat.md)
 - [128 — Golirea lotului prin retur la furnizor trece reziduul pe politica de diferențe](decizii/128-golirea-prin-retur-trece-reziduul-pe-politica.md)
 - [129 — Minusul de inventar își culege cauza: cheltuiala rămâne pe tip, imputarea merge pe politica de diferențe](decizii/129-minusul-de-inventar-isi-culege-cauza.md)
+- [130 — „Rotund” e declarat: PoC-ul se oprește, migrarea devine etapa următoare, iar restanțele se rejudecă pe modelul rot…](decizii/130-rotund-declarat.md)
 - [Jurnalul de decizii — index (un fișier per decizie)](decizii/README.md)
 - [Istoricul de execuție al planului de lucru (snapshot 2026-08-24)](decizii/istoric-plan-de-lucru.md)
 - [Restanțele și amânările cu nume](decizii/restante.md)

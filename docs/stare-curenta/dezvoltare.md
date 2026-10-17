@@ -358,5 +358,5 @@ când ramura de nul e filtru lângă o cheie selectivă.
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (24; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 21, 23, 26 (amendată de 112), 35, 36 (amendată de 71), 39, 40, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 52, 56 (amendată de 77, 81), 69, 73 (amendată de 74, 105), 80, 81, 84, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 120.
+Deciziile care numesc pagina în `Arii:` (25; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 21, 23, 26 (amendată de 112), 35, 36 (amendată de 71), 39, 40, 41, 42 (amendată de 104, 106), 43 (amendată de 104), 45 (amendată de 75), 52, 56 (amendată de 77, 81), 69, 73 (amendată de 74, 105), 80, 81, 84, 89, 90 (amendată de 91, 92, 93, 95, 96, 110, 119), 91 (amendată de 107, 118, 120), 102, 104 (amendată de 106), 120, 130 (propusă).
 <!-- /gen:decizii -->

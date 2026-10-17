@@ -12,7 +12,7 @@
 
 **„Rotund” se declară după condițiile (2) și (7) din 091 (g), plus restanțele rămase `activă`; restul registrului nu-l mai blochează.**
 
-(a) **Condițiile îndeplinite la 2026-10-17:** (1) toate cele 15 tipuri declară prin `Document.Declarant()`, iar tipul fără declarant e refuzat cu `TIP_FARA_DECLARATIE`; (3) prin 119; (4) prin X-D6; (5) prin 091-r3 și N-r8; (6) prin 110. Rămân (2), ciclul obligatoriu în 8 rânduri pe BCS, FCT, PLT, INC, BTR, FCL și DSC plus lanțurile transversale (091-r6), și (7), recomprimarea migrațiilor (120 b), care se face ultima.
+(a) **Condițiile (1) și (3)–(6) se îndeplinesc fără felie nouă:** (1) toate cele 15 tipuri declară prin `Document.Declarant()`, iar tipul fără declarant e refuzat cu `TIP_FARA_DECLARATIE`; (3) prin 119; (4) prin X-D6; (5) prin 091-r3 și N-r8; (6) prin 110. Condiția (2), ciclul obligatoriu în 8 rânduri pe BCS, FCT, PLT, INC, BTR, FCL și DSC plus lanțurile transversale (091-r6), se probează prin (h) și (i); condiția (7), recomprimarea migrațiilor (120 b), se face ultima, prin (j).
 
 (b) **Restanțe închise ca făcute sau ca regulă:** 091-r2 (recensămintele sunt în `docs/nucleu/scenarii/recensamant-*.sql`, cifrele în fișierele tipurilor); 76-r2 (`AsignatFataDe` citește un singur sens din cub); N-r7 (premisa e falsă: `Guid.CompareTo` dă ordinea octeților RFC, adică `ORDER BY uuid`, probat de `OrdineaGuidEsteOrdineaUuidDinPostgres`); TR-r7 (Folosință prin 093, injectivitatea SAF-T prin D17-D1 și 105 h, Custodie în T-r6, Gratuit fără date pe Flax); TR-r10 (SC-DES verzi pe ambele profiluri, restul SC-X-11 în 091-r6); TR-r11 (atributele documentului scrise la operare sunt regula, nu restanță); 095-r1 (SC-IMO verzi pe ambele profiluri, corecturile 098b/c comise în a82a2416).
 
@@ -28,7 +28,7 @@
 
 (h) **Rândul 8 al ciclului se probează la sursă.** Orice sold citit după un pas al unei scene (`SoldLot`, `SoldPartida`, `Sold` la BCS) e comparat cu cititorii de producție (`Loturi.Cumulate`, `Partide.Cumulate`, citire integrală și vizibilă) și cu fișa și balanța pe cheia unității la acea dată. Cititorii nu se probează separat, pe scene paralele, ci pe pașii ciclului fiecărui tip.
 
-(i) **Condiția (2) din 091 (g) e îndeplinită.** Ciclul obligatoriu în 8 rânduri e probat pe BCS, FCT, PLT, INC, BTR, FCL și DSC, pe profilurile unde tipul există, iar lanțurile transversale SC-X-01, 03, 08, 10 și 11 sunt realizate (SC-X-13 e după PoC, prin (g)). Stornoul se judecă pe sold (025d), nu pe dependență: SC-X-08 probează ambele ramuri. Dry-run-ul refuză la fel ca operarea pe toate refuzurile de operare din scene. Rămân condiția (7) și S-r4.
+(i) **Condiția (2) din 091 (g) e îndeplinită.** Ciclul obligatoriu în 8 rânduri e probat pe BCS, FCT, PLT, INC, BTR, FCL și DSC, pe profilurile unde tipul există, iar lanțurile transversale SC-X-01, 03, 08, 10 și 11 sunt realizate (SC-X-13 e după PoC, prin (g)). Stornoul se judecă pe sold (025d), nu pe dependență: SC-X-08 probează ambele ramuri. Dry-run-ul refuză la fel ca operarea pe toate refuzurile de operare din scene.
 
 (j) **Condiția (7) e îndeplinită.** Lanțul de 15 migrații e recomprimat în `20261017101337_InitialCreate`, cu SQL-ul nedeclarat de model în `Migrations/Sql` (120 e) și proba de schemă identică (120 c). S-r4 se închide ca regulă: divergența cheii `Postare` (EF `ID`, baza `(Spatiu, ID)`) e declarată și probată de `STR-SCHEMA`, iar migrațiile pe `Postare` se scriu în SQL; recomprimarea a scos singura abatere (`RenameColumn` din `SensPePostare`).
 
@@ -47,10 +47,11 @@ Firul de performanță a importului s-a închis la 2026-10-16 (125), iar owner-u
 
 ## Ce rămâne deschis
 
-Restanțele `activă` rămase și feliile lor: R1 F26-r18, S-r8, NG-r2; R2 X-r3 și NG-r1 după (d)–(e); R3 T-r2 și S-r7 după (f); R4 099-r1 și T-r6; R5 T-r5, 86-r11, 86-r2, 86-r1; R6 condiția (2) și 091-r6; R7 condiția (7) și S-r4.
+Nimic. Restanțele `activă` de la inventar s-au închis în feliile R1–R7 (127, 128, 129 și literele (d)–(j)); ce a rămas din registru e `după PoC` sau `migrare`. Declararea e decizia 130.
 
 ## Istoric
 
+- 2026-10-17: curățată la declararea lui „rotund” (130): (a) și (i) fără stările tranzitorii, „Ce rămâne deschis” golit.
 - 2026-10-17: scrisă la felia R0 a firului „rotund”; propusă owner-ului.
 - 2026-10-17: (j) adăugată la felia R7; S-r4 închisă; toate condițiile din 091 (g) și 120 (b) îndeplinite.
 - 2026-10-17: (i) adăugată la feliile R6b–R6c; 091-r6 închisă. Owner: SC-X-08 pe sold, SC-X-03 fără RDC.
