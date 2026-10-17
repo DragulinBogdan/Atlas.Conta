@@ -104,7 +104,7 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [CVL — corecția valorii lotului fără schimbarea cantității](nucleu/scenarii/CVL.md) | 2026-10-15 |
 | [D9B — originea partidei](nucleu/scenarii/D9B.md) | 2026-10-14 |
 | [DECL — declarațiile D300 și D394 în XML](nucleu/scenarii/DECL.md) | 2026-10-16 |
-| [X — scenarii transversale](nucleu/scenarii/X.md) | 2026-10-16 |
+| [X — scenarii transversale](nucleu/scenarii/X.md) | 2026-10-17 |
 
 ## Ce nu poate ști
 
