@@ -123,7 +123,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-astra.md)
 - [(fără titlu)](consultations/2026-10-06-repartitor-pe-postare/raspunsuri/r2-fable.md)
 
-### `docs/decizii/` (134)
+### `docs/decizii/` (135)
 
 - [1 — Nucleu generic + moștenire, nu tabele complet separate](decizii/001-nucleu-generic-mostenire.md)
 - [2 — Testul de apartenență a unui câmp](decizii/002-testul-apartenentei-campului.md)
@@ -256,6 +256,7 @@ Lista de mai jos e generată de `docskit gen` din titlul și prima propoziție a
 - [129 — Minusul de inventar își culege cauza: cheltuiala rămâne pe tip, imputarea merge pe politica de diferențe](decizii/129-minusul-de-inventar-isi-culege-cauza.md)
 - [130 — „Rotund” e declarat: PoC-ul se oprește, migrarea devine etapa următoare, iar restanțele se rejudecă pe modelul rot…](decizii/130-rotund-declarat.md)
 - [131 — Cubul adună; faptul datat e supapă cu nume, construită la primul consumator, nu registru de acumulare și nu postar…](decizii/131-cubul-aduna-faptul-datat-e-supapa.md)
+- [132 — Migrarea din 1C: conectorul numește ce numește sursa, iar diferența unei partide se atribuie pe document](decizii/132-migrarea-numeste-ce-numeste-sursa.md)
 - [Jurnalul de decizii — index (un fișier per decizie)](decizii/README.md)
 - [Istoricul de execuție al planului de lucru (snapshot 2026-08-24)](decizii/istoric-plan-de-lucru.md)
 - [Restanțele și amânările cu nume](decizii/restante.md)

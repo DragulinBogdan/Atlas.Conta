@@ -141,15 +141,15 @@ același commit cu contractul.
 | Id | Verdict | Pas |
 |---|---|---|
 | 091-r4 | activă: etapa însăși; se închide prin decizia etapei | 5 |
-| 110-r2 | activă: puntea reclasificării cade pentru ASM-ul care postează; contractul 1 pe ianuarie | 1 |
-| 107-r9 | activă: rândurile fără document numit care mișcă partida inițială; contractul 5 pe ianuarie | 1 |
-| 109-r3 | activă: cele 46 de împerecheri refuzate pe ianuarie se triază pe categorii | 1 |
-| TR-r2 | activă: se verifică dacă divergențele înregistrate pe conturile de stoc fără lot acoperă cele cinci corespondențe; dacă da, se închide | 1 |
+| 110-r2 | închisă prin 132 (a): puntea reclasificării cade pentru ASM-ul care postează | 1 |
+| 107-r9 | închisă prin 132 (b), (e): slotul gol numește poziția fără document; restul se atribuie pe document | 1 |
+| 109-r3 | închisă prin 132 (d): plafonare la rest, cu excedentul raportat | 1 |
+| TR-r2 | închisă prin 132: pe ianuarie, notele pe 371 fără lot sunt toate în categoriile punții | 1 |
 | 107-r7 | activă: ordinea cronologică a stingerilor (E4-D7) | 3 |
 | 116-r2 | activă numai dacă proba E4-D7 arată o diferență; altfel trece în „după PoC” | 3 |
 | F26-r13 | activă: fișele la deschidere (E4-D3); fără ele, ITV-ul lui martie e refuzat | 2 |
 | 107-r8 | activă: rotunjirea la bani a notei-punte, cu divergența declarată; blochează iunie | 3 |
-| 107-r10 | activă: încasările inline ale retailului în trecerea 2 | 3 |
+| 107-r10 | închisă prin 132 (c), mutată la pasul 1: o partidă a contractului 5 pe ianuarie | 1 |
 | 107-r1 | activă: stingerile prin facturi intră în trecerea 2 sau rămân categorie declarată, cu sumă | 3 |
 | S-r5 | activă: plafonările de plată devin categorie a contractului 5 | 3 |
 | E3-r6 | activă: IRZ pe decembrie 2025 și exercițiul închis pe baza de import | 3 |
@@ -170,11 +170,26 @@ Restanțele noi ale etapei se numesc `E4-rN`.
 | Pas | Conținut | Probă | Stare |
 |---|---|---|---|
 | 0 | contractul, triajul, scopul E4, rândurile din catalog; owner pe E4-D1, E4-D6 și pe triaj | docskit verde | propus 2026-10-17 |
-| 1 | ianuarie 2025 verde: 110-r2, 107-r9, 109-r3, TR-r2 | `--recreeaza --pana-la 1`: contractele 1–5 fără diferență fără nume, INV-CUB | — |
+| 1 | ianuarie 2025 verde: 110-r2, 107-r9, 107-r10, 109-r3, TR-r2 | `--recreeaza --pana-la 1`: contractele 1–5 fără diferență fără nume, INV-CUB | închis 2026-10-17 (132) |
 | 2 | fișele la deschidere (E4-D3), recensământul imobilizărilor | controlul pe 2xx/28xx; ianuarie–martie 2025 verde, cu ITV-ul lui martie | — |
 | 3 | anul 2025 12/12; IRZ pe decembrie, exercițiul închis, soldurile de la 01.01.2026 față de `BalantaNivel3`; E4-D7; FZ-r3 | rularea integrală detașată; raportul cu tabelul „Categorii”; două importuri ale lunilor 1–3 identice | — |
 | 4 | granița parametru (E4-D2); bază nouă la 01.01.2026 + ianuarie 2026; E4-D6; SAF-T L pe decembrie 2025 | deschiderea exactă la 2026-01; ianuarie 2026 cu contractele 1–5; DUK `ok` | — |
 | 5 | review advers, decizia etapei, triajul final, starea curentă, catalogul | docskit; ModelCheck pe ambele profiluri, dacă `Module` s-a schimbat | — |
+
+## Tranșări la pasul 1 (2026-10-17)
+
+Regulile sunt în decizia 132. Ianuarie 2025, bază recreată: „CONTRACT
+ÎNDEPLINIT”, 0 eșecuri, 6:14 în total.
+
+| Contract | După pasul 1 |
+|---|---|
+| 1 | verde: puntea reclasificării nu mai dublează ASM-ul (132 a) |
+| 5 | 3.967 partide, 0 FAIL: 1.497 stinse integral, 14 explicate de refuzuri, 31 de plafonare, 128 neatinse de trecerea 2 (Σ cub −258.298,19), 2 explicate pe document (o notă pe FIFO, Σ −60,00, E4-r1; un rând de retur la furnizor ținut pe partida documentului) |
+| Împerecheri | 2.590 create; 38 plafonate pe documente (excedent Σ 9.417,08, 132 d) |
+
+E4-r1 nu cere schimbare de motor la pasul 1, fiindcă contractul 5 o numește
+(regula de oprire 1 nu se declanșează). Rămâne „după PoC”: e o notă de 60
+de lei care creditează facturi din 2024 cu sold zero la graniță.
 
 ## Regula de oprire
 

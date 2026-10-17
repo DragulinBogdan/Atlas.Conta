@@ -293,10 +293,27 @@ static class ReconciliereLuna {
             }
             picate.Add((cheie, cub, sold, refuzat, plafonat, directe.TryGetValue(partida, out var direct) ? direct : null));
         }
+        var deLa = new DateOnly(ctx.An, 1, 1);
+        var atribuite = new List<(string Cheie, AtribuirePartide.Rezultat Rezultat)>();
+        foreach (var x in picate.ToList()) {
+            var partida = legaturi[x.Cheie];
+            var rezultat = AtribuirePartide.Atribuie(os, ctx.Bucla, partida, x.Cheie, x.Cub - x.Sursa, deLa, ctx.Ultima,
+                x.Refuzat != 0m || x.Plafonat != 0m);
+            atribuite.Add((x.Cheie, rezultat));
+            if (rezultat.Explicata)
+                picate.Remove(x);
+        }
+        var peDocument = atribuite.Where(a => a.Rezultat.Explicata).ToList();
         stare.Jurnalizeaza($"\n[5] Partide inițiale la {ctx.Ultima:yyyy-MM-dd} — {legaturi.Count} partide, "
             + $"{stinseIntegral} stinse integral în ambele părți, {explicate} explicate de refuzuri, "
             + $"{plafonate} explicate de plafonare, {cumulate} de refuz și plafonare, {declarate.Count} declarate pe partenerul generic, "
-            + $"{neatinse.Count} neatinse de trecerea 2 (stinse în sursă de alt tip), {picate.Count} FAIL:");
+            + $"{neatinse.Count} neatinse de trecerea 2 (stinse în sursă de alt tip), "
+            + $"{peDocument.Count} explicate pe document, {picate.Count} FAIL:");
+        foreach (var (cheieAtr, rez) in atribuite)
+            foreach (var parte in rez.Parti)
+                stare.Jurnalizeaza($"  {(rez.Explicata ? "doc " : "FAIL")} partidă {cheieAtr}: {parte.View}/{parte.Recorder} "
+                    + $"sursă {parte.Sursa:N2}, Atlas {parte.Atlas:N2} — {parte.Categorie ?? "fără categorie"}"
+                    + (rez.Inchisa ? "" : " (atribuirea nu închide Δ)"));
         foreach (var x in declarate)
             stare.Jurnalizeaza($"  decl partidă {x.Cheie}: cub {x.Cub:N2}, sursă {x.Sursa:N2} — partener nedefinit în sursă (M1-D5)");
         foreach (var x in neatinse.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)))
@@ -307,7 +324,7 @@ static class ReconciliereLuna {
             Console.WriteLine($"     [5] neatinse de trecerea 2: {string.Join(", ", neatinsePeCont)}");
         string Origine((string Cheie, decimal Cub, decimal Sursa, decimal Refuzat, decimal Plafonat, decimal? Direct) x) =>
             $"Δ {x.Cub - x.Sursa:N2}, refuzat {x.Refuzat:N2}, plafonat {x.Plafonat:N2}"
-            + (x.Direct is { } d ? $", mișcată direct la operare Σ {d:N2} (107-r9)" : "");
+            + (x.Direct is { } d ? $", mișcată direct la operare Σ {d:N2} (132 e)" : "");
         foreach (var x in picate.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)).ThenBy(x => x.Cheie, StringComparer.Ordinal))
             stare.Jurnalizeaza($"  FAIL partidă {x.Cheie}: cub {x.Cub:N2} = sursă {x.Sursa:N2} ({Origine(x)})");
         foreach (var x in picate.OrderByDescending(x => Math.Abs(x.Cub - x.Sursa)).ThenBy(x => x.Cheie, StringComparer.Ordinal).Take(10))
@@ -318,7 +335,10 @@ static class ReconciliereLuna {
             + $"{explicate} explicate de refuzuri, {plafonate} de plafonare, {cumulate} de refuz și plafonare, "
             + $"{declarate.Count} declarate (partener generic, "
             + $"Σ cub {declarate.Sum(x => x.Cub):N2}), {neatinse.Count} neatinse de trecerea 2 "
-            + $"(Σ cub {neatinse.Sum(x => x.Cub):N2}), {picate.Count} fără explicație"
+            + $"(Σ cub {neatinse.Sum(x => x.Cub):N2}), {peDocument.Count} explicate pe document ("
+            + string.Join(", ", peDocument.SelectMany(a => a.Rezultat.Parti).GroupBy(p => p.Categorie)
+                .Select(g => $"{g.Count()} × {g.Key}, Σ {g.Sum(p => p.Delta):N2}"))
+            + $"), {picate.Count} fără explicație"
             + (picate.Count == 0 ? "" : $" — pe conturi: {string.Join(", ", peCont)}"), picate.Count == 0);
     }
 
