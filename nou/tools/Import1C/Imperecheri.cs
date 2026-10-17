@@ -65,26 +65,41 @@ static class Imperecheri1C {
     static bool probaEsecFacuta;
     static Dictionary<(Guid Document, Guid Partida), (decimal Total, decimal Ramas)> aplicate;
     static Dictionary<string, List<(Guid Partida, Guid Cont, Guid Partener)>> indexDeschidere;
+    static Dictionary<(Guid Cont, Guid Partener), Guid> indexFaraDocument;
 
     internal static IReadOnlyList<(Guid Partida, Guid Cont, Guid Partener)> PartideDeschidere(BuclaImport bucla,
             string tipRef, string id) {
-        if (indexDeschidere == null) {
-            indexDeschidere = new Dictionary<string, List<(Guid, Guid, Guid)>>(StringComparer.Ordinal);
-            using var os = bucla.CreeazaObjectSpace();
-            var fapte = os.GetObjectsQuery<Postare>()
-                .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
-                .Select(p => new { p.Unitate, p.Cont, Partener = p.Repartitor }).ToList()
-                .ToDictionary(x => x.Unitate.Value);
-            foreach (var (cheie, partida) in Legaturi.Incarca(os, Deschidere.ViewPartide)) {
-                var referinta = cheie.Split('|')[2];
-                if (referinta == Deschidere.CheieFaraDocument || !fapte.TryGetValue(partida, out var f) || f.Partener == null)
-                    continue;
-                (indexDeschidere.TryGetValue(referinta, out var lista)
-                    ? lista : indexDeschidere[referinta] = []).Add((partida, f.Cont, f.Partener.Value));
-            }
-        }
+        IndexeazaDeschiderea(bucla);
         var refCheie = Deschidere.RefCheie(tipRef, id);
         return refCheie != null && indexDeschidere.TryGetValue(refCheie, out var l) ? l : [];
+    }
+
+    // Poziția 1C fără document de decontare a lui (cont, partener), adică partida inițială cu referința din (cont, partener).
+    internal static Guid? PartidaFaraDocument(BuclaImport bucla, Guid cont, Guid partener) {
+        IndexeazaDeschiderea(bucla);
+        return indexFaraDocument.TryGetValue((cont, partener), out var p) ? p : null;
+    }
+
+    static void IndexeazaDeschiderea(BuclaImport bucla) {
+        if (indexDeschidere != null)
+            return;
+        indexDeschidere = new Dictionary<string, List<(Guid, Guid, Guid)>>(StringComparer.Ordinal);
+        indexFaraDocument = [];
+        using var os = bucla.CreeazaObjectSpace();
+        var fapte = os.GetObjectsQuery<Postare>()
+            .Where(p => p.Tranzactie.Fel == N.FelTranzactie.Deschidere && p.FelUnitate == N.FelUnitate.Partida)
+            .Select(p => new { p.Unitate, p.Cont, Partener = p.Repartitor }).ToList()
+            .ToDictionary(x => x.Unitate.Value);
+        foreach (var (cheie, partida) in Legaturi.Incarca(os, Deschidere.ViewPartide)) {
+            if (!fapte.TryGetValue(partida, out var f) || f.Partener == null)
+                continue;
+            var referinta = cheie.Split('|')[2];
+            if (referinta == Deschidere.CheieFaraDocument)
+                indexFaraDocument[(f.Cont, f.Partener.Value)] = partida;
+            else
+                (indexDeschidere.TryGetValue(referinta, out var lista)
+                    ? lista : indexDeschidere[referinta] = []).Add((partida, f.Cont, f.Partener.Value));
+        }
     }
 
     // Câte instanțe se lasă pe un singur ObjectSpace înainte de reciclare: fiecare
@@ -113,6 +128,7 @@ static class Imperecheri1C {
             .Concat(HandlerIncasareCasa.Stingeri(ctx))
             .Concat(HandlerCard.Stingeri(ctx))
             .Concat(HandlerCompensare.Stingeri(ctx))
+            .Concat(HandlerAmanunt.Stingeri(ctx))
             .ToList();
 
         // Agregarea per pereche (stingător, stins): mai multe rânduri de registru
@@ -253,6 +269,19 @@ static class Imperecheri1C {
             var existent = os.FirstOrDefault<Imperechere>(
                 i => i.DocumentStingatorId == stingatorId && i.DocumentId == tintaId);
             if (existent == null) {
+                // 132 d: ca pe partida inițială (107h), stingerea se plafonează la restul ambelor documente.
+                var rest = Math.Min(ImperechereService.Ramas(os, tintaId), ImperechereService.Ramas(os, stingatorId));
+                if (rest < 0.005m) {
+                    Sare(ImperechereService.Total(os, tintaId) == 0m || ImperechereService.Total(os, stingatorId) == 0m
+                        ? "ținta sau stingătorul nu poartă partidă pe latură (notă transcrisă, aviz, document intern)"
+                        : "documentul stins sau stingătorul n-are rest (stins de o împerechere anterioară)", suma);
+                    return false;
+                }
+                if (rest < suma) {
+                    PlafonateDocumente++;
+                    excedentDocumente += suma - rest;
+                    suma = rest;
+                }
                 var stingator = os.GetObjectByKey<Document>(stingatorId);
                 var tinta = os.GetObjectByKey<Document>(tintaId);
                 // 107g
@@ -450,6 +479,8 @@ static class Imperecheri1C {
     }
 
     static decimal valoarePlafonata;
+    public static int PlafonateDocumente { get; private set; }
+    static decimal excedentDocumente;
     static int detaliiRefuzDeschidere;
 
     // Triajul refuzurilor. Cele de BUSINESS sunt divergențe reale între sursă și
@@ -492,7 +523,8 @@ static class Imperecheri1C {
             + $"{NumiteLaOperare} numite la operare (115), "
             + $"{RefuzatPePartida.Count} partide cu refuzuri (Σ {RefuzatPePartida.Values.Sum(v => Math.Abs(v)):N2}), "
             + $"{Plafonate} plafonate la restul partidei (excedent Σ {valoarePlafonata:N2}), "
-            + $"{EsecuriTehnice} erori tehnice.");
+            + $"{EsecuriTehnice} erori tehnice; pe documente: {PlafonateDocumente} plafonate la restul documentului "
+            + $"(excedent Σ {excedentDocumente:N2}, 132 d).");
         foreach (var s in sarite.OrderByDescending(x => x.Value))
             Console.WriteLine($"    {s.Value,8} sărite — {s.Key} (Σ {valoareSarita[s.Key]:N2} lei)");
     }

@@ -464,6 +464,28 @@ partial class FlaxDb(string connectionString) : IDisposable {
 
     static bool RefGoala(string tipRef) => tipRef == null || tipRef.All(c => c == '0');
 
+    // Mișcările unei poziții de terț în fereastră: documentul numit în subconto (null = slotul gol) pe partener.
+    public List<(string Recorder, int Correspond, string ContDebit, string ContCredit, decimal Suma)> MiscariPePozitie(
+            string docHex, string partenerHex, DateTime de, DateTime pana) =>
+        Query(@"select convert(varchar(34), d.Recorder_Id, 2), d.Correspond,
+                       ltrim(rtrim(n.ContDebit)), ltrim(rtrim(n.ContCredit)), n.Suma
+                from flax.DefalcareNote d
+                join flax.NoteContabile n on n.DocReferinta_Id = d.Recorder_Id and n.[LineNo] = d.[LineNo]
+                where d.KindRef = 'Documente' and d.Value_Id = @doc
+                  and n.Period >= @de and n.Period < @pana
+                  and exists (select 1 from flax.DefalcareNote p
+                              where p.Recorder_Id = d.Recorder_Id and p.[LineNo] = d.[LineNo]
+                                and p.Correspond = d.Correspond and p.Value_Id = @partener)",
+            r => (Text(r, 0), Int(r, 1), Text(r, 2), Text(r, 3), Dec(r, 4)),
+            ("@doc", docHex == null ? new byte[16] : DinHex(docHex)), ("@partener", DinHex(partenerHex)),
+            ("@de", de), ("@pana", pana));
+
+    public string VedereDocument(string recorderHex) {
+        var cazuri = string.Join(" ", TipuriCuColoanaVii().Select(t => $"when DocReferinta_{t}_ID is not null then '{t}'"));
+        return Query($"select top 1 case {cazuri} end from flax.NoteContabile where DocReferinta_Id = @id",
+            r => Text(r, 0), ("@id", DinHex(recorderHex))).FirstOrDefault();
+    }
+
     public string PartenerDocument(string tipNume, string hexId) {
         var view = tipNume switch {
             "VanzareMarfuriSiServiciiPrestate" or "AprovizionareMarfuriSiServiciiPrimite"

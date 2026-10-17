@@ -130,9 +130,9 @@ static class MiscareStoc1C {
 // deci reclasificarea e o MIȘCARE de stoc: un ASM (46d: n→m, |Σ| ≤ 0,005, zero
 // contare) în gestiunea sursei consumă lotul de pe `produs@contVechi` și naște
 // lotul pe `produs@contNou` cu aceeași cantitate și exact valoarea consumului
-// (D18-D2: lotul vechi ajunge la 0/0,00 dacă e golit); NTC-puntea rămâne
-// (`contNou = contVechi` la valoarea ASM-ului — acum ARE mișcarea în spate);
-// iar BTR-ul mută lotul NOU în gestiunea destinație, dacă gestiunile diferă.
+// (D18-D2: lotul vechi ajunge la 0/0,00 dacă e golit). ASM-ul postează
+// reclasificarea pe cont, deci puntea o preia numai pe rândurile rămase fără
+// ASM (132 a); BTR-ul mută lotul NOU în gestiunea destinație, dacă gestiunile diferă.
 // Cheile: `#reclas` (ASM), `#punte` (NTC), cheia plată (BTR); toate trei sunt
 // ale aceleiași unități, executate în ordinea asta — ASM înaintea BTR-ului, ca
 // lotul nou să existe (operat) când transferul îl mută.
@@ -373,6 +373,7 @@ static class HandlerTransfer {
             else if (reclasificare)
                 ReclasificariDejaPeContNou++;
             var miscaStoc = !plan.FaraDocument || tipNou != null;
+            var caMiscare = false;
 
             decimal valoareAtlas = 0m;
             // Partea pe care Atlas n-o mișcă deloc: e înregistrată separat mai jos
@@ -426,6 +427,7 @@ static class HandlerTransfer {
                         produs.Valoare += valoareLinie;
                     }
                     ReclasificariCaMiscare++;
+                    caMiscare = true;
                 }
                 else
                     foreach (var (lotId, cantitate, valoareLinie) in alocari) {
@@ -497,16 +499,13 @@ static class HandlerTransfer {
                         new EfectStoc(nomRef.Id, h.DepozitDestinatarId, 0m, delta)]);
             }
 
-            // Reclasificarea (556 de rânduri pe an): 1C mută lotul pe alt cont
-            // fără să-i schimbe identitatea. Nici ASM-ul, nici BTR-ul nu contează
-            // (23c/46d), deci rândul 1C se transcrie ca atare — la valoarea ATLAS
-            // a mișcării (cea a consumului ASM-ului, când reclasificarea e
-            // mișcare), ca soldul contabil să rămână în pas cu registrul de stoc.
             if (reclasificare) {
                 Reclasificari++;
-                plan.Punte.Categoria("BTR: reclasificare de cont pe transfer")
-                    .Tinta1C(simbolDebit, simbolCredit, valoareAtlas);
-                plan.ReclasRanduri.Add((simbolDebit, simbolCredit, r.Suma));
+                if (caMiscare)
+                    plan.ReclasRanduri.Add((simbolDebit, simbolCredit, r.Suma));
+                else
+                    plan.Punte.Categoria("BTR: reclasificare de cont pe transfer")
+                        .Tinta1C(simbolDebit, simbolCredit, valoareAtlas);
             }
         }
         LoturiReclasificate += plan.ReclasProduse.Count;

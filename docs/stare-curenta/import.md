@@ -1,6 +1,6 @@
 # Import și migrare
 
-**Actualizat: 2026-10-16.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Importul din 1C, opțiunile rulării, reconcilierea cu sursa și deschiderea importată.
 
@@ -21,9 +21,12 @@ Conectorul păstrează nominalizarea sursei. La loturi, linia poartă lotul
 numit de 1C. La partide, rândul de compensare sau de operație care are un
 document în subconto-ul „Documente” numește pe linia de notă partida acelui
 document, fie ea deschisă de un document importat sau inițială; trecerea 2 nu
-mută o partidă inițială pe care stingătorul a numit-o la operare. Unde
-sursa nu numește, conectorul dă cheia de ordonare: partida inițială primește
-data documentului 1C ca dată de naștere. (115)
+mută o partidă inițială pe care stingătorul a numit-o la operare. Slotul
+„Documente” prezent și gol numește poziția fără document a (cont, partener).
+Un document numit fără poziție la graniță și fără document în Atlas lasă
+linia pe FIFO și se numără (E4-r1). Unde sursa nu numește, conectorul dă
+cheia de ordonare: partida inițială primește data documentului 1C ca dată de
+naștere. (115, 132 b)
 
 Partidele inițiale intră în deschidere ordonate pe cheia sursei (simbol,
 partener, document 1C), iar la aceeași dată de naștere FIFO le consumă în
@@ -37,7 +40,9 @@ de cont sunt explicite și se verifică înainte de import. (47d, 48c, 50a)
 NTC este punte numai pentru cazurile permise explicit, nu fallback universal
 pentru documente nerecunoscute. Transformările și transferurile sunt
 clasificate în ASM, BTR sau NTC după faptul economic. FCL importată postează
-venitul; DSC folosește loturile identificate de sursă. (49a, 49d, 75b)
+venitul; DSC folosește loturile identificate de sursă. Puntea reclasificării
+de cont la transfer preia numai rândurile pe care ASM-ul nu le postează.
+(49a, 49d, 75b, 132 a)
 
 Proba supremă a motorului e catalogul de scenarii, nu importul
 (`docs/nucleu/scenarii/README.md`): așteptări scrise de mână, ciclul complet
@@ -130,13 +135,19 @@ terții ca partide inițiale `(cont, partener, document de decontare)` din
 `BalantaNivel3`, pozițiile fără partener pe partenerul generic de migrare
 `MIGRARE-NEDEFINIT`. Stingerile anului pe pozițiile de deschidere se scriu în
 cub pe partidă, în trecerea 2, plafonate la rest; data împerecherii este a
-faptului. La reluare deschiderea nu se rescrie: fiecare partidă și fiecare
+faptului. Trecerea 2 enumeră și încasările pe facturi ale raportului de
+vânzări cu amănuntul (copiii `#inc`). Împerecherea pe documente se
+plafonează la restul ambelor documente, cu excedentul raportat. (132 c, d) La reluare deschiderea nu se rescrie: fiecare partidă și fiecare
 lot al sursei se compară cu cubul, în ambele sensuri. Contractul 5 al
 reconcilierii compară restul fiecărei partide inițiale cu soldul poziției în
 sursă la luna următoare, corectat cu mișcarea neaplicată (refuzuri și
 plafonări semnate după sensul real, cumulate, rederivate din cub la reluare);
 partidele neatinse de trecerea 2 și cele ale partenerului generic se declară
-cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
+cu sumă. O partidă rămasă fără explicație se atribuie pe documentele sursei:
+mișcarea pe poziție din 1C față de mișcarea Atlas pe partidă, document cu
+document. Fiecare parte are o categorie (stingere refuzată sau plafonată,
+rând ținut pe partida documentului, notă pe FIFO cu document fără poziție),
+iar suma părților închide Δ; altfel partida pică (132 e). O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 `--probe-stingeri` injectează două erori pe prima stingere reală. Contractul
 și cifrele:
 `docs/import/m1-deschidere-terti-contract.md`. (107)
@@ -148,11 +159,12 @@ cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
   pe partide inițiale se scriu în cub; fără deschiderea în cub, Import1C nu
   rulează. Stingerile prin facturi rămân în afara trecerii 2 (107-r1), iar
   pozițiile în valută intră în lei, plafonate la rest (107-r4). (107, 107 j)
-- Reconcilierea Import1C nu e verde: contractul 1 are conturi fără explicație
-  (nota-punte a reclasificării dublează ASM-ul care postează, 110-r2), iar
-  contractul 5 are partide inițiale neexplicate. Sensibilitatea contractelor 1
-  și 3 n-are probă proprie, iar unealta n-are un mod de reconciliere fără
-  scriere. (D9-D11)
+- Reconcilierea Import1C e verde numai pe ianuarie 2025; lunile de după
+  intră pe pașii etapei E4 (`docs/import/e4-migrarea-contract.md`).
+  Sensibilitatea contractelor 1 și 3 n-are probă proprie, iar unealta n-are
+  un mod de reconciliere fără scriere. (D9-D11, 132)
+- O linie de notă care numește un document fără poziție la graniță rămâne
+  pe FIFO, iar contractul 5 o numește (E4-r1).
 - Reproductibilitatea importului e măsurată pe o singură lună, pe chei
   naturale. (116)
 - Reluarea parțială cu `--continua` poate afecta interpretarea reconcilierii;
@@ -162,5 +174,5 @@ cu sumă. O eroare tehnică a unei stingeri pică luna și nu explică nimic.
 <!-- gen:decizii -->
 ## Decizii
 
-Deciziile care numesc pagina în `Arii:` (16; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117), 125, 130.
+Deciziile care numesc pagina în `Arii:` (17; titlurile în [index](../decizii/README.md); generat de `docskit gen`, nu se editează): 34, 45 (amendată de 75), 47 (amendată de 107), 48 (amendată de 76), 49, 50, 51, 75, 87 (amendată de 97), 89, 91 (amendată de 107, 118, 120), 107, 115, 116 (amendată de 117), 125, 130, 132 (propusă).
 <!-- /gen:decizii -->

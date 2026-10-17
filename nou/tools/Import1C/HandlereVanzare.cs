@@ -381,9 +381,7 @@ static class HandlerAmanunt {
                 // Cheile încasărilor sunt derivabile din rândurile de trezorerie, deci
                 // intră și ele în gardul reluării (ca descărcările). Doar cele cu sumă
                 // POZITIVĂ: restul n-are document (F4, ca la cardul facturii).
-                var cheiIncasari = randuri.Where(r => (cat.Mapeaza(r.ContCredit)?.StartsWith("411") ?? false)
-                        && (cat.Mapeaza(r.ContDebit)?.StartsWith('5') ?? false) && r.Suma > 0)
-                    .Select(r => $"{h.Id}#inc{r.Linie}").ToList();
+                var cheiIncasari = RanduriIncasare(cat, randuri).Select(r => CheieIncasare(h.Id, r)).ToList();
                 var punteVeche = bucla.EsteCunoscut(View, h.Id + "#punte");
                 // Gardul nu poate fi vacuu (F1a) — vezi nota de la factura de ieșire.
                 var chei = new List<string>();
@@ -466,6 +464,26 @@ static class HandlerAmanunt {
                             "încasarea pe factură nominală n-a rămas în plan"));
                 }
             });
+    }
+
+    static IEnumerable<FlaxRandNota> RanduriIncasare(Catalog cat, IEnumerable<FlaxRandNota> randuri) =>
+        randuri.Where(r => (cat.Mapeaza(r.ContCredit)?.StartsWith("411") ?? false)
+            && (cat.Mapeaza(r.ContDebit)?.StartsWith('5') ?? false) && r.Suma > 0);
+
+    static string CheieIncasare(string raportId, FlaxRandNota r) => $"{raportId}#inc{r.Linie}";
+
+    // Trecerea 2 (132 c): încasarea pe factură nominală stinge documentul din subconto-ul creditului.
+    public static IEnumerable<StingereSursa> Stingeri(ContextLuna ctx) {
+        var bucla = ctx.Bucla;
+        foreach (var h in bucla.Flax.RapoarteAmanunt(ctx.An, ctx.Luna)) {
+            var randuri = bucla.RanduriLuna.GetValueOrDefault(h.Id) ?? [];
+            if (randuri.Count == 0)
+                continue;
+            var subconto = Subconto.IndexeazaTot(bucla.SubcontoLuna.GetValueOrDefault(h.Id) ?? []);
+            foreach (var r in RanduriIncasare(bucla.Catalog, randuri))
+                if (subconto.Latura(r.Linie, Subconto.Credit).DeFel(Subconto.FelDocumente) is { } stins)
+                    yield return new StingereSursa(View, CheieIncasare(h.Id, r), stins, r.Suma);
+        }
     }
 
     static Plan Planifica(ContextLuna ctx, FlaxRaportAmanunt h, IReadOnlyList<FlaxRandNota> randuri,

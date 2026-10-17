@@ -34,20 +34,31 @@ static class NoteComune {
 
     public static int PartideNumite { get; private set; }
     public static int PartideNumiteAbsente { get; private set; }
+    // Laturile al căror document numit n-are partidă în Atlas (sold zero la graniță): rămân pe FIFO (E4-r1).
+    public static int LaturiFaraPozitie { get; private set; }
 
-    // 115: documentul din subconto-ul „Documente" al laturii numește partida pe care rândul o stinge.
+    // 115: documentul din subconto-ul „Documente" al laturii numește partida pe care rândul o stinge;
+    // slotul prezent și gol numește poziția fără document (132 b).
     // Partida absentă la data notei pe contul și partenerul laturii nu se numește: rândul rămâne pe FIFO.
     public static List<Linie> NumestePartide(BuclaImport bucla, string docId, DateOnly data, List<Linie> linii) {
         var subconto = Subconto.IndexeazaTot(bucla.SubcontoLuna.GetValueOrDefault(docId) ?? []);
         Guid? Partida(int linie, int latura, string simbol, Guid? partener) {
-            if (partener is not Guid tert || subconto.Latura(linie, latura).DeFel(Subconto.FelDocumente) is not { } tinta)
+            if (partener is not Guid tert)
                 return null;
+            var analitice = subconto.Latura(linie, latura);
             var cont = bucla.Catalog.Plan[simbol];
+            if (analitice.DeFel(Subconto.FelDocumente) is not { } tinta)
+                return analitice.Any(s => s.Fel == Subconto.FelDocumente)
+                    ? Imperecheri1C.PartidaFaraDocument(bucla, cont, tert)
+                    : null;
             if (bucla.Tinta(tinta.Tip, tinta.Id) is Guid document)
                 return N.UnitateSold.DeschidePartida(cont, tert, document, default).Id;
             var initiala = Imperecheri1C.PartideDeschidere(bucla, tinta.TipRef, tinta.Id)
                 .FirstOrDefault(p => p.Cont == cont && p.Partener == tert);
-            return initiala == default ? null : initiala.Partida;
+            if (initiala != default)
+                return initiala.Partida;
+            LaturiFaraPozitie++;
+            return null;
         }
         var numite = linii.Select(l => l with {
             PartidaDebitId = Partida(l.RandSursa, Subconto.Debit, l.Debit, l.RepartitorDebitId),
@@ -295,7 +306,8 @@ static class HandlerCompensare {
             + $"(nu pot sting nimic), {LiniiCuRepartitorDinAntet} linii cu contrapartida luată "
             + "din antet (subconto-ul rândului n-avea niciuna).");
         Console.WriteLine($"  Note: {NoteComune.PartideNumite} laturi cu partida numită de sursă (115), "
-            + $"{NoteComune.PartideNumiteAbsente} cu partida absentă la data notei (rămase pe FIFO).");
+            + $"{NoteComune.PartideNumiteAbsente} cu partida absentă la data notei (rămase pe FIFO), "
+            + $"{NoteComune.LaturiFaraPozitie} cu documentul numit fără poziție la graniță (pe FIFO, E4-r1).");
     }
 }
 
