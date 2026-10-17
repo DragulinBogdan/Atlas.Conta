@@ -353629,6 +353629,9 @@
           "Valoare": {
             "type": "number",
             "format": "double"
+          },
+          "Consum": {
+            "type": "boolean"
           }
         },
         "additionalProperties": false

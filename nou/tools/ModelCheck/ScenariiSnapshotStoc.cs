@@ -159,6 +159,39 @@ sealed partial class ScenariiSnapshotStoc(Func<IObjectSpace> deschide, Action<st
                 && peLoturi.ToQueryString().Contains("\"Data\" + ")
                 && !C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie).ToQueryString().Contains("\"Data\" + ");
         }));
+        Verifica("SC-CIT-117", "raportul de stoc marchează poziția de consum, nu stocul din gestiuni", CuSpatiu(os => {
+            var r = StocProiectii.SoldStoc(os, new(An, 1, 31), CitireCumul.Integrala).Where(r => r.LotId == lot).ToArray();
+            return r.Single(r => r.RepartitorId == Loc).Consum
+                && r.Where(r => r.RepartitorId == Magazie || r.RepartitorId == Destinatie).All(r => !r.Consum)
+                && r.Count(r => r.RepartitorId != Loc) == 2;
+        }));
+        Verifica("SC-CIT-118", "filtrul pe gestiune și balanța analitică văd valoarea mutată de BTR; transferul (D +40 / D −40) nu schimbă sintetica", CuSpatiu(os => {
+            var stoc = Cont(Stoc);
+            var ian = (Start: new DateOnly(An, 1, 1), Sfarsit: new DateOnly(An, 1, 31));
+            var feb = (Start: new DateOnly(An, 2, 1), Sfarsit: new DateOnly(An, 2, 28));
+            var filtrata = ContabilProiectii.Balanta(os, feb.Start, feb.Sfarsit, repartitorId: Destinatie,
+                citire: CitireCumul.Integrala).Single(r => r.ContId == stoc);
+            var analitica = ContabilProiectii.Balanta(os, ian.Start, ian.Sfarsit, analitic: true,
+                citire: CitireCumul.Integrala).Where(r => r.ContId == stoc).ToArray();
+            var sintetica = ContabilProiectii.Balanta(os, ian.Start, ian.Sfarsit, citire: CitireCumul.Integrala)
+                .Single(r => r.ContId == stoc);
+            var destinatie = analitica.Single(r => r.RepartitorId == Destinatie);
+            var fisaSold = ContabilProiectii.FisaSold(os, stoc, feb.Start, feb.Sfarsit, repartitorId: Destinatie,
+                citire: CitireCumul.Integrala);
+            var fisa = ContabilProiectii.FisaCont(os, stoc, ian.Start, ian.Sfarsit, repartitorId: Destinatie,
+                citire: CitireCumul.Integrala).ToArray();
+            Console.WriteLine($"     MĂSURAT (SC-CIT-118): filtrată feb {filtrata.SoldInitialDebit}/{filtrata.SoldFinalDebit}; "
+                + $"analitică ian destinație {destinatie.RulajDebit}/{destinatie.SoldFinalDebit}, Σ rulaj D {analitica.Sum(r => r.RulajDebit)}, "
+                + $"Σ sold {analitica.Sum(r => r.SoldFinalDebit - r.SoldFinalCredit)}; sintetică rulaj D {sintetica.RulajDebit}, "
+                + $"sold {sintetica.SoldFinalDebit - sintetica.SoldFinalCredit}; fișă feb inițial {fisaSold.SoldInitialDebit}; "
+                + $"fișă ian [{string.Join(", ", fisa.Select(f => $"{f.Debit}/{f.Credit}/{f.SoldCurent}"))}]");
+            return filtrata.SoldInitialDebit == 40m && filtrata.SoldFinalDebit == 40m
+                && destinatie.RulajDebit == 40m && destinatie.SoldFinalDebit == 40m
+                && analitica.Sum(r => r.RulajDebit) == sintetica.RulajDebit
+                && analitica.Sum(r => r.SoldFinalDebit - r.SoldFinalCredit) == sintetica.SoldFinalDebit - sintetica.SoldFinalCredit
+                && fisaSold.SoldInitialDebit == 40m
+                && fisa.Length == 1 && fisa[0].Debit == 40m && fisa[0].SoldCurent == 40m;
+        }));
         Storneaza(btr, Februarie);
         Verifica("SC-CIT-71", "storno peste închidere: sursa 8/80, destinația zero, ianuarie intact", CuSpatiu(os => {
             var s = C.Citiri.Loturi.Cumulate(os, CitireCumul.Integrala, Februarie).Where(s => s.LotId == lot).ToArray();

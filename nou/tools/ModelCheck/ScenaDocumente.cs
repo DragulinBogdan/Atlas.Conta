@@ -334,7 +334,7 @@ abstract class ScenaDocumente(Func<IObjectSpace> deschide, Action<string, bool> 
             + "zero pe intrările care exclud și pe cealaltă intrare care include",
             transfer.Count == transferuri && inv.Count == inverse
             && numarate.Any(n => n.Nume == intrare && n.Regim == ProbeTransferCititori.Regim.Include)
-            && numarate.Where(n => n.Regim != ProbeTransferCititori.Regim.Indiferent)
+            && numarate.Where(n => n.Regim is ProbeTransferCititori.Regim.Include or ProbeTransferCititori.Regim.Exclude)
                 .All(n => n.Numar == (n.Nume == intrare ? peIntrare : 0)));
     }
 

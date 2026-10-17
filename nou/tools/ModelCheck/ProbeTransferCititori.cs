@@ -10,13 +10,15 @@ namespace Atlas.Conta.BackOffice.ModelCheck;
 // N-r8: `Transfer` și inversele lui se exclud într-un singur loc, iar consumatorii nu refiltrează.
 static class ProbeTransferCititori {
     // `Indiferent`: intrarea nu filtrează felul, domeniul ei e dat de coordonate; N-r8 nu i se aplică.
-    public enum Regim { Exclude, Include, Indiferent }
+    // `Doar`: complementul lui `Contabil.Postari`, numai `Transfer` și inversele lui (126e).
+    public enum Regim { Exclude, Include, Indiferent, Doar }
 
     public sealed record Intrare(string Nume, Regim Regim, Func<IObjectSpace, IQueryable<Guid>> Postari);
 
     public static readonly Intrare[] Intrari = [
         new("Contabil.Postari", Regim.Exclude, os => Contabil.Postari(os).Select(p => p.ID)),
         new("Contabil.Perechi", Regim.Indiferent, os => Contabil.Perechi(os, null, null).Select(p => p.ID)),
+        new("Contabil.Transferuri", Regim.Doar, os => Contabil.Transferuri(os).Select(p => p.ID)),
         new("Contabil.Jurnal", Regim.Exclude, os => Contabil.Jurnal(os, DateOnly.MinValue, DateOnly.MaxValue).Select(p => p.Id)),
         new("Plati.Postari", Regim.Exclude, os => Plati.Postari(os).Select(p => p.Id)),
         new("Loturi.Postari", Regim.Include, os => Loturi.Postari(os).Select(p => p.ID)),
@@ -32,6 +34,7 @@ static class ProbeTransferCititori {
         (Modul + "Cub/Materializare.cs", "Materializare.Anuleaza", "scriitorul: anularea șterge și transferurile"),
         (Modul + "Cub/Materializare.StingereDeschidere.cs", "Materializare.StingeriDeschidere", "scriitorul: stingerea pozițiilor inițiale"),
         (Modul + "Declaratii/DeclarantAsamblare.cs", "DeclarantAsamblare.Declara", "producătorul alege felul tranzacției"),
+        (Modul + "Cub/Citiri/Contabil.cs", "Contabil.Transferuri", "cititorul comun al transferurilor, pentru vederile pe repartitor sau material (126e)"),
         (Modul + "Cub/Citiri/Loturi.cs", "Loturi.VerificaRetragere", "retragerea reverifică soldul și pe transferurile proprii"),
         (Modul + "Cub/Citiri/Plati.cs", "Plati.Alocari", "alocarea plăților urmează transferurile pe partida proprie"),
         (Modul + "Cub/Citiri/Imobilizari.cs", "Imobilizari.VerificaProvenienta", "martor: transfer valoric fără suport"),

@@ -29,6 +29,7 @@ export function SoldStoc() {
         <Column dataField="ProdusDenumire" caption="Produs" />
         <Column dataField="ProdusUM" caption="UM" />
         <Column dataField="GestiuneDenumire" caption="Gestiune" />
+        <Column dataField="Consum" caption="Consum" dataType="boolean" />
         <Column dataField="ContSimbol" caption="Cont" />
         <Column dataField="LotData" caption="Data lot" dataType="date" format="dd.MM.yyyy" />
         <Column dataField="LotPretUnitar" caption="Cost unitar" dataType="number" format="#,##0.000000" alignment="right" />

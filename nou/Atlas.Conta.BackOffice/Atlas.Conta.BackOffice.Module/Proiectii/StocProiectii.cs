@@ -20,6 +20,8 @@ public sealed class SoldStocRand {
     public string GestiuneDenumire { get; set; }
     public decimal Cantitate { get; set; }
     public decimal Valoare { get; set; }
+    /// <summary>Poziția lăsată de consum la un repartitor care nu e gestiune (cheltuială pe lot), nu stoc disponibil (126d).</summary>
+    public bool Consum { get; set; }
 }
 
 public static class StocProiectii {
@@ -39,6 +41,7 @@ public static class StocProiectii {
             LotData = a.Deschisa,
             LotPretUnitar = a.Cantitate == 0m ? 0m : a.Valoare / a.Cantitate,
             GestiuneDenumire = rep.Denumire,
-            Cantitate = a.Cantitate, Valoare = a.Valoare
+            Cantitate = a.Cantitate, Valoare = a.Valoare,
+            Consum = rep != null && !(rep is Gestiune)
         };
 }

@@ -1,6 +1,6 @@
 # Stoc
 
-**Actualizat: 2026-10-16.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Loturile și evaluarea FIFO, citirea stocului, recepția conexă și diferențele ei, transformarea, descărcarea de gestiune și corecția valorii lotului; plus invarianții cubului și citirile contabile ale lui.
 
@@ -48,6 +48,10 @@ nesecurizate folosesc snapshot + fereastră, inclusiv evaluarea ieșirii cu
 graniță strict anterioară documentului. Reconstrucția detectează și data
 alterată, pe lângă diferențele de chei și măsuri. Soldurile 0/0 se omit, cele
 0/valoare nenulă rămân. (098, 099, TR-D8)
+
+Raportul de stoc (`StocProiectii.SoldStoc`) listează și poziția lăsată de
+consum pe lot, la un repartitor care nu e gestiune (cheltuiala la locul de
+consum), marcată `Consum`; disponibilul FIFO le ignoră. (126d)
 
 Soldul cerut pe o listă de loturi (`Loturi.Cumulate(…, loturi)`) restrânge
 snapshot-ul și postările înaintea grupării. Pe ramura postărilor fereastra e
