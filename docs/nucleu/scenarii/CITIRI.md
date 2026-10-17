@@ -167,6 +167,17 @@ FIFO și raportul păstrează data deschiderii peste granița snapshot-ului.
 Citirea cu excluderea unui document recitește postările, fără a-l păstra
 ascuns în snapshot. Un snapshot absent permite citirea integrală din cub.
 
+SC-CIT-117 (126d): după BTR 4/40 Magazie → Destinație și BCS 2/20 la Loc,
+raportul de stoc pe lot marchează `Consum` numai poziția de la Loc; cele din
+Magazie și Destinație nu.
+
+SC-CIT-118 (126e): aceeași scenă. Balanța din februarie filtrată pe
+Destinație are inițial și final 40 pe contul de stoc; balanța analitică din
+ianuarie are rândul Destinație cu rulaj D 40 și final 40; suma rândurilor
+analitice dă rulajul și soldul balanței sintetice (transferul e D +40 /
+D −40); fișa filtrată pe Destinație are în ianuarie un rând D 40, sold 40, iar
+în februarie soldul inițial 40.
+
 SC-CIT-116 (127): produsul lotului recepției, cu stoc în magazie, nu trece pe
 un tip de material din altă clasă (gardianul refuză); un produs nou, fără
 stoc, trece. (NG-r2)

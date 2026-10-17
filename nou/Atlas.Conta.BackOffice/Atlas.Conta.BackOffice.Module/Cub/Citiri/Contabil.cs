@@ -81,8 +81,25 @@ public static class Contabil {
                select p;
     }
 
-    public static IQueryable<PostareAnalitica> Analitice(IObjectSpace os) =>
-        Postari(os).Select(p => new PostareAnalitica {
+    /// <summary>Tranzacțiile `Transfer` și stornourile lor: mișcarea între repartitori sau materiale pe același cont, netă zero pe cont (126e).</summary>
+    public static IQueryable<Postare> Transferuri(IObjectSpace os) {
+        var toate = os.GetObjectsQuery<Postare>();
+        return from p in Domeniu(os)
+               join original in toate on new { Id = p.InversaDinId, Spatiu = p.InversaDinSpatiu }
+                   equals new { Id = (Guid?)original.ID, Spatiu = (N.Spatiu?)original.Spatiu } into originale
+               from original in originale.DefaultIfEmpty()
+               where p.Tranzactie.Fel == N.FelTranzactie.Transfer
+                   || p.Tranzactie.Fel == N.FelTranzactie.Storno && original != null
+                       && original.Tranzactie.Fel == N.FelTranzactie.Transfer
+               select p;
+    }
+
+    public static IQueryable<PostareAnalitica> Analitice(IObjectSpace os) => Analitice(Postari(os));
+
+    public static IQueryable<PostareAnalitica> AnaliticeTransfer(IObjectSpace os) => Analitice(Transferuri(os));
+
+    static IQueryable<PostareAnalitica> Analitice(IQueryable<Postare> postari) =>
+        postari.Select(p => new PostareAnalitica {
             Id = p.ID, Spatiu = p.Spatiu, TranzactieId = p.TranzactieId, Fel = p.Tranzactie.Fel, Pereche = p.Pereche,
             DocumentId = p.DocumentId, Data = p.Data, Cont = p.Cont, Sens = p.Sens, Valoare = p.Valoare,
             Repartitor = p.Repartitor, Produs = p.Produs,

@@ -14225,6 +14225,7 @@ export interface components {
             Cantitate?: number;
             /** Format: double */
             Valoare?: number;
+            Consum?: boolean;
         };
         SoldStocRandPaginaDto: {
             data?: components["schemas"]["SoldStocRand"][] | null;

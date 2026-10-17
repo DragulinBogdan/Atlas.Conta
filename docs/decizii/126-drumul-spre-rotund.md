@@ -5,8 +5,8 @@
 - Execuție: firul „rotund”, felia R0 (2026-10-17), branch `rotund-r0`; inventarul făcut de trei agenți doar-citire și verificat de main pe cod; owner-ul a tranșat retriajul și (d)–(f) la 2026-10-17
 - Arii: verificare, stoc, motor, imobilizari, partide, tva, perioade
 - Amendează: —
-- Închide: 091-r2, 76-r2, N-r7, TR-r7, TR-r10, TR-r11, 095-r1
-- Docs: `docs/decizii/restante.md`; `docs/nucleu/scenarii/IMO.md`; testul `FifoTeste.OrdineaGuidEsteOrdineaUuidDinPostgres`
+- Închide: 091-r2, 76-r2, N-r7, TR-r7, TR-r10, TR-r11, 095-r1, X-r3, NG-r1
+- Docs: `docs/decizii/restante.md`; `docs/nucleu/scenarii/IMO.md`; testul `FifoTeste.OrdineaGuidEsteOrdineaUuidDinPostgres`; SC-CIT-117, SC-CIT-118 din `docs/nucleu/scenarii/CITIRI.md`; `docs/stare-curenta/stoc.md`, `raportare.md`
 
 ## Regula durabilă
 
@@ -20,7 +20,7 @@
 
 (d) **Raportul de stoc arată și consumul pe lot.** Poziția lăsată de consum pe contul de cheltuială, la locul de consum, cu lotul ca unitate (X-r3), apare în raportul de stoc și în soldul pe lot, marcată ca poziție de consum, nu ca stoc disponibil.
 
-(e) **Filtrul pe gestiune sau material, pe conturile de stoc, urmează valoarea la destinație.** Balanța și fișa de cont filtrate pe gestiune sau material includ `Transfer` (BTR, ASM pe același cont), deci arată valoarea mutată; nefiltrate rămân neschimbate, fiindcă `Transfer` se netează pe cont (NG-r1).
+(e) **Vederile pe repartitor sau material urmează valoarea la destinație.** Atomii balanței și ai snapshot-ului contabil includ `Transfer` și inversele lui (BTR, ASM pe același cont), prin cititorul comun `Contabil.Transferuri`; balanța analitică, balanța, fișa și soldul pe partener filtrate pe repartitor sau material arată deci valoarea mutată. Transferul conservă pe cont și se scrie ca debite de semn opus (090 f), deci balanța sintetică și rulajele pe cont rămân neschimbate. Listările (jurnalul, fișa nefiltrată) rămân fără transferuri; fișa filtrată pe repartitor sau material le listează (NG-r1).
 
 (f) **Lotul nu se naște cu valoare negativă.** O linie care naște lot cu cantitate pozitivă și valoare negativă e refuzată cu cod stabil; returul sau reducerea pe același document se fac prin RLF sau prin corecția valorică (119) (S-r7).
 
@@ -42,3 +42,4 @@ Restanțele `activă` rămase și feliile lor: R1 F26-r18, S-r8, NG-r2; R2 X-r3 
 ## Istoric
 
 - 2026-10-17: scrisă la felia R0 a firului „rotund”; propusă owner-ului.
+- 2026-10-17: (d) și (e) implementate la felia R2. (e) precizată: transferurile intră în atomii balanței și în snapshot, deci și în balanța analitică și în soldul pe partener; o primă variantă care le citea din cub, fără snapshot, a picat scara PerfCub (X-D5, citirea depindea de istoric). Transferul nu schimbă rulajele sintetice, fiindcă e scris ca debite de semn opus pe același cont. Probat de SC-CIT-118.

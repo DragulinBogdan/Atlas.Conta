@@ -1,6 +1,6 @@
 # Raportare
 
-**Actualizat: 2026-10-16.** [Index](README.md)
+**Actualizat: 2026-10-17.** [Index](README.md)
 
 Explicația deciziei persistată în cub, invarianții care o verifică, citirile contabile ale cubului și identitățile cititorilor lui.
 
@@ -132,6 +132,15 @@ fără coloană de gestiune; citirea dinamică și cea din snapshot dau aceleaș
 cifre. Snapshot-ul se scrie numai din cub și se reconstruiește din postări.
 Citirile securizate folosesc postările autorizate, nu snapshot-ul global,
 pentru a păstra permisiunile pe rând și membru. (S1, C111-Q6, 098, 099)
+
+Atomii balanței și ai snapshot-ului contabil includ transferurile, prin
+cititorul comun `Contabil.Transferuri` (`Transfer` și inversele lui): după un
+BTR sau un ASM valoarea apare la destinație în balanța analitică, în balanța,
+fișa și soldul pe partener filtrate pe repartitor sau material. Transferul
+conservă pe cont și se scrie ca debite de semn opus, deci balanța sintetică
+și rulajele pe cont rămân neschimbate. Listările rămân fără transferuri
+(jurnalul, fișa nefiltrată); fișa filtrată pe repartitor sau material le
+listează. (126e)
 
 ### Balanța pe an
 

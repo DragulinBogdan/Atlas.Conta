@@ -7,7 +7,7 @@ Generat de `docskit gen` din antete, registru și cod; nu se editează. Cronolog
 | Ce | Cât |
 |---|---|
 | Decizii | 127: 89 active, 35 amendate parțial, 0 depășite, 3 propuse |
-| Restanțe | 403: 280 deschise, 123 închise |
+| Restanțe | 403: 278 deschise, 125 închise |
 | Pagini de stare curentă | 19 |
 | Contracte de felie (`Tip: contract`) | 5, deschise 0 |
 | Cataloage vii (`Tip: catalog`) | 6 |
@@ -46,24 +46,22 @@ Niciuna.
 
 | Stare | Câte |
 |---|---|
-| activă | 11 |
+| activă | 9 |
 | după PoC | 230 |
 | migrare | 25 |
 | depășită de 091 | 2 |
 | docs | 8 |
 | (în afara vocabularului) | 4 |
 
-### Lista `activă` (11, prag 45)
+### Lista `activă` (9, prag 45)
 
-**stoc** (7)
+**stoc** (5)
 
 - `86-r1` taxele vamale și accizele în costul de achiziție (ajustare de cost pe lot)
 - `86-r2` anularea/stornarea unei FCT legate la o DVI operată nu se refuză
 - `86-r11` DVI ca document stins: restul polimorf în ImperechereService.Total + ramura în DocumenteCuRest
 - `T-r2` reziduul valoric lăsat de RLF pe lotul golit (valoare fiscală ≠ raportul lotului) contrazice 090 (j)…
 - `099-r1` LDI adoptă cauza diferenței: minus imputabil pe partener, perisabilitate, neimputabilă; plus (099)
-- `X-r3` Raportul de stoc listează capătul de consum al BCS (postarea de debit poartă lotul ca unitate, pe co…
-- `NG-r1` Balanța și fișa contului filtrate pe gestiune sau pe material nu văd transferurile (BTR, ASM): valoa…
 
 **partide** (1)
 
@@ -106,9 +104,9 @@ Decizia (numărul de citări `// N` din cod): 13 (1), 15 (1), 22 (1), 26 (1), 33
 | [partide](stare-curenta/partide.md) | 2026-10-15 |
 | [perioade](stare-curenta/perioade.md) | 2026-10-16 |
 | [politici](stare-curenta/politici.md) | 2026-10-16 |
-| [raportare](stare-curenta/raportare.md) | 2026-10-16 |
+| [raportare](stare-curenta/raportare.md) | 2026-10-17 |
 | [saft](stare-curenta/saft.md) | 2026-10-15 |
-| [stoc](stare-curenta/stoc.md) | 2026-10-16 |
+| [stoc](stare-curenta/stoc.md) | 2026-10-17 |
 | [termeni](stare-curenta/termeni.md) | 2026-10-15 |
 | [tva](stare-curenta/tva.md) | 2026-10-16 |
 | [verificare](stare-curenta/verificare.md) | 2026-10-16 |

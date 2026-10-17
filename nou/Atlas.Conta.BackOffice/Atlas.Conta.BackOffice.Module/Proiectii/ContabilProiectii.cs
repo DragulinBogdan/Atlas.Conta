@@ -184,8 +184,12 @@ struct SursaFisa {
 
 public static partial class ContabilProiectii {
 
+    /// <summary>Atomii balanței și ai snapshot-ului; transferurile conservă pe cont, deci mută valoarea numai între repartitori și materiale (126e).</summary>
     public static IQueryable<AtomContabil> Atomi(IObjectSpace os) =>
-        Cub.Citiri.Contabil.Analitice(os).Select(p => new AtomContabil {
+        Atomi(Cub.Citiri.Contabil.Analitice(os)).Concat(Atomi(Cub.Citiri.Contabil.AnaliticeTransfer(os)));
+
+    static IQueryable<AtomContabil> Atomi(IQueryable<Cub.Citiri.PostareAnalitica> postari) =>
+        postari.Select(p => new AtomContabil {
             Data = p.Data, ContId = p.Cont,
             Debit = p.Sens == Atlas.Conta.Nucleu.Sens.Debit ? p.Valoare : 0m,
             Credit = p.Sens == Atlas.Conta.Nucleu.Sens.Credit ? p.Valoare : 0m,
@@ -276,7 +280,9 @@ public static partial class ContabilProiectii {
         CitireCumul citire = CitireCumul.Vizibila, bool faraTert = false) {
         var argumente = new List<object>();
         string P(object valoare) { argumente.Add(valoare); return "{" + (argumente.Count - 1) + "}"; }
+        var peUnitati = repartitorId != null || materialId != null;
         var postari = Cub.Citiri.Contabil.Analitice(os).Where(p => p.Data <= dataEnd);
+        if (peUnitati) postari = postari.Concat(Cub.Citiri.Contabil.AnaliticeTransfer(os).Where(p => p.Data <= dataEnd));
         var etichetate = from p in postari
             join c in os.GetObjectsQuery<Cont>() on p.Cont equals c.ID into conturi
             from c in conturi.DefaultIfEmpty()
